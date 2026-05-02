@@ -133,7 +133,6 @@
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:hint="영문/숫자 6~12자"
-                        android:hintTextColor="#9FA6AC"
                         android:textColor="#1A1C1E"
                         android:textSize="14sp"
                         android:paddingLeft="16dp"
@@ -186,7 +185,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:hint="영문, 숫자, 특수문자 포함 8자 이상"
-                        android:hintTextColor="#9FA6AC"
                         android:textColor="#1A1C1E"
                         android:textSize="14sp"
                         android:paddingLeft="16dp"
@@ -236,7 +234,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:hint="비밀번호를 다시 입력하세요"
-                        android:hintTextColor="#9FA6AC"
                         android:textColor="#1A1C1E"
                         android:textSize="14sp"
                         android:paddingLeft="16dp"
@@ -282,7 +279,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
                     android:hint="이름을 입력하세요"
-                    android:hintTextColor="#9FA6AC"
                     android:textColor="#1A1C1E"
                     android:textSize="14sp"
                     android:paddingLeft="16dp"
@@ -307,7 +303,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
                     android:hint="010-0000-0000"
-                    android:hintTextColor="#9FA6AC"
                     android:textColor="#1A1C1E"
                     android:textSize="14sp"
                     android:paddingLeft="16dp"
@@ -347,7 +342,6 @@
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:hint="example@email.com"
-                        android:hintTextColor="#9FA6AC"
                         android:textColor="#1A1C1E"
                         android:textSize="14sp"
                         android:paddingLeft="16dp"
@@ -383,38 +377,71 @@
                 <LinearLayout
                     android:id="@+id/layoutEmailCode"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:orientation="horizontal"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
                     android:layout_marginTop="8dp"
                     android:visibility="gone">
 
-                    <EditText
-                        android:id="@+id/etEmailCode"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:hint="인증코드 6자리"
-                        android:hintTextColor="#9FA6AC"
-                        android:textColor="#1A1C1E"
-                        android:textSize="14sp"
-                        android:paddingLeft="16dp"
-                        android:paddingRight="16dp"
-                        android:background="@drawable/bg_input_rounded"
-                        android:inputType="number"
-                        android:singleLine="true" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:orientation="horizontal">
 
-                    <Button
-                        android:id="@+id/btnConfirmCode"
+                        <FrameLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1">
+
+                            <EditText
+                                android:id="@+id/etEmailCode"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:hint="인증코드 6자리"
+                                android:textColor="#1A1C1E"
+                                android:textSize="14sp"
+                                android:paddingLeft="16dp"
+                                android:paddingRight="72dp"
+                                android:background="@drawable/bg_input_rounded"
+                                android:inputType="number"
+                                android:singleLine="true" />
+
+                            <TextView
+                                android:id="@+id/tvEmailTimer"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center_vertical|end"
+                                android:layout_marginEnd="12dp"
+                                android:text="3:00"
+                                android:textSize="13sp"
+                                android:textColor="#EF4444" />
+
+                        </FrameLayout>
+
+                        <Button
+                            android:id="@+id/btnConfirmCode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:text="확인"
+                            android:textSize="14sp"
+                            android:textColor="#FEFEFE"
+                            android:textStyle="bold"
+                            android:background="@drawable/bg_button_blue"
+                            android:layout_marginLeft="8dp"
+                            android:paddingLeft="16dp"
+                            android:paddingRight="16dp" />
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvEmailResend"
                         android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:text="확인"
-                        android:textSize="14sp"
-                        android:textColor="#FEFEFE"
-                        android:textStyle="bold"
-                        android:background="@drawable/bg_button_blue"
-                        android:layout_marginLeft="8dp"
-                        android:paddingLeft="16dp"
-                        android:paddingRight="16dp" />
+                        android:layout_height="wrap_content"
+                        android:text="인증코드를 다시 받기"
+                        android:textSize="12sp"
+                        android:textColor="#4D80FF"
+                        android:layout_marginTop="6dp"
+                        android:layout_marginStart="8dp"
+                        android:visibility="visible" />
 
                 </LinearLayout>
 
@@ -445,7 +472,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
                     android:hint="도로명 주소를 검색하세요"
-                    android:hintTextColor="#9FA6AC"
                     android:textColor="#1A1C1E"
                     android:textSize="14sp"
                     android:paddingLeft="16dp"
@@ -461,7 +487,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="50dp"
                     android:hint="상세 주소 (동, 호수 등)"
-                    android:hintTextColor="#9FA6AC"
                     android:textColor="#1A1C1E"
                     android:textSize="14sp"
                     android:paddingLeft="16dp"

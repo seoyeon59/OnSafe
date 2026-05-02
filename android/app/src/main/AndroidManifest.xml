@@ -12,17 +12,20 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OnSafe"
         tools:targetApi="31">
+
+        <activity android:name=".MainActivity" />
+
+        <activity android:name="com.example.onsafe.ResetPasswordActivity" />
+
         <activity
-            android:name=".MainActivity"
+            android:name="com.example.onsafe.ui.login.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <activity android:name="com.example.onsafe.ui.login.LoginActivity" />
         <activity android:name="com.example.onsafe.ui.login.FindIdActivity" />
         <activity android:name="com.example.onsafe.ui.login.FindPwActivity" />
         <activity android:name="com.example.onsafe.ui.login.RegisterStep1Activity" />

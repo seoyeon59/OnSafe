@@ -2,6 +2,7 @@ package com.example.onsafe.ui.login
 
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.method.HideReturnsTransformationMethod
@@ -44,11 +45,15 @@ class RegisterStep2Activity : AppCompatActivity() {
     private lateinit var tvPhoneMessage: TextView
     private lateinit var tvEmailMessage: TextView
     private lateinit var tvEmailVerified: TextView
+    private lateinit var tvEmailTimer: TextView
+    private lateinit var tvEmailResend: TextView
 
     private var isPwVisible = false
     private var isPwConfirmVisible = false
     private var isIdChecked = false
     private var isEmailVerified = false
+
+    private var emailCountDownTimer: CountDownTimer? = null
 
     // 유효성 상태
     private var isPwValid = false
@@ -93,6 +98,8 @@ class RegisterStep2Activity : AppCompatActivity() {
         tvPhoneMessage = findViewById(R.id.tvPhoneMessage)
         tvEmailMessage = findViewById(R.id.tvEmailMessage)
         tvEmailVerified = findViewById(R.id.tvEmailVerified)
+        tvEmailTimer = findViewById(R.id.tvEmailTimer)
+        tvEmailResend = findViewById(R.id.tvEmailResend)
 
         btnBack.setOnClickListener { finish() }
 
@@ -255,10 +262,7 @@ class RegisterStep2Activity : AppCompatActivity() {
                 return@setOnClickListener
             }
             // TODO: API 연결 - 이메일 인증 요청
-            btnVerifyEmail.isEnabled = false
-            btnVerifyEmail.alpha = 0.4f
-            layoutEmailCode.visibility = View.VISIBLE
-            Toast.makeText(this, "인증 메일을 발송했습니다.", Toast.LENGTH_SHORT).show()
+            startEmailVerification()
         }
 
         // 인증코드 확인
@@ -269,11 +273,20 @@ class RegisterStep2Activity : AppCompatActivity() {
                 return@setOnClickListener
             }
             // TODO: API 연결 - 인증코드 확인
+            emailCountDownTimer?.cancel()
             isEmailVerified = true
             layoutEmailCode.visibility = View.GONE
             tvEmailMessage.visibility = View.GONE
             tvEmailVerified.visibility = View.VISIBLE
             updateCompleteButton()
+        }
+
+        // 재전송
+        tvEmailResend.setOnClickListener {
+            etEmailCode.text.clear()
+            // TODO: API 연결 - 인증코드 재발송
+            startEmailVerification()
+            Toast.makeText(this, "인증 메일을 재발송했습니다.", Toast.LENGTH_SHORT).show()
         }
 
         // 주소 검색
@@ -286,6 +299,42 @@ class RegisterStep2Activity : AppCompatActivity() {
         btnComplete.setOnClickListener {
             // TODO: API 연결 - 회원가입
         }
+    }
+
+    private fun startEmailVerification() {
+        btnVerifyEmail.isEnabled = false
+        btnVerifyEmail.alpha = 0.4f
+        layoutEmailCode.visibility = View.VISIBLE
+        tvEmailResend.visibility = View.VISIBLE
+        tvEmailTimer.visibility = View.VISIBLE
+        btnConfirmCode.isEnabled = true
+        btnConfirmCode.alpha = 1.0f
+        Toast.makeText(this, "인증 메일을 발송했습니다.", Toast.LENGTH_SHORT).show()
+        startEmailTimer()
+    }
+
+    private fun startEmailTimer() {
+        emailCountDownTimer?.cancel()
+        emailCountDownTimer = object : CountDownTimer(180_000L, 1000L) {
+            override fun onTick(millisUntilFinished: Long) {
+                val minutes = millisUntilFinished / 60000
+                val seconds = (millisUntilFinished % 60000) / 1000
+                tvEmailTimer.text = String.format("%d:%02d", minutes, seconds)
+            }
+
+            override fun onFinish() {
+                tvEmailTimer.text = "0:00"
+                btnConfirmCode.isEnabled = false
+                btnConfirmCode.alpha = 0.4f
+                btnVerifyEmail.isEnabled = true
+                btnVerifyEmail.alpha = 1.0f
+            }
+        }.start()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        emailCountDownTimer?.cancel()
     }
 
     private fun validatePwConfirm(confirm: String) {
