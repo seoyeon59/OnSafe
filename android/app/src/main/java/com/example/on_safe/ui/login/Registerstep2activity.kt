@@ -232,6 +232,7 @@ class RegisterStep2Activity : AppCompatActivity() {
 
         // 나머지 필드
         etName.addTextChangedListener(simpleWatcher())
+        etAddressDetail.addTextChangedListener(simpleWatcher())  // 추가
 
         // 아이디 중복 확인
         btnCheckId.setOnClickListener {
@@ -389,6 +390,8 @@ class RegisterStep2Activity : AppCompatActivity() {
                 && isPhoneValid
                 && isEmailValid
                 && isEmailVerified
+                && etAddress.text.isNotEmpty()
+                && etAddressDetail.text.isNotEmpty()
 
         btnComplete.isEnabled = allValid
         btnComplete.alpha = if (allValid) 1.0f else 0.4f
