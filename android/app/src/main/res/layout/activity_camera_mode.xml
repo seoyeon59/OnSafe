@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0D0F11">
+
+    <!-- 좌측: 카메라 프리뷰 영역 -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/sidePanel"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:background="#0D0F11" />
+
+    <!-- 대기 중 오버레이 (촬영 전에만 표시) -->
+    <LinearLayout
+        android:id="@+id/layoutStandby"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#0D0F11"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/sidePanel"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- 카메라 꺼짐 아이콘 원형 배경 -->
+        <FrameLayout
+            android:layout_width="80dp"
+            android:layout_height="80dp">
+            <View
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:background="@drawable/bg_camera_icon_circle" />
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_no_photography"
+                android:alpha="0.4"
+                app:tint="#4D80FF" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="촬영 대기 중"
+            android:textSize="14sp"
+            android:textColor="#80FEFEFE"
+            android:fontFamily="@font/pretendard_medium" />
+    </LinearLayout>
+
+    <!-- 상단 로고 (항상 표시) -->
+    <LinearLayout
+        android:id="@+id/layoutLogo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <FrameLayout
+            android:layout_width="28dp"
+            android:layout_height="28dp">
+            <View
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="@drawable/bg_logo_blue" />
+            <ImageView
+                android:layout_width="13dp"
+                android:layout_height="16dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_shield"
+                app:tint="#FEFEFE" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:text="On-Safe"
+            android:textSize="16sp"
+            android:textColor="#4D80FF"
+            android:fontFamily="@font/gmarket_sans_bold" />
+
+        <!-- LIVE 뱃지 (전송 중에만 표시) -->
+        <LinearLayout
+            android:id="@+id/layoutLiveBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="25dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_live_badge"
+            android:visibility="gone">
+
+            <View
+                android:layout_width="5dp"
+                android:layout_height="5dp"
+                android:background="@drawable/bg_dot_white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="LIVE"
+                android:textSize="11sp"
+                android:textColor="#FEFEFE"
+                android:fontFamily="@font/pretendard_bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 우하단 전체화면 버튼 -->
+    <FrameLayout
+        android:id="@+id/btnFullscreen"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_fullscreen_btn"
+        app:layout_constraintEnd_toStartOf="@id/sidePanel"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_fullscreen"
+            app:tint="#FEFEFE" />
+    </FrameLayout>
+
+    <!-- 우측 사이드 패널 -->
+    <LinearLayout
+        android:id="@+id/sidePanel"
+        android:layout_width="200dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#EB0F1216"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- 패널 헤더 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:background="#202327">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_camera"
+                app:tint="#4D80FF" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="카메라 모드"
+                android:textSize="12sp"
+                android:textColor="#FEFEFE"
+                android:fontFamily="@font/pretendard_bold" />
+        </LinearLayout>
+
+        <!-- 패널 본문 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="12dp">
+
+            <!-- 연결 상태 섹션 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="연결 상태"
+                    android:textSize="10sp"
+                    android:textColor="#4DFFFFFF"
+                    android:fontFamily="@font/pretendard_semibold"
+                    android:letterSpacing="0.09" />
+
+                <!-- 상태 뱃지 -->
+                <LinearLayout
+                    android:id="@+id/layoutStatusBadge"
+                    android:layout_width="match_parent"
+                    android:layout_height="26dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/bg_status_badge">
+
+                    <View
+                        android:id="@+id/viewStatusDot"
+                        android:layout_width="4dp"
+                        android:layout_height="4dp"
+                        android:background="@drawable/bg_dot_status" />
+
+                    <TextView
+                        android:id="@+id/tvStatusText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:text="대기 중"
+                        android:textSize="10sp"
+                        android:textColor="#9CA3AF"
+                        android:fontFamily="@font/pretendard_semibold" />
+
+                    <ProgressBar
+                        android:id="@+id/pbConnecting"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:layout_marginStart="6dp"
+                        android:indeterminateTint="#F59E0B"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 연결 정보 섹션 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:layout_marginTop="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="연결 정보"
+                    android:textSize="10sp"
+                    android:textColor="#4DFFFFFF"
+                    android:fontFamily="@font/pretendard_semibold"
+                    android:letterSpacing="0.09" />
+
+                <!-- 연결 보호자 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="10dp"
+                            android:layout_height="10dp"
+                            android:src="@drawable/ic_person"
+                            android:alpha="0.25"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:text="연결 보호자"
+                            android:textSize="9sp"
+                            android:textColor="#4DFFFFFF"
+                            android:fontFamily="@font/pretendard_regular" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvGuardianName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_marginTop="2dp"
+                        android:text="박지영"
+                        android:textSize="11sp"
+                        android:textColor="#BFFFFFFF"
+                        android:fontFamily="@font/pretendard_semibold" />
+                </LinearLayout>
+
+                <!-- 기기 ID -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="8dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <ImageView
+                            android:layout_width="10dp"
+                            android:layout_height="10dp"
+                            android:src="@drawable/ic_devices"
+                            android:alpha="0.25"
+                            app:tint="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:text="기기 ID"
+                            android:textSize="9sp"
+                            android:textColor="#4DFFFFFF"
+                            android:fontFamily="@font/pretendard_regular" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvDeviceId"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_marginTop="2dp"
+                        android:text="ONS-2026-0417"
+                        android:textSize="11sp"
+                        android:textColor="#BFFFFFFF"
+                        android:fontFamily="@font/pretendard_semibold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 스페이서 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- 버튼 영역 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <!-- 촬영 시작/종료 버튼 -->
+                <Button
+                    android:id="@+id/btnToggleRecording"
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:text="촬영 시작하기"
+                    android:textSize="12sp"
+                    android:textColor="#FEFEFE"
+                    android:fontFamily="@font/pretendard_bold"
+                    android:backgroundTint="#4D80FF"
+                    android:stateListAnimator="@null"
+                    style="@style/Widget.MaterialComponents.Button" />
+
+                <!-- 로그아웃 버튼 -->
+                <Button
+                    android:id="@+id/btnLogout"
+                    android:layout_width="match_parent"
+                    android:layout_height="33dp"
+                    android:layout_marginTop="4dp"
+                    android:text="로그아웃"
+                    android:textSize="10sp"
+                    android:textColor="#59FFFFFF"
+                    android:fontFamily="@font/pretendard_semibold"
+                    android:backgroundTint="#0DFFFFFF"
+                    android:stateListAnimator="@null"
+                    style="@style/Widget.MaterialComponents.Button" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0D0F11">
+
+    <!-- 중앙 콘텐츠 -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- 해제 원형 버튼 -->
+        <FrameLayout
+            android:id="@+id/btnWakeUp"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:background="@drawable/bg_wakeup_btn"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_lock_open"
+                app:tint="#FEFEFE" />
+        </FrameLayout>
+
+        <!-- 촬영중입니다 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="촬영 중입니다..."
+            android:textSize="18sp"
+            android:textColor="#FEFEFE"
+            android:fontFamily="@font/pretendard_semibold" />
+
+        <!-- 설명 -->
+        <TextView
+            android:layout_width="260dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="배터리 절약과 화면 보호를 위해\n화면 보호기가 실행 중입니다.\n해제하려면 위 버튼을 누르세요."
+            android:textSize="13sp"
+            android:textColor="#80FEFEFE"
+            android:fontFamily="@font/pretendard_regular"
+            android:gravity="center"
+            android:lineSpacingMultiplier="1.4" />
+    </LinearLayout>
+
+    <!-- On-Safe 로고 (좌상단) -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <FrameLayout
+            android:layout_width="28dp"
+            android:layout_height="28dp">
+            <View
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="@drawable/bg_logo_blue" />
+            <ImageView
+                android:layout_width="13dp"
+                android:layout_height="16dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_shield"
+                app:tint="#FEFEFE" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:text="On-Safe"
+            android:textSize="16sp"
+            android:textColor="#4D80FF"
+            android:fontFamily="@font/gmarket_sans_bold" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

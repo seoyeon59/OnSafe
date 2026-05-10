@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
+import com.example.on_safe.MainActivity
+import com.example.on_safe.ui.camera.CameraModeActivity
 import com.example.on_safe.R
 
 class ModeSelectActivity : AppCompatActivity() {
@@ -36,12 +38,14 @@ class ModeSelectActivity : AppCompatActivity() {
         }
 
         btnNext.setOnClickListener {
-            // TODO: 선택된 모드 저장 후 다음 화면으로
             if (selectedMode == 0) return@setOnClickListener
-            // 예: SharedPreferences에 모드 저장
-            // val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-            // prefs.edit().putInt("mode", selectedMode).apply()
-            // startActivity(Intent(this, PermissionActivity::class.java))
+            val intent = when (selectedMode) {
+                1 -> Intent(this, MainActivity::class.java)        // 보호자 모드
+                2 -> Intent(this, CameraModeActivity::class.java)  // 카메라 모드
+                else -> return@setOnClickListener
+            }
+            intent.putExtra("selected_mode", selectedMode)
+            startActivity(intent)
         }
     }
 

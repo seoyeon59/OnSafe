@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -13,12 +16,17 @@
         android:theme="@style/Theme.OnSafe"
         tools:targetApi="31">
 
-        <activity android:name=".MainActivity" />
+        <activity
+            android:name=".MainActivity"
+            android:screenOrientation="portrait" />
 
-        <activity android:name="com.example.onsafe.ResetPasswordActivity" />
+        <activity
+            android:name="com.example.onsafe.ResetPasswordActivity"
+            android:screenOrientation="portrait" />
 
         <activity
             android:name="com.example.onsafe.ui.login.LoginActivity"
+            android:screenOrientation="portrait"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -26,12 +34,34 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="com.example.onsafe.ui.login.FindIdActivity" />
-        <activity android:name="com.example.onsafe.ui.login.FindPwActivity" />
-        <activity android:name="com.example.onsafe.ui.login.RegisterStep1Activity" />
-        <activity android:name="com.example.onsafe.ui.login.RegisterStep2Activity" />
-        <activity android:name="com.example.onsafe.ui.login.ModeSelectActivity" />
-        <activity android:name="com.example.onsafe.ui.login.PermissionActivity" />
+        <activity
+            android:name=".ui.camera.CameraModeActivity"
+            android:screenOrientation="landscape" />
+
+        <activity
+            android:name="com.example.onsafe.ui.login.FindIdActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.example.onsafe.ui.login.FindPwActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.example.onsafe.ui.login.RegisterStep1Activity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.example.onsafe.ui.login.RegisterStep2Activity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.example.onsafe.ui.login.PermissionActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.example.onsafe.ui.login.ModeSelectActivity"
+            android:screenOrientation="portrait" />
+
     </application>
 
 </manifest>
