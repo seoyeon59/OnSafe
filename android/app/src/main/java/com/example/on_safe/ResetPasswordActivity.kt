@@ -1,4 +1,4 @@
-package com.example.onsafe
+package com.example.on_safe
 
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle

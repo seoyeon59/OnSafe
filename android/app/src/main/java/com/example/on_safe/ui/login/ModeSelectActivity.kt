@@ -1,4 +1,4 @@
-package com.example.onsafe.ui.login
+package com.example.on_safe.ui.login
 
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable

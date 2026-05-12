@@ -1,6 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 기본 -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="primary_blue">#4D80FF</color>
+
+    <!-- 디자인 토큰: 텍스트/배경 -->
+    <color name="ink_900">#1A1C1E</color>     <!-- 본문 검정 -->
+    <color name="ink_500">#9FA6AC</color>     <!-- 보조 텍스트, 대기중 -->
+    <color name="surface_white">#FEFEFE</color>     <!-- 카드/시트 흰색 -->
+    <color name="surface_bg">#F7F7F8</color>        <!-- 화면 배경, 점수 박스 -->
+    <color name="surface_track">#F1F1F3</color>     <!-- 프로그레스 트랙 -->
+    <color name="surface_tab_active">#F4F7FB</color> <!-- 하단 탭 active 배경 -->
+    <color name="surface_icon_blue">#EEF0FF</color> <!-- 프로필 아이콘 원형 배경 -->
+
+    <!-- 상태 색상 -->
+    <color name="status_normal">#22C55E</color>   <!-- 정상/연결됨 (초록) -->
+    <color name="status_warning">#F59E0B</color>  <!-- 주의/연결중 (주황) -->
+    <color name="status_danger">#EF4444</color>   <!-- 위험/연결실패 (빨강) -->
+    <color name="status_standby">#9FA6AC</color>  <!-- 대기중 (회색) -->
+
+    <!-- 모달 배경 딤 -->
+    <color name="scrim_dim">#80000000</color>
 </resources>
