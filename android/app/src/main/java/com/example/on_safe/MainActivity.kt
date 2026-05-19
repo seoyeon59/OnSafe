@@ -1,8 +1,8 @@
 package com.example.on_safe
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.FrameLayout
@@ -45,9 +45,6 @@ class MainActivity : AppCompatActivity() {
         STANDBY("대기 중", R.color.status_standby)
     }
 
-    // 보호자 전화번호 (TODO: 추후 사용자 설정/서버에서 받아옴)
-    private val guardianPhoneNumber: String = ""
-
     private var alertDialog: BottomSheetDialog? = null
 
     // 테스트용
@@ -73,17 +70,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnFullscreen).setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.FullscreenActivity::class.java))
         }
-        findViewById<View>(R.id.btnCall119).setOnClickListener {
-            openDialer("119")
-        }
-        findViewById<View>(R.id.btnCallGuardian).setOnClickListener {
-            openDialer(guardianPhoneNumber)
-        }
         findViewById<View>(R.id.tabHistory).setOnClickListener {
             Toast.makeText(this, "사고 이력 준비 중", Toast.LENGTH_SHORT).show()
         }
         findViewById<View>(R.id.tabSettings).setOnClickListener {
-            Toast.makeText(this, "설정 준비 중", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, com.example.on_safe.ui.settings.SettingsActivity::class.java))
         }
 
         // [테스트] 점수 박스 길게 누르면 점수 순환 (실제 서버 연결 후 제거)
@@ -120,7 +111,8 @@ class MainActivity : AppCompatActivity() {
         tvScore.setTextColor(color)
 
         tvBadge.text = level.label
-        tvBadge.background.setTint(color)
+        // backgroundTintList 사용 — 공유 Drawable 인스턴스를 직접 변조하지 않음
+        tvBadge.backgroundTintList = ColorStateList.valueOf(color)
 
         tvRange.text = level.rangeText
         tvMessage.text = level.message
@@ -132,12 +124,13 @@ class MainActivity : AppCompatActivity() {
             val params = progressFill.layoutParams
             params.width = (maxWidth * ratio).toInt()
             progressFill.layoutParams = params
-            progressFill.background.setTint(color)
+            progressFill.backgroundTintList = ColorStateList.valueOf(color)
         }
 
         // 위험 단계면 카드에 빨강 stroke, 아니면 제거
-        val cardBg = cardRoot.background
-        if (cardBg is GradientDrawable) {
+        // mutate() 로 이 뷰 전용 Drawable 복사본을 만들어 다른 bg_card 뷰에 영향 없도록 처리
+        val cardBg = cardRoot.background.mutate() as? GradientDrawable
+        if (cardBg != null) {
             if (level == RiskLevel.DANGER) {
                 cardBg.setStroke(dp(2), color)
             } else {
@@ -150,7 +143,8 @@ class MainActivity : AppCompatActivity() {
         val color = ContextCompat.getColor(this, state.colorRes)
         val dot = findViewById<View>(R.id.connectionDot)
         val tv = findViewById<TextView>(R.id.tvConnectionStatus)
-        dot.background.setTint(color)
+        // backgroundTintList 사용 — 공유 bg_circle Drawable 인스턴스 직접 변조 방지
+        dot.backgroundTintList = ColorStateList.valueOf(color)
         tv.text = state.label
         tv.setTextColor(color)
     }
@@ -173,12 +167,6 @@ class MainActivity : AppCompatActivity() {
         val alertCard = view.findViewById<View>(R.id.alertRiskScoreCard)
         applyRiskScoreToCard(alertCard, score)
 
-        view.findViewById<View>(R.id.btnAlertCall119).setOnClickListener {
-            openDialer("119")
-        }
-        view.findViewById<View>(R.id.btnAlertCallGuardian).setOnClickListener {
-            openDialer(guardianPhoneNumber)
-        }
         view.findViewById<View>(R.id.btnAlertDismiss).setOnClickListener {
             dialog.dismiss()
         }
@@ -186,16 +174,6 @@ class MainActivity : AppCompatActivity() {
         dialog.setContentView(view)
         dialog.show()
         alertDialog = dialog
-    }
-
-    private fun openDialer(phoneNumber: String) {
-        val uri = if (phoneNumber.isBlank()) Uri.parse("tel:") else Uri.parse("tel:$phoneNumber")
-        val intent = Intent(Intent.ACTION_DIAL, uri)
-        try {
-            startActivity(intent)
-        } catch (e: Exception) {
-            Toast.makeText(this, "전화 앱을 열 수 없습니다.", Toast.LENGTH_SHORT).show()
-        }
     }
 
     private fun dp(value: Int): Int =

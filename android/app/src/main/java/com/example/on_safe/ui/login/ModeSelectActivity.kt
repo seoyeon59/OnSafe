@@ -53,13 +53,13 @@ class ModeSelectActivity : AppCompatActivity() {
         when (selectedMode) {
             1 -> {
                 // 보호자 선택 — 파란 테두리
-                cardGuardian.setBackgroundResource(R.drawable.bg_mode_card_selected)
-                cardCamera.setBackgroundResource(R.drawable.bg_mode_card_normal)
+                cardGuardian.setBackgroundResource(R.drawable.bg_card_xl_selected)
+                cardCamera.setBackgroundResource(R.drawable.bg_card_xl)
             }
             2 -> {
                 // 카메라 선택 — 파란 테두리
-                cardCamera.setBackgroundResource(R.drawable.bg_mode_card_selected)
-                cardGuardian.setBackgroundResource(R.drawable.bg_mode_card_normal)
+                cardCamera.setBackgroundResource(R.drawable.bg_card_xl_selected)
+                cardGuardian.setBackgroundResource(R.drawable.bg_card_xl)
             }
         }
         // 다음 버튼 활성화

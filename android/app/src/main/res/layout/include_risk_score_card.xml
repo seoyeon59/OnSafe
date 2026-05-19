@@ -3,7 +3,7 @@
     android:id="@+id/riskScoreCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/bg_card_rounded"
+    android:background="@drawable/bg_card"
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingHorizontal="12dp"
@@ -12,7 +12,7 @@
     <FrameLayout
         android:layout_width="64dp"
         android:layout_height="64dp"
-        android:background="@drawable/bg_card_rounded"
+        android:background="@drawable/bg_card"
         android:backgroundTint="@color/surface_bg">
 
         <TextView

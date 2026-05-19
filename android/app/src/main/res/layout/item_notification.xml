@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="4dp"
-    android:background="@drawable/bg_notification_item"
+    android:background="@drawable/bg_card"
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingStart="12dp"
@@ -59,7 +59,8 @@
                 android:layout_width="8dp"
                 android:layout_height="8dp"
                 android:layout_marginStart="8dp"
-                android:background="@drawable/bg_dot_status"
+                android:background="@drawable/bg_dot_neutral"
+                android:backgroundTint="@color/primary_blue"
                 android:visibility="visible" />
 
         </LinearLayout>
@@ -101,6 +102,6 @@
         android:src="@drawable/ic_chevron_right"
         android:visibility="gone"
         android:contentDescription="상세 보기"
-        app:tint="#9FA6AC" />
+        app:tint="@color/ink_500" />
 
 </LinearLayout>

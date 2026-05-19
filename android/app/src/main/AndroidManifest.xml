@@ -66,14 +66,23 @@
             android:name="com.example.on_safe.ui.camera.CameraModeActivity"
             android:screenOrientation="landscape" />
 
-        <!-- 전체화면 (새로 추가) -->
+        <!-- 전체화면 -->
         <activity
             android:name="com.example.on_safe.ui.FullscreenActivity"
             android:screenOrientation="landscape" />
 
-        <!-- 알림 내역 (새로 추가) -->
+        <!-- 알림 내역 -->
         <activity
             android:name="com.example.on_safe.ui.notification.NotificationActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- 설정 -->
+        <activity
+            android:name="com.example.on_safe.ui.settings.SettingsActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.example.on_safe.ui.settings.EditProfileActivity"
             android:screenOrientation="portrait" />
 
     </application>

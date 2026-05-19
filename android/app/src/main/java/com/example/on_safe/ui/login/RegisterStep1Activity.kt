@@ -83,8 +83,8 @@ class RegisterStep1Activity : AppCompatActivity() {
     private fun updateAllCheck() {
         val allChecked = isCheck1 && isCheck2 && isCheck3 && isCheck4
         checkAll.setBackgroundResource(
-            if (allChecked) R.drawable.bg_check_circle_checked
-            else R.drawable.bg_check_circle_unchecked
+            if (allChecked) R.drawable.bg_circle_primary
+            else R.drawable.bg_circle_outline
         )
     }
 

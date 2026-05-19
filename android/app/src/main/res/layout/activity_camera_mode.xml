@@ -37,14 +37,14 @@
             <View
                 android:layout_width="80dp"
                 android:layout_height="80dp"
-                android:background="@drawable/bg_camera_icon_circle" />
+                android:background="@drawable/bg_circle_primary_tint" />
             <ImageView
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_no_photography"
+                android:src="@drawable/ic_camera_off"
                 android:alpha="0.4"
-                app:tint="#4D80FF" />
+                app:tint="@color/primary_blue" />
         </FrameLayout>
 
         <TextView
@@ -75,13 +75,14 @@
             <View
                 android:layout_width="28dp"
                 android:layout_height="28dp"
-                android:background="@drawable/bg_logo_blue" />
+                android:background="@drawable/bg_logo" />
+
             <ImageView
-                android:layout_width="13dp"
-                android:layout_height="16dp"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_shield"
-                app:tint="#FEFEFE" />
+                app:tint="@color/surface_white" />
         </FrameLayout>
 
         <TextView
@@ -103,13 +104,13 @@
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
             android:layout_marginStart="8dp"
-            android:background="@drawable/bg_live_badge"
+            android:background="@drawable/bg_badge_danger"
             android:visibility="gone">
 
             <View
                 android:layout_width="5dp"
                 android:layout_height="5dp"
-                android:background="@drawable/bg_dot_white" />
+                android:background="@drawable/bg_circle" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -129,7 +130,7 @@
         android:layout_height="40dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="8dp"
-        android:background="@drawable/bg_fullscreen_btn"
+        android:background="@drawable/bg_btn_overlay"
         app:layout_constraintEnd_toStartOf="@id/sidePanel"
         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -138,7 +139,7 @@
             android:layout_height="20dp"
             android:layout_gravity="center"
             android:src="@drawable/ic_fullscreen"
-            app:tint="#FEFEFE" />
+            app:tint="@color/surface_white" />
     </FrameLayout>
 
     <!-- 우측 사이드 패널 -->
@@ -166,7 +167,7 @@
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:src="@drawable/ic_camera"
-                app:tint="#4D80FF" />
+                app:tint="@color/primary_blue" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -216,13 +217,13 @@
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
                     android:layout_marginTop="4dp"
-                    android:background="@drawable/bg_status_badge">
+                    android:background="@drawable/bg_badge_standby">
 
                     <View
                         android:id="@+id/viewStatusDot"
                         android:layout_width="4dp"
                         android:layout_height="4dp"
-                        android:background="@drawable/bg_dot_status" />
+                        android:background="@drawable/bg_dot_neutral" />
 
                     <TextView
                         android:id="@+id/tvStatusText"
@@ -280,7 +281,7 @@
                             android:layout_height="10dp"
                             android:src="@drawable/ic_person"
                             android:alpha="0.25"
-                            app:tint="#FFFFFF" />
+                            app:tint="@color/surface_white" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -322,7 +323,7 @@
                             android:layout_height="10dp"
                             android:src="@drawable/ic_devices"
                             android:alpha="0.25"
-                            app:tint="#FFFFFF" />
+                            app:tint="@color/surface_white" />
 
                         <TextView
                             android:layout_width="wrap_content"

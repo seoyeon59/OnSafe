@@ -49,6 +49,9 @@ class ResetPasswordActivity : AppCompatActivity() {
     private val COLOR_GREEN = 0xFF22C55E.toInt()
     private val COLOR_NORMAL = 0xFFF4F7FB.toInt()
 
+    // onCreate에서 한 번만 읽어 캐싱 — 매 TextWatcher 호출마다 Intent를 재조회하지 않도록
+    private var currentMode = MODE_FIND_PW
+
     private var dpScale = 0f
     private var cornerPx = 0f
 
@@ -72,8 +75,8 @@ class ResetPasswordActivity : AppCompatActivity() {
         tvNewPwConfirmMessage = findViewById(R.id.tvNewPwConfirmMessage)
 
         // 모드 확인 — 설정에서 진입 시 현재 비밀번호 칸 표시
-        val mode = intent.getStringExtra("mode") ?: MODE_FIND_PW
-        if (mode == MODE_SETTINGS) {
+        currentMode = intent.getStringExtra("mode") ?: MODE_FIND_PW
+        if (currentMode == MODE_SETTINGS) {
             layoutCurrentPw.visibility = View.VISIBLE
         }
 
@@ -185,9 +188,8 @@ class ResetPasswordActivity : AppCompatActivity() {
     }
 
     private fun updateSaveButton() {
-        val mode = intent.getStringExtra("mode") ?: MODE_FIND_PW
         val allValid = isNewPwValid && isNewPwConfirmValid &&
-                (mode == MODE_FIND_PW || etCurrentPw.text.isNotEmpty())
+                (currentMode == MODE_FIND_PW || etCurrentPw.text.isNotEmpty())
         btnSave.isEnabled = allValid
         btnSave.alpha = if (allValid) 1.0f else 0.4f
     }

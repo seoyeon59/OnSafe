@@ -22,7 +22,7 @@
             android:id="@+id/btnWakeUp"
             android:layout_width="96dp"
             android:layout_height="96dp"
-            android:background="@drawable/bg_wakeup_btn"
+            android:background="@drawable/bg_circle_primary_outline"
             android:clickable="true"
             android:focusable="true">
 
@@ -31,7 +31,7 @@
                 android:layout_height="36dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_lock_open"
-                app:tint="#FEFEFE" />
+                app:tint="@color/surface_white" />
         </FrameLayout>
 
         <!-- 촬영중입니다 -->
@@ -74,13 +74,13 @@
             <View
                 android:layout_width="28dp"
                 android:layout_height="28dp"
-                android:background="@drawable/bg_logo_blue" />
+                android:background="@drawable/bg_logo" />
             <ImageView
                 android:layout_width="13dp"
                 android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_shield"
-                app:tint="#FEFEFE" />
+                app:tint="@color/surface_white" />
         </FrameLayout>
 
         <TextView

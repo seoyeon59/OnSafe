@@ -16,7 +16,7 @@ class NotificationActivity : AppCompatActivity() {
         setContentView(R.layout.activity_notification)
 
         // 뒤로가기 버튼
-        findViewById<android.widget.ImageButton>(R.id.btn_back).setOnClickListener {
+        findViewById<android.widget.ImageButton>(R.id.btnBack).setOnClickListener {
             finish()
         }
 
