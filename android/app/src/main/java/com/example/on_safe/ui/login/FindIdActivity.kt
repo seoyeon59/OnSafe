@@ -10,7 +10,13 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.FindIdRequest
+import com.example.on_safe.network.dto.SendEmailCodeRequest
+import com.example.on_safe.network.dto.VerifyEmailCodeRequest
+import kotlinx.coroutines.launch
 
 class FindIdActivity : AppCompatActivity() {
 
@@ -49,7 +55,7 @@ class FindIdActivity : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
         btnGoLogin.setOnClickListener { finish() }
 
-        // 인증 요청
+        // 인증코드 발송
         btnRequestCode.setOnClickListener {
             val name = etName.text.toString().trim()
             val email = etEmail.text.toString().trim()
@@ -59,37 +65,74 @@ class FindIdActivity : AppCompatActivity() {
                 Toast.makeText(this, "이름을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (email.isEmpty()) {
-                Toast.makeText(this, "이메일을 입력해주세요.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            if (!emailRegex.matches(email)) {
+            if (email.isEmpty() || !emailRegex.matches(email)) {
                 Toast.makeText(this, "올바른 이메일 형식을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // TODO: API 연결 - 인증코드 발송
-            startVerification()
+            btnRequestCode.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = email))
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        startVerification()
+                    } else {
+                        Toast.makeText(this@FindIdActivity, response.body()?.message ?: "인증 메일 발송에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                        btnRequestCode.isEnabled = true
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@FindIdActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                    btnRequestCode.isEnabled = true
+                }
+            }
         }
 
-        // 인증코드 확인
+        // 인증코드 확인 후 아이디 수신
         btnConfirm.setOnClickListener {
             val code = etCode.text.toString().trim()
             if (code.isEmpty()) {
                 Toast.makeText(this, "인증코드를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            // TODO: API 연결 - 인증코드 확인 후 아이디 수신
-            countDownTimer?.cancel()
-            showResult("stoney109@example.com") // TODO: API 응답값으로 교체
+            btnConfirm.isEnabled = false
+            val email = etEmail.text.toString().trim()
+            val name = etName.text.toString().trim()
+            lifecycleScope.launch {
+                try {
+                    val verifyResponse = ApiClient.api.verifyEmailCode(VerifyEmailCodeRequest(mail = email, code = code))
+                    if (verifyResponse.isSuccessful && verifyResponse.body()?.success == true) {
+                        val findResponse = ApiClient.api.findId(FindIdRequest(name = name, mail = email))
+                        if (findResponse.isSuccessful && findResponse.body()?.success == true) {
+                            countDownTimer?.cancel()
+                            showResult(findResponse.body()!!.data!!.userId)
+                        } else {
+                            Toast.makeText(this@FindIdActivity, findResponse.body()?.message ?: "아이디를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
+                            btnConfirm.isEnabled = true
+                        }
+                    } else {
+                        Toast.makeText(this@FindIdActivity, verifyResponse.body()?.message ?: "인증코드가 올바르지 않습니다.", Toast.LENGTH_SHORT).show()
+                        btnConfirm.isEnabled = true
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@FindIdActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                    btnConfirm.isEnabled = true
+                }
+            }
         }
 
         // 재전송
         tvResend.setOnClickListener {
             etCode.text.clear()
             tvResend.visibility = View.GONE
-            startVerification()
-            Toast.makeText(this, "인증번호를 재발송했습니다.", Toast.LENGTH_SHORT).show()
+            lifecycleScope.launch {
+                try {
+                    ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
+                    startVerification()
+                    Toast.makeText(this@FindIdActivity, "인증번호를 재발송했습니다.", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this@FindIdActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
@@ -111,14 +154,11 @@ class FindIdActivity : AppCompatActivity() {
                 val seconds = (millisUntilFinished % 60000) / 1000
                 tvTimer.text = String.format("%d:%02d", minutes, seconds)
             }
-
             override fun onFinish() {
                 tvTimer.text = "0:00"
-                // 만료 처리
                 btnConfirm.isEnabled = false
                 btnConfirm.alpha = 0.4f
                 tvResend.visibility = View.VISIBLE
-                // 인증요청 버튼 재활성화
                 btnRequestCode.isEnabled = true
                 btnRequestCode.alpha = 1.0f
             }

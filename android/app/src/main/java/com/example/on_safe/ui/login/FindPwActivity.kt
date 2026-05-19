@@ -11,8 +11,13 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.SendResetCodeRequest
+import com.example.on_safe.network.dto.VerifyResetCodeRequest
 import com.example.onsafe.ResetPasswordActivity
+import kotlinx.coroutines.launch
 
 class FindPwActivity : AppCompatActivity() {
 
@@ -47,7 +52,7 @@ class FindPwActivity : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
         btnGoLogin.setOnClickListener { finish() }
 
-        // 코드 받기
+        // 재설정 코드 발송
         btnRequestCode.setOnClickListener {
             val userId = etUserId.text.toString().trim()
             val email = etEmail.text.toString().trim()
@@ -57,17 +62,26 @@ class FindPwActivity : AppCompatActivity() {
                 Toast.makeText(this, "아이디를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (email.isEmpty()) {
-                Toast.makeText(this, "이메일을 입력해주세요.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            if (!emailRegex.matches(email)) {
+            if (email.isEmpty() || !emailRegex.matches(email)) {
                 Toast.makeText(this, "올바른 이메일 형식을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // TODO: API 연결 - 재설정 코드 발송
-            startVerification()
+            btnRequestCode.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    val response = ApiClient.api.sendResetCode(SendResetCodeRequest(userId = userId, mail = email))
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        startVerification()
+                    } else {
+                        Toast.makeText(this@FindPwActivity, response.body()?.message ?: "코드 발송에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                        btnRequestCode.isEnabled = true
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@FindPwActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                    btnRequestCode.isEnabled = true
+                }
+            }
         }
 
         // 재설정 코드 확인
@@ -77,17 +91,39 @@ class FindPwActivity : AppCompatActivity() {
                 Toast.makeText(this, "재설정 코드를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            // TODO: API 연결 - 코드 확인
-            countDownTimer?.cancel()
-            navigateToResetPassword()
+            btnConfirm.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    val response = ApiClient.api.verifyResetCode(
+                        VerifyResetCodeRequest(userId = etUserId.text.toString().trim(), code = code)
+                    )
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        countDownTimer?.cancel()
+                        navigateToResetPassword()
+                    } else {
+                        Toast.makeText(this@FindPwActivity, response.body()?.message ?: "코드가 올바르지 않습니다.", Toast.LENGTH_SHORT).show()
+                        btnConfirm.isEnabled = true
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@FindPwActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                    btnConfirm.isEnabled = true
+                }
+            }
         }
 
         // 재전송
         tvResend.setOnClickListener {
             etCode.text.clear()
             tvResend.visibility = View.GONE
-            startVerification()
-            Toast.makeText(this, "재설정 코드를 재발송했습니다.", Toast.LENGTH_SHORT).show()
+            lifecycleScope.launch {
+                try {
+                    ApiClient.api.sendResetCode(SendResetCodeRequest(userId = etUserId.text.toString().trim(), mail = etEmail.text.toString().trim()))
+                    startVerification()
+                    Toast.makeText(this@FindPwActivity, "재설정 코드를 재발송했습니다.", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this@FindPwActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
@@ -111,7 +147,6 @@ class FindPwActivity : AppCompatActivity() {
                 val seconds = (millisUntilFinished % 60000) / 1000
                 tvTimer.text = String.format("%d:%02d", minutes, seconds)
             }
-
             override fun onFinish() {
                 tvTimer.text = "0:00"
                 btnConfirm.isEnabled = false
@@ -125,9 +160,7 @@ class FindPwActivity : AppCompatActivity() {
 
     private fun navigateToResetPassword() {
         val intent = Intent(this, ResetPasswordActivity::class.java)
-        // 필요 시 아이디/이메일 전달
         intent.putExtra("userId", etUserId.text.toString().trim())
-        // FindPwActivity — navigateToResetPassword() 안
         intent.putExtra("mode", ResetPasswordActivity.MODE_FIND_PW)
         startActivity(intent)
         finish()

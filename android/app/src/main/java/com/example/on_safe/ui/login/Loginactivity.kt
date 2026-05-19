@@ -2,15 +2,21 @@ package com.example.onsafe.ui.login
 
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.LoginRequest
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
@@ -36,7 +42,6 @@ class LoginActivity : AppCompatActivity() {
         tvFindPw = findViewById(R.id.tvFindPw)
         tvRegister = findViewById(R.id.tvRegister)
 
-        // 비밀번호 표시/숨김 토글
         btnTogglePw.setOnClickListener {
             isPwVisible = !isPwVisible
             if (isPwVisible) {
@@ -46,11 +51,9 @@ class LoginActivity : AppCompatActivity() {
                 etPw.transformationMethod = PasswordTransformationMethod.getInstance()
                 btnTogglePw.setImageResource(R.drawable.ic_eye)
             }
-            // 커서를 텍스트 끝으로 이동
             etPw.setSelection(etPw.text.length)
         }
 
-        // 로그인 버튼
         btnLogin.setOnClickListener {
             val id = etId.text.toString().trim()
             val pw = etPw.text.toString().trim()
@@ -60,21 +63,45 @@ class LoginActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // TODO: API 연결 (ApiClient 사용)
-            // 예시: loginWithServer(id, pw)
+            val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+
+            btnLogin.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    val response = ApiClient.api.login(LoginRequest(userId = id, password = pw, deviceId = deviceId))
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        val data = response.body()!!.data!!
+                        getSharedPreferences("auth", MODE_PRIVATE).edit()
+                            .putString("access_token", data.accessToken)
+                            .putString("refresh_token", data.refreshToken)
+                            .putString("user_id", data.userId)
+                            .apply()
+                        Log.d("Login", "저장 완료 — userId=${data.userId}, accessToken=${data.accessToken.take(20)}...")
+                        Toast.makeText(this@LoginActivity, "로그인 성공", Toast.LENGTH_SHORT).show()
+                        // TODO: 메인 화면으로 이동
+                    } else {
+                        val message = response.body()?.message
+                            ?: ApiClient.parseErrorMessage(response.errorBody(), "로그인에 실패했습니다.")
+                        Log.w("Login", "실패 — HTTP ${response.code()}: $message")
+                        Toast.makeText(this@LoginActivity, message, Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Log.e("Login", "네트워크 오류", e)
+                    Toast.makeText(this@LoginActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                } finally {
+                    btnLogin.isEnabled = true
+                }
+            }
         }
 
-        // 아이디 찾기
         tvFindId.setOnClickListener {
             startActivity(Intent(this, FindIdActivity::class.java))
         }
 
-        // 비밀번호 찾기
         tvFindPw.setOnClickListener {
             startActivity(Intent(this, FindPwActivity::class.java))
         }
 
-        // 회원가입
         tvRegister.setOnClickListener {
             startActivity(Intent(this, RegisterStep1Activity::class.java))
         }

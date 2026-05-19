@@ -9,20 +9,22 @@ import android.text.method.PasswordTransformationMethod
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.ResetPasswordRequest
+import kotlinx.coroutines.launch
 
 class ResetPasswordActivity : AppCompatActivity() {
 
     companion object {
-        // 호출 측에서 Intent에 담아 보내는 모드값
-        const val MODE_FIND_PW = "find_pw"     // 비밀번호 찾기 후 진입 (현재 비번 칸 숨김)
-        const val MODE_SETTINGS = "settings"   // 설정에서 진입 (현재 비번 칸 표시)
+        const val MODE_FIND_PW = "find_pw"
+        const val MODE_SETTINGS = "settings"
     }
 
     private lateinit var layoutCurrentPw: LinearLayout
@@ -71,51 +73,40 @@ class ResetPasswordActivity : AppCompatActivity() {
         tvNewPwMessage = findViewById(R.id.tvNewPwMessage)
         tvNewPwConfirmMessage = findViewById(R.id.tvNewPwConfirmMessage)
 
-        // 모드 확인 — 설정에서 진입 시 현재 비밀번호 칸 표시
         val mode = intent.getStringExtra("mode") ?: MODE_FIND_PW
-        if (mode == MODE_SETTINGS) {
-            layoutCurrentPw.visibility = View.VISIBLE
-        }
+        val userId = intent.getStringExtra("userId") ?: ""
+
+        if (mode == MODE_SETTINGS) layoutCurrentPw.visibility = View.VISIBLE
 
         btnBack.setOnClickListener { finish() }
 
-        // 현재 비밀번호 토글
         btnToggleCurrentPw.setOnClickListener {
             isCurrentPwVisible = !isCurrentPwVisible
             etCurrentPw.transformationMethod = if (isCurrentPwVisible)
                 HideReturnsTransformationMethod.getInstance()
             else PasswordTransformationMethod.getInstance()
             etCurrentPw.setSelection(etCurrentPw.text.length)
-            btnToggleCurrentPw.setImageResource(
-                if (isCurrentPwVisible) R.drawable.ic_eye_off else R.drawable.ic_eye
-            )
+            btnToggleCurrentPw.setImageResource(if (isCurrentPwVisible) R.drawable.ic_eye_off else R.drawable.ic_eye)
         }
 
-        // 새 비밀번호 토글
         btnToggleNewPw.setOnClickListener {
             isNewPwVisible = !isNewPwVisible
             etNewPw.transformationMethod = if (isNewPwVisible)
                 HideReturnsTransformationMethod.getInstance()
             else PasswordTransformationMethod.getInstance()
             etNewPw.setSelection(etNewPw.text.length)
-            btnToggleNewPw.setImageResource(
-                if (isNewPwVisible) R.drawable.ic_eye_off else R.drawable.ic_eye
-            )
+            btnToggleNewPw.setImageResource(if (isNewPwVisible) R.drawable.ic_eye_off else R.drawable.ic_eye)
         }
 
-        // 비밀번호 확인 토글
         btnToggleNewPwConfirm.setOnClickListener {
             isNewPwConfirmVisible = !isNewPwConfirmVisible
             etNewPwConfirm.transformationMethod = if (isNewPwConfirmVisible)
                 HideReturnsTransformationMethod.getInstance()
             else PasswordTransformationMethod.getInstance()
             etNewPwConfirm.setSelection(etNewPwConfirm.text.length)
-            btnToggleNewPwConfirm.setImageResource(
-                if (isNewPwConfirmVisible) R.drawable.ic_eye_off else R.drawable.ic_eye
-            )
+            btnToggleNewPwConfirm.setImageResource(if (isNewPwConfirmVisible) R.drawable.ic_eye_off else R.drawable.ic_eye)
         }
 
-        // 새 비밀번호 유효성
         etNewPw.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 val pw = s.toString()
@@ -135,34 +126,46 @@ class ResetPasswordActivity : AppCompatActivity() {
                     }
                 }
                 validateConfirm(etNewPwConfirm.text.toString())
-                updateSaveButton()
+                updateSaveButton(mode)
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // 비밀번호 확인 유효성
         etNewPwConfirm.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 validateConfirm(s.toString())
-                updateSaveButton()
+                updateSaveButton(mode)
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // 설정 모드에서 현재 비밀번호 입력 시에도 버튼 상태 갱신
         etCurrentPw.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) { updateSaveButton() }
+            override fun afterTextChanged(s: Editable?) { updateSaveButton(mode) }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // 저장하기
         btnSave.setOnClickListener {
-            // TODO: API 연결 - 비밀번호 변경
-            Toast.makeText(this, "비밀번호가 변경되었습니다.", Toast.LENGTH_SHORT).show()
-            finish()
+            btnSave.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    val response = ApiClient.api.resetPassword(
+                        ResetPasswordRequest(userId = userId, newPassword = etNewPw.text.toString().trim())
+                    )
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        Toast.makeText(this@ResetPasswordActivity, "비밀번호가 변경되었습니다.", Toast.LENGTH_SHORT).show()
+                        finish()
+                    } else {
+                        Toast.makeText(this@ResetPasswordActivity, response.body()?.message ?: "비밀번호 변경에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                        btnSave.isEnabled = true
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@ResetPasswordActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                    btnSave.isEnabled = true
+                }
+            }
         }
     }
 
@@ -184,8 +187,7 @@ class ResetPasswordActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateSaveButton() {
-        val mode = intent.getStringExtra("mode") ?: MODE_FIND_PW
+    private fun updateSaveButton(mode: String) {
         val allValid = isNewPwValid && isNewPwConfirmValid &&
                 (mode == MODE_FIND_PW || etCurrentPw.text.isNotEmpty())
         btnSave.isEnabled = allValid
