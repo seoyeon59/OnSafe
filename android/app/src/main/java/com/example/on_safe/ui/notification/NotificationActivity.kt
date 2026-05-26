@@ -15,12 +15,11 @@ class NotificationActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_notification)
 
-        // 뒤로가기 버튼
         findViewById<android.widget.ImageButton>(R.id.btnBack).setOnClickListener {
             finish()
         }
 
-        // 하드코딩 샘플 데이터 (Figma 기준)
+        // TODO: GET /notification/list API로 교체 (현재 더미 데이터)
         val sampleData = mutableListOf(
             NotificationItem(NotificationType.FALL,    "낙상 위험 감지", "오늘 · 오후 02:23", 88, isUnread = true),
             NotificationItem(NotificationType.WARNING, "주의 상태 감지", "오늘 · 오후 02:23", 61, isUnread = true),

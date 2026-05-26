@@ -1,6 +1,7 @@
 package com.example.on_safe.ui.settings
 
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
@@ -8,11 +9,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.on_safe.R
 
-/**
- * 개인정보 수정 화면.
- * 보호자 이름, 전화번호, 이메일, 주소(도로명+상세)를 수정한다.
- * TODO: SharedPreferences / 서버 API와 연결하여 실제 데이터를 불러오고 저장한다.
- */
+// 개인정보 수정 화면 — 진입 시 비밀번호 확인 후 폼 활성화
+// TODO: GET /user/profile + PUT /user/profile 연결
 class EditProfileActivity : AppCompatActivity() {
 
     private lateinit var etName: EditText
@@ -23,36 +21,49 @@ class EditProfileActivity : AppCompatActivity() {
     private lateinit var btnSave: Button
     private lateinit var btnBack: ImageButton
 
+    // 인증 전에는 숨김 처리
+    private lateinit var formContainer: View
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_edit_profile)
 
         initViews()
-        loadUserData()
-        setupClickListeners()
+        showVerifyDialog()
     }
 
     private fun initViews() {
-        etName     = findViewById(R.id.etName)
-        etPhone    = findViewById(R.id.etPhone)
-        etEmail    = findViewById(R.id.etEmail)
-        etAddress1 = findViewById(R.id.etAddress1)
-        etAddress2 = findViewById(R.id.etAddress2)
-        btnSave    = findViewById(R.id.btnSave)
-        btnBack    = findViewById(R.id.btnBack)
+        etName        = findViewById(R.id.etName)
+        etPhone       = findViewById(R.id.etPhone)
+        etEmail       = findViewById(R.id.etEmail)
+        etAddress1    = findViewById(R.id.etAddress1)
+        etAddress2    = findViewById(R.id.etAddress2)
+        btnSave       = findViewById(R.id.btnSave)
+        btnBack       = findViewById(R.id.btnBack)
+        formContainer = findViewById(R.id.scrollContent)
+
+        // 인증 전: 폼 숨김
+        formContainer.visibility = View.INVISIBLE
+        btnSave.visibility = View.INVISIBLE
     }
 
-    /**
-     * TODO: SharedPreferences 또는 서버에서 저장된 정보를 불러와 입력 필드에 채운다.
-     */
+    // 진입 시 비밀번호 확인 — 취소: finish, 확인: 폼 표시 + 데이터 로드
+    private fun showVerifyDialog() {
+        VerifyPasswordDialog(
+            context = this,
+            onConfirm = { _ ->
+                // TODO: 서버에 비밀번호 검증 요청 후 성공 시 아래 실행
+                formContainer.visibility = View.VISIBLE
+                btnSave.visibility = View.VISIBLE
+                loadUserData()
+                setupClickListeners()
+            },
+            onCancel = { finish() }
+        ).show()
+    }
+
     private fun loadUserData() {
-        // 예시: SharedPreferences에서 읽기
-        // val prefs = getSharedPreferences("user_prefs", MODE_PRIVATE)
-        // etName.setText(prefs.getString("name", ""))
-        // etPhone.setText(prefs.getString("phone", ""))
-        // etEmail.setText(prefs.getString("email", ""))
-        // etAddress1.setText(prefs.getString("address1", ""))
-        // etAddress2.setText(prefs.getString("address2", ""))
+        // TODO: GET /user/profile → 각 필드에 채움
     }
 
     private fun setupClickListeners() {
@@ -82,17 +93,7 @@ class EditProfileActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // TODO: 서버 API로 저장 처리
-            // 임시: SharedPreferences 저장
-            // val prefs = getSharedPreferences("user_prefs", MODE_PRIVATE)
-            // prefs.edit().apply {
-            //     putString("name", name)
-            //     putString("phone", phone)
-            //     putString("email", email)
-            //     putString("address1", address1)
-            //     putString("address2", address2)
-            // }.apply()
-
+            // TODO: PUT /user/profile → 성공 시 finish()
             Toast.makeText(this, "정보가 저장되었습니다.", Toast.LENGTH_SHORT).show()
             finish()
         }

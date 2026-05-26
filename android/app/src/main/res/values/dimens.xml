@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 필터 탭 pill 모서리 반지름 -->
+    <dimen name="tab_pill_radius">999dp</dimen>
+    <!-- 카메라 모드 사이드 패널 너비 -->
+    <dimen name="side_panel_width">200dp</dimen>
+    <!-- 카메라 모드 (가로) 에서 로그아웃 모달 최대 너비 -->
+    <dimen name="logout_dialog_max_width">280dp</dimen>
+</resources>

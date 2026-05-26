@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">On Safe</string>
+
+    <!-- 튜토리얼 버튼 텍스트 -->
+    <string name="tutorial_btn_next">다음</string>
+    <string name="tutorial_btn_complete">완료</string>
 </resources>

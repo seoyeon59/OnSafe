@@ -1,82 +1,111 @@
 package com.example.on_safe.ui.login
 
 import android.Manifest
+import android.app.AlertDialog
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.view.View
+import android.provider.Settings
 import android.widget.Button
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import com.example.on_safe.MainActivity
 import com.example.on_safe.R
+import com.example.on_safe.ui.camera.CameraModeActivity
 
+// 온보딩 권한 요청 화면 (TutorialActivity → 이 화면 → MainActivity or CameraModeActivity)
+// selected_mode: 1 = 보호자 모드, 2 = 카메라 모드
 class PermissionActivity : AppCompatActivity() {
 
-    private lateinit var btnAllow: Button
-    private lateinit var tvSkip: TextView
-    private lateinit var itemCamera: LinearLayout
-
-    // ModeSelectActivity에서 전달받은 모드
-    // 1 = 보호자, 2 = 카메라
     private var selectedMode = 1
 
-    // 알림 권한 요청
-    private val requestNotificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (selectedMode == 2) {
-                // 카메라 모드면 카메라 권한도 요청
-                requestCameraPermission.launch(Manifest.permission.CAMERA)
+    // API 버전에 따라 요청 권한 목록 결정 (lazy — API 레벨 체크를 onCreate 이전에 하지 않기 위함)
+    private val requiredPermissions: Array<String> by lazy {
+        buildList {
+            add(Manifest.permission.CAMERA)
+            add(Manifest.permission.RECORD_AUDIO)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+                add(Manifest.permission.READ_MEDIA_VIDEO)
             } else {
-                goToMain()
+                add(Manifest.permission.READ_EXTERNAL_STORAGE)
             }
+        }.toTypedArray()
+    }
+
+    private val requestPermissions =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            handlePermissionResults(results)
         }
 
-    // 카메라 권한 요청
-    private val requestCameraPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            goToMain()
+    // 앱 설정에서 돌아왔을 때 권한 재확인
+    private val openSettings =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (areAllPermissionsGranted()) goToMain()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_permission)
 
-        btnAllow = findViewById(R.id.btnAllow)
-        tvSkip = findViewById(R.id.tvSkip)
-        itemCamera = findViewById(R.id.itemCamera)
-
-        // ModeSelectActivity에서 모드 전달받기
         selectedMode = intent.getIntExtra("selected_mode", 1)
 
-        // 카메라 모드면 카메라 권한 항목 표시
-        if (selectedMode == 2) {
-            itemCamera.visibility = View.VISIBLE
+        findViewById<Button>(R.id.btnAllow).setOnClickListener { requestAllPermissions() }
+        findViewById<TextView>(R.id.tvSkip).setOnClickListener { goToMain() }
+
+        if (areAllPermissionsGranted()) goToMain()
+    }
+
+    private fun requestAllPermissions() {
+        if (areAllPermissionsGranted()) { goToMain(); return }
+        requestPermissions.launch(requiredPermissions)
+    }
+
+    private fun handlePermissionResults(results: Map<String, Boolean>) {
+        val denied = results.filter { !it.value }.keys
+        if (denied.isEmpty()) { goToMain(); return }
+
+        // 영구 거부된 항목이 하나라도 있으면 설정 화면으로 유도
+        val permanentlyDenied = denied.any { !shouldShowRequestPermissionRationale(it) }
+        if (permanentlyDenied) showGoToSettingsDialog()
+        // else: 일시 거부 → 화면 유지, 사용자가 버튼 재클릭으로 재시도 가능
+    }
+
+    private fun areAllPermissionsGranted(): Boolean =
+        requiredPermissions.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
         }
 
-        // 알림 허용하기
-        btnAllow.setOnClickListener {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-            } else {
-                // Android 13 미만은 알림 권한 자동 허용
-                if (selectedMode == 2) {
-                    requestCameraPermission.launch(Manifest.permission.CAMERA)
-                } else {
-                    goToMain()
-                }
+    private fun showGoToSettingsDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("권한 설정 필요")
+            .setMessage("일부 권한이 '다시 묻지 않음'으로 거부되었습니다.\n앱 설정에서 직접 허용해주세요.")
+            .setPositiveButton("설정으로 이동") { _, _ ->
+                openSettings.launch(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.fromParts("package", packageName, null)
+                    }
+                )
             }
-        }
-
-        // 나중에 설정하기
-        tvSkip.setOnClickListener {
-            goToMain()
-        }
+            .setNegativeButton("나중에") { dialog, _ -> dialog.dismiss() }
+            .setCancelable(false)
+            .show()
     }
 
     private fun goToMain() {
-        // TODO: MainActivity로 이동
-        // startActivity(Intent(this, MainActivity::class.java))
-        // finishAffinity() // 로그인 스택 전부 종료
+        val intent = when (selectedMode) {
+            2 -> Intent(this, CameraModeActivity::class.java)
+            else -> Intent(this, MainActivity::class.java)
+        }.apply {
+            putExtra("selected_mode", selectedMode)
+            // 온보딩 백스택 전부 종료
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        finish()
     }
 }

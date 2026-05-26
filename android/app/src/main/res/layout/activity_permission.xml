@@ -1,24 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/surface_white"
     android:orientation="vertical"
-    android:background="#FFFFFF"
-    android:paddingLeft="16dp"
-    android:paddingRight="16dp"
+    android:paddingHorizontal="16dp"
     android:paddingTop="52dp"
     android:paddingBottom="20dp">
 
-    <!-- 본문 영역 -->
+    <!-- ============ 본문 영역 ============ -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:gravity="top"
-        android:paddingTop="40dp">
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp">
 
-        <!-- 아이콘 -->
+        <!-- 상단 아이콘 (80×80, 파란 둥근 박스) -->
         <FrameLayout
             android:layout_width="80dp"
             android:layout_height="80dp"
@@ -29,144 +30,245 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_notification"
-                android:contentDescription="알림 아이콘" />
+                android:contentDescription="@null"
+                android:src="@drawable/ic_lock_open"
+                app:tint="@color/primary_blue" />
 
         </FrameLayout>
 
         <!-- 제목 + 설명 -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:text="알림 권한이 필요합니다"
-            android:textSize="22sp"
-            android:textColor="#1A1C1E"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"
-            android:gravity="center" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:text="낙상 위험 감지 시 즉시 알림을 받으려면\n알림 권한을 허용해주세요."
-            android:textSize="14sp"
-            android:textColor="#6B7280"
-            android:layout_marginTop="4dp"
-            android:gravity="center"
-            android:lineSpacingExtra="3dp" />
-
-        <!-- 권한 목록 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginTop="20dp">
+            android:layout_marginTop="8dp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
 
-            <!-- 카메라 권한 (카메라 모드일 때만 표시) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:lineSpacingMultiplier="1.3"
+                android:text="원활한 서비스 이용을 위해&#10;권한이 필요합니다"
+                android:textColor="@color/ink_900"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:lineSpacingMultiplier="1.4"
+                android:text="실시간 낙상 감지 및 위험 알림 기능을 위해&#10;아래 권한을 허용해주세요."
+                android:textColor="#6B7280"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <!-- 권한 항목 목록 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="vertical">
+
+            <!-- 카메라 권한 -->
             <LinearLayout
-                android:id="@+id/itemCamera"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:orientation="horizontal"
-                android:background="@drawable/bg_card"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
+                android:background="@drawable/bg_perm_row"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="12dp"
-                android:visibility="gone">
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp">
 
                 <FrameLayout
                     android:layout_width="32dp"
-                    android:layout_height="32dp">
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="8dp">
 
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:layout_gravity="center"
+                        android:contentDescription="@null"
                         android:src="@drawable/ic_camera"
-                        android:contentDescription="카메라 아이콘" />
+                        app:tint="@color/primary_blue" />
 
                 </FrameLayout>
 
-                <TextView
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="카메라 촬영·전송"
-                    android:textSize="13sp"
-                    android:textColor="#1A1C1E"
-                    android:textStyle="bold"
-                    android:layout_marginLeft="12dp" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="카메라 권한"
+                        android:textColor="@color/ink_900"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="실시간 영상 분석 및 낙상 감지에 사용됩니다."
+                        android:textColor="@color/ink_500"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
-            <!-- 긴급 알림 권한 -->
+            <!-- 마이크 권한 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:orientation="horizontal"
-                android:background="@drawable/bg_list_item"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_perm_row"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp">
 
                 <FrameLayout
                     android:layout_width="32dp"
-                    android:layout_height="32dp">
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="8dp">
 
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:layout_gravity="center"
-                        android:src="@drawable/ic_siren"
-                        android:contentDescription="알림 아이콘" />
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_microphone"
+                        app:tint="@color/primary_blue" />
 
                 </FrameLayout>
 
-                <TextView
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="위험 감지 긴급 알림"
-                    android:textSize="13sp"
-                    android:textColor="#1A1C1E"
-                    android:textStyle="bold"
-                    android:layout_marginLeft="12dp" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="마이크 권한"
+                        android:textColor="@color/ink_900"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="사고 상황 음성 저장 및 영상 기록에 사용됩니다."
+                        android:textColor="@color/ink_500"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
-            <!-- 주의 알림 권한 -->
+            <!-- 알림 권한 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_perm_row"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:background="@drawable/bg_list_item"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
-                android:gravity="center_vertical">
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp">
 
                 <FrameLayout
                     android:layout_width="32dp"
-                    android:layout_height="32dp">
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="8dp">
 
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:layout_gravity="center"
+                        android:contentDescription="@null"
                         android:src="@drawable/ic_notification"
-                        android:contentDescription="알림 아이콘" />
+                        app:tint="@color/primary_blue" />
 
                 </FrameLayout>
 
-                <TextView
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="주의 단계 푸시 알림"
-                    android:textSize="13sp"
-                    android:textColor="#1A1C1E"
-                    android:textStyle="bold"
-                    android:layout_marginLeft="12dp" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="알림 권한"
+                        android:textColor="@color/ink_900"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="위험 감지 시 즉시 알림을 보내기 위해 사용됩니다."
+                        android:textColor="@color/ink_500"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- 사진/영상 접근 권한 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_perm_row"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp">
+
+                <FrameLayout
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="8dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_video"
+                        app:tint="@color/primary_blue" />
+
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="사진/영상 접근 권한"
+                        android:textColor="@color/ink_900"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="사고 영상을 갤러리에 저장하기 위해 사용됩니다."
+                        android:textColor="@color/ink_500"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
@@ -174,35 +276,33 @@
 
     </LinearLayout>
 
-    <!-- 하단 버튼 영역 -->
+    <!-- ============ 하단 버튼 영역 ============ -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- 알림 허용하기 버튼 -->
         <Button
             android:id="@+id/btnAllow"
             android:layout_width="match_parent"
             android:layout_height="54dp"
-            android:text="알림 허용하기"
-            android:textColor="#FEFEFE"
+            android:background="@drawable/bg_button_blue"
+            android:stateListAnimator="@null"
+            android:text="권한 허용하기"
+            android:textColor="@color/surface_white"
             android:textSize="18sp"
-            android:textStyle="bold"
-            android:background="@drawable/bg_button_blue" />
+            android:textStyle="bold" />
 
-        <!-- 나중에 설정하기 -->
         <TextView
             android:id="@+id/tvSkip"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="나중에 설정하기 (일부 기능 제한)"
-            android:textSize="13sp"
-            android:textColor="#9CA3AF"
-            android:gravity="center"
             android:layout_marginTop="8dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp" />
+            android:gravity="center"
+            android:paddingVertical="8dp"
+            android:text="나중에 설정하기 (일부 기능 제한)"
+            android:textColor="#9CA3AF"
+            android:textSize="13sp" />
 
     </LinearLayout>
 
