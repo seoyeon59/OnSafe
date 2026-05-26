@@ -23,13 +23,13 @@
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:layout_gravity="center_horizontal"
-            android:background="@drawable/bg_mode_icon_blue">
+            android:background="@drawable/bg_container_blue">
 
             <ImageView
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_notifications"
+                android:src="@drawable/ic_notification"
                 android:contentDescription="알림 아이콘" />
 
         </FrameLayout>
@@ -70,7 +70,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:orientation="horizontal"
-                android:background="@drawable/bg_card_white"
+                android:background="@drawable/bg_card"
                 android:paddingLeft="16dp"
                 android:paddingRight="16dp"
                 android:gravity="center_vertical"
@@ -106,7 +106,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:orientation="horizontal"
-                android:background="@drawable/bg_permission_item"
+                android:background="@drawable/bg_list_item"
                 android:paddingLeft="16dp"
                 android:paddingRight="16dp"
                 android:gravity="center_vertical"
@@ -141,7 +141,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:orientation="horizontal"
-                android:background="@drawable/bg_permission_item"
+                android:background="@drawable/bg_list_item"
                 android:paddingLeft="16dp"
                 android:paddingRight="16dp"
                 android:gravity="center_vertical">
@@ -154,7 +154,7 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:layout_gravity="center"
-                        android:src="@drawable/ic_notifications"
+                        android:src="@drawable/ic_notification"
                         android:contentDescription="알림 아이콘" />
 
                 </FrameLayout>

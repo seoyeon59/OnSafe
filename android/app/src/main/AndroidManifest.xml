@@ -16,16 +16,9 @@
         android:theme="@style/Theme.OnSafe"
         tools:targetApi="31">
 
+        <!-- 런처 -->
         <activity
-            android:name=".MainActivity"
-            android:screenOrientation="portrait" />
-
-        <activity
-            android:name="com.example.onsafe.ResetPasswordActivity"
-            android:screenOrientation="portrait" />
-
-        <activity
-            android:name="com.example.onsafe.ui.login.LoginActivity"
+            android:name="com.example.on_safe.ui.login.ModeSelectActivity"
             android:screenOrientation="portrait"
             android:exported="true">
             <intent-filter>
@@ -34,32 +27,62 @@
             </intent-filter>
         </activity>
 
+        <!-- 메인 -->
         <activity
-            android:name=".ui.camera.CameraModeActivity"
+            android:name="com.example.on_safe.MainActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- 로그인 플로우 -->
+        <activity
+            android:name="com.example.on_safe.ui.login.LoginActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.example.on_safe.ui.login.FindIdActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.example.on_safe.ui.login.FindPwActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.example.on_safe.ui.login.RegisterStep1Activity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.example.on_safe.ui.login.RegisterStep2Activity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.example.on_safe.ui.login.PermissionActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name="com.example.on_safe.ResetPasswordActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- 카메라 -->
+        <activity
+            android:name="com.example.on_safe.ui.camera.CameraModeActivity"
             android:screenOrientation="landscape" />
 
+        <!-- 전체화면 -->
         <activity
-            android:name="com.example.onsafe.ui.login.FindIdActivity"
+            android:name="com.example.on_safe.ui.FullscreenActivity"
+            android:screenOrientation="landscape" />
+
+        <!-- 알림 내역 -->
+        <activity
+            android:name="com.example.on_safe.ui.notification.NotificationActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- 설정 -->
+        <activity
+            android:name="com.example.on_safe.ui.settings.SettingsActivity"
             android:screenOrientation="portrait" />
 
         <activity
-            android:name="com.example.onsafe.ui.login.FindPwActivity"
-            android:screenOrientation="portrait" />
-
-        <activity
-            android:name="com.example.onsafe.ui.login.RegisterStep1Activity"
-            android:screenOrientation="portrait" />
-
-        <activity
-            android:name="com.example.onsafe.ui.login.RegisterStep2Activity"
-            android:screenOrientation="portrait" />
-
-        <activity
-            android:name="com.example.onsafe.ui.login.PermissionActivity"
-            android:screenOrientation="portrait" />
-
-        <activity
-            android:name="com.example.onsafe.ui.login.ModeSelectActivity"
+            android:name="com.example.on_safe.ui.settings.EditProfileActivity"
             android:screenOrientation="portrait" />
 
     </application>

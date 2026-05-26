@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- res/drawable/bg_progress_fill.xml -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#4D80FF" />
-    <corners android:radius="48dp" />
+    <solid android:color="@color/primary_blue" />
+    <corners android:radius="9999dp" />
 </shape>
