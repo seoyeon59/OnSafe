@@ -39,6 +39,17 @@ class ModeSelectActivity : AppCompatActivity() {
 
         btnNext.setOnClickListener {
             if (selectedMode == 0) return@setOnClickListener
+
+            // 최초 실행이면 튜토리얼 → 권한 요구 화면 순으로 이동
+            if (!com.example.on_safe.ui.tutorial.TutorialActivity.isTutorialShown(this)) {
+                startActivity(
+                    com.example.on_safe.ui.tutorial.TutorialActivity
+                        .intentForLogin(this, selectedMode)
+                )
+                return@setOnClickListener
+            }
+
+            // 이후 실행: 기존 플로우 (TODO: 로그인 화면으로 이동)
             val intent = when (selectedMode) {
                 1 -> Intent(this, MainActivity::class.java)        // 보호자 모드
                 2 -> Intent(this, CameraModeActivity::class.java)  // 카메라 모드

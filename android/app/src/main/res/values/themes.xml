@@ -5,6 +5,8 @@
         <item name="colorPrimary">@color/primary_blue</item>
         <item name="colorPrimaryVariant">@color/primary_blue</item>
         <item name="colorOnPrimary">@color/white</item>
+        <!-- 앱 전체 기본 폰트: Pretendard (400/500/600/700 자동 매핑) -->
+        <item name="android:fontFamily">@font/pretendard</item>
     </style>
 
     <style name="Theme.OnSafe" parent="Base.Theme.OnSafe" />

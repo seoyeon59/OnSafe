@@ -12,11 +12,19 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.CheckIdRequest
+import com.example.on_safe.network.dto.RegisterRequest
+import com.example.on_safe.network.dto.SendEmailCodeRequest
+import com.example.on_safe.network.dto.VerifyEmailCodeRequest
+import kotlinx.coroutines.launch
 
 class RegisterStep2Activity : AppCompatActivity() {
 
@@ -37,6 +45,7 @@ class RegisterStep2Activity : AppCompatActivity() {
     private lateinit var btnTogglePwConfirm: ImageButton
     private lateinit var btnComplete: Button
     private lateinit var btnBack: ImageButton
+    private lateinit var pbLoading: ProgressBar
 
     private lateinit var layoutEmailCode: LinearLayout
     private lateinit var tvIdMessage: TextView
@@ -90,7 +99,8 @@ class RegisterStep2Activity : AppCompatActivity() {
         btnTogglePw = findViewById(R.id.btnTogglePw)
         btnTogglePwConfirm = findViewById(R.id.btnTogglePwConfirm)
         btnComplete = findViewById(R.id.btnComplete)
-        btnBack = findViewById(R.id.btnBack)
+        btnBack     = findViewById(R.id.btnBack)
+        pbLoading   = findViewById(R.id.pbLoading)
         layoutEmailCode = findViewById(R.id.layoutEmailCode)
         tvIdMessage = findViewById(R.id.tvIdMessage)
         tvPwMessage = findViewById(R.id.tvPwMessage)
@@ -103,7 +113,6 @@ class RegisterStep2Activity : AppCompatActivity() {
 
         btnBack.setOnClickListener { finish() }
 
-        // 비밀번호 토글
         btnTogglePw.setOnClickListener {
             isPwVisible = !isPwVisible
             etPw.transformationMethod = if (isPwVisible)
@@ -122,7 +131,7 @@ class RegisterStep2Activity : AppCompatActivity() {
             btnTogglePwConfirm.setImageResource(if (isPwConfirmVisible) R.drawable.ic_eye_off else R.drawable.ic_eye)
         }
 
-        // 아이디 — 변경 시 중복확인 초기화
+        // 아이디 변경 시 중복확인 초기화
         etId.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 isIdChecked = false
@@ -155,7 +164,6 @@ class RegisterStep2Activity : AppCompatActivity() {
                         setInputBorderColor(etPw, COLOR_RED)
                     }
                 }
-                // 비밀번호 바뀌면 확인란도 재검사
                 validatePwConfirm(etPwConfirm.text.toString())
                 updateCompleteButton()
             }
@@ -247,13 +255,26 @@ class RegisterStep2Activity : AppCompatActivity() {
                 setInputBorderColor(etId, COLOR_RED)
                 return@setOnClickListener
             }
-            // TODO: API 연결 - 아이디 중복 확인
-            isIdChecked = true
-            showMessage(tvIdMessage, "✓ 사용 가능한 아이디입니다.", COLOR_GREEN)
-            setInputBorderColor(etId, COLOR_GREEN)
             btnCheckId.isEnabled = false
-            btnCheckId.alpha = 0.4f
-            updateCompleteButton()
+            lifecycleScope.launch {
+                try {
+                    val response = ApiClient.api.checkId(CheckIdRequest(userId = id))
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        isIdChecked = true
+                        showMessage(tvIdMessage, "✓ 사용 가능한 아이디입니다.", COLOR_GREEN)
+                        setInputBorderColor(etId, COLOR_GREEN)
+                        btnCheckId.alpha = 0.4f
+                    } else {
+                        showMessage(tvIdMessage, response.body()?.message ?: "이미 사용 중인 아이디입니다.", COLOR_RED)
+                        setInputBorderColor(etId, COLOR_RED)
+                        btnCheckId.isEnabled = true
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                    btnCheckId.isEnabled = true
+                }
+                updateCompleteButton()
+            }
         }
 
         // 이메일 인증 요청
@@ -262,8 +283,21 @@ class RegisterStep2Activity : AppCompatActivity() {
                 Toast.makeText(this, "올바른 이메일을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            // TODO: API 연결 - 이메일 인증 요청
-            startEmailVerification()
+            btnVerifyEmail.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        startEmailVerification()
+                    } else {
+                        Toast.makeText(this@RegisterStep2Activity, response.body()?.message ?: "인증 메일 발송에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                        btnVerifyEmail.isEnabled = true
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                    btnVerifyEmail.isEnabled = true
+                }
+            }
         }
 
         // 인증코드 확인
@@ -273,32 +307,81 @@ class RegisterStep2Activity : AppCompatActivity() {
                 Toast.makeText(this, "인증코드를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            // TODO: API 연결 - 인증코드 확인
-            emailCountDownTimer?.cancel()
-            isEmailVerified = true
-            layoutEmailCode.visibility = View.GONE
-            tvEmailMessage.visibility = View.GONE
-            tvEmailVerified.visibility = View.VISIBLE
-            updateCompleteButton()
+            btnConfirmCode.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    val response = ApiClient.api.verifyEmailCode(
+                        VerifyEmailCodeRequest(mail = etEmail.text.toString().trim(), code = code)
+                    )
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        emailCountDownTimer?.cancel()
+                        isEmailVerified = true
+                        layoutEmailCode.visibility = View.GONE
+                        tvEmailMessage.visibility = View.GONE
+                        tvEmailVerified.visibility = View.VISIBLE
+                    } else {
+                        Toast.makeText(this@RegisterStep2Activity, response.body()?.message ?: "인증코드가 올바르지 않습니다.", Toast.LENGTH_SHORT).show()
+                        btnConfirmCode.isEnabled = true
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                    btnConfirmCode.isEnabled = true
+                }
+                updateCompleteButton()
+            }
         }
 
         // 재전송
         tvEmailResend.setOnClickListener {
             etEmailCode.text.clear()
-            // TODO: API 연결 - 인증코드 재발송
-            startEmailVerification()
-            Toast.makeText(this, "인증 메일을 재발송했습니다.", Toast.LENGTH_SHORT).show()
+            lifecycleScope.launch {
+                try {
+                    ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
+                    startEmailVerification()
+                    Toast.makeText(this@RegisterStep2Activity, "인증 메일을 재발송했습니다.", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
-        // 주소 검색
         etAddress.setOnClickListener {
             // TODO: 도로명 주소 API 연결
             Toast.makeText(this, "주소 검색 준비 중", Toast.LENGTH_SHORT).show()
         }
 
-        // 가입 완료
         btnComplete.setOnClickListener {
-            // TODO: API 연결 - 회원가입
+            btnComplete.isEnabled = false
+            pbLoading.visibility = View.VISIBLE
+            lifecycleScope.launch {
+                try {
+                    val response = ApiClient.api.register(
+                        RegisterRequest(
+                            userId = etId.text.toString().trim(),
+                            password = etPw.text.toString().trim(),
+                            name = etName.text.toString().trim(),
+                            mail = etEmail.text.toString().trim(),
+                            phone = etPhone.text.toString().trim(),
+                            address = etAddress.text.toString().trim().ifEmpty { null },
+                            addressDetail = etAddressDetail.text.toString().trim().ifEmpty { null }
+                        )
+                    )
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        Toast.makeText(this@RegisterStep2Activity, "회원가입이 완료되었습니다.", Toast.LENGTH_SHORT).show()
+                        finish()
+                    } else {
+                        Toast.makeText(this@RegisterStep2Activity, response.body()?.message ?: "회원가입에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                        btnComplete.isEnabled = true
+                        btnComplete.alpha = 1.0f
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                    btnComplete.isEnabled = true
+                    btnComplete.alpha = 1.0f
+                } finally {
+                    pbLoading.visibility = View.GONE
+                }
+            }
         }
     }
 
@@ -362,7 +445,6 @@ class RegisterStep2Activity : AppCompatActivity() {
         tv.visibility = View.VISIBLE
     }
 
-    // 입력칸 테두리 색 변경
     private fun setInputBorderColor(et: EditText, color: Int) {
         val drawable = GradientDrawable()
         drawable.setColor(COLOR_NORMAL)

@@ -2,6 +2,7 @@ package com.example.on_safe
 
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.net.Uri
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
@@ -47,7 +48,7 @@ class MainActivity : AppCompatActivity() {
 
     private var alertDialog: BottomSheetDialog? = null
 
-    // 테스트용
+    // TODO: WebSocket/SSE 연결 후 실시간 점수로 교체 (현재 테스트 더미)
     private val testScores = intArrayOf(32, 62, 88)
     private var testIdx = 0
 
@@ -55,7 +56,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 메인 화면의 위험 지수 카드는 실시간 갱신
+        // TODO: 서버 실시간 점수/연결 상태로 교체
         val mainCard = findViewById<View>(R.id.riskScoreCard)
         applyRiskScoreToCard(mainCard, 32)
         applyConnectionState(ConnectionState.CONNECTED)
@@ -71,10 +72,13 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, com.example.on_safe.ui.FullscreenActivity::class.java))
         }
         findViewById<View>(R.id.tabHistory).setOnClickListener {
-            Toast.makeText(this, "사고 이력 준비 중", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, com.example.on_safe.ui.history.AccidentHistoryActivity::class.java))
         }
         findViewById<View>(R.id.tabSettings).setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.settings.SettingsActivity::class.java))
+        }
+        findViewById<View>(R.id.btn119).setOnClickListener {
+            startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:119")))
         }
 
         // [테스트] 점수 박스 길게 누르면 점수 순환 (실제 서버 연결 후 제거)
@@ -92,10 +96,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * 위험 지수 카드(include 사용 위치 어디든) 갱신.
-     * 위험 단계면 빨강 stroke 추가, 아니면 제거.
-     */
+    // 위험 지수 카드 갱신 — DANGER이면 빨강 stroke, 아니면 제거 (include 어디서든 재사용)
     private fun applyRiskScoreToCard(cardRoot: View, score: Int) {
         val level = RiskLevel.fromScore(score)
         val color = ContextCompat.getColor(this, level.colorRes)
@@ -149,9 +150,7 @@ class MainActivity : AppCompatActivity() {
         tv.setTextColor(color)
     }
 
-    /**
-     * 위험 감지 바텀시트 - 그 시점의 점수와 감지 시각을 받아 표시.
-     */
+    // 위험 감지 바텀시트 — 감지 시점의 점수·시각 스냅샷 표시
     private fun showFallAlertDialog(score: Int, detectedAtMillis: Long) {
         if (alertDialog?.isShowing == true) return
 
@@ -167,6 +166,9 @@ class MainActivity : AppCompatActivity() {
         val alertCard = view.findViewById<View>(R.id.alertRiskScoreCard)
         applyRiskScoreToCard(alertCard, score)
 
+        view.findViewById<View>(R.id.btn119Alert).setOnClickListener {
+            startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:119")))
+        }
         view.findViewById<View>(R.id.btnAlertDismiss).setOnClickListener {
             dialog.dismiss()
         }

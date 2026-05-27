@@ -542,6 +542,16 @@
                 android:alpha="0.4"
                 android:enabled="false" />
 
+            <!-- 가입 완료 중 로딩 인디케이터 -->
+            <ProgressBar
+                android:id="@+id/pbLoading"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="12dp"
+                android:indeterminateTint="@color/primary_blue"
+                android:visibility="gone" />
+
         </LinearLayout>
 
     </ScrollView>

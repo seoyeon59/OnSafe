@@ -38,7 +38,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="12dp"
             android:text="촬영 중입니다..."
             android:textSize="18sp"
             android:textColor="#FEFEFE"
@@ -46,10 +46,10 @@
 
         <!-- 설명 -->
         <TextView
-            android:layout_width="260dp"
+            android:layout_width="360dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="배터리 절약과 화면 보호를 위해\n화면 보호기가 실행 중입니다.\n해제하려면 위 버튼을 누르세요."
+            android:text="배터리 절약과 화면 보호를 위해 화면 보호기가 실행 중입니다.\n해제하려면 위 버튼을 누르세요."
             android:textSize="13sp"
             android:textColor="#80FEFEFE"
             android:fontFamily="@font/pretendard_regular"
@@ -76,8 +76,8 @@
                 android:layout_height="28dp"
                 android:background="@drawable/bg_logo" />
             <ImageView
-                android:layout_width="13dp"
-                android:layout_height="16dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_shield"
                 app:tint="@color/surface_white" />

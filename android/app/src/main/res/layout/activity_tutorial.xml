@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface_white"
+    android:paddingHorizontal="16dp"
+    android:paddingTop="24dp"
+    android:paddingBottom="24dp">
+
+    <!-- ============ 진행 표시줄 행 ============ -->
+    <LinearLayout
+        android:id="@+id/progressRow"
+        android:layout_width="0dp"
+        android:layout_height="21dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:weightSum="1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- 프로그레스 바 -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+            android:layout_width="0dp"
+            android:layout_height="8dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="12dp"
+            android:max="100"
+            android:progressDrawable="@drawable/bg_progress_tutorial" />
+
+        <!-- 페이지 카운터: "1/6" -->
+        <TextView
+            android:id="@+id/tvPageCounter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#414752"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- ============ 이미지 영역 ============ -->
+    <FrameLayout
+        android:id="@+id/pageImageArea"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="28dp"
+        android:layout_marginBottom="22dp"
+        android:background="#FAFAFA"
+        app:layout_constraintBottom_toTopOf="@id/btnRow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/progressRow">
+
+        <!-- 각 페이지 이미지. 나중에 이미지 리소스를 넣으면 여기에 표시됨 -->
+        <ImageView
+            android:id="@+id/ivPageImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@null"
+            android:scaleType="centerInside"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+    <!-- ============ 버튼 행 ============ -->
+    <LinearLayout
+        android:id="@+id/btnRow"
+        android:layout_width="0dp"
+        android:layout_height="54dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <!-- 이전 버튼 (첫 페이지에서는 숨김) -->
+        <Button
+            android:id="@+id/btnPrev"
+            android:layout_width="96dp"
+            android:layout_height="54dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_outline_blue"
+            android:stateListAnimator="@null"
+            android:text="이전"
+            android:textColor="@color/primary_blue"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="invisible" />
+
+        <!-- 다음 / 완료 버튼 -->
+        <Button
+            android:id="@+id/btnNext"
+            android:layout_width="0dp"
+            android:layout_height="54dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_button_blue"
+            android:stateListAnimator="@null"
+            android:text="다음"
+            android:textColor="@color/surface_white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

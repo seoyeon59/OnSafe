@@ -12,10 +12,15 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.ResetPasswordRequest
+import kotlinx.coroutines.launch
 
 class ResetPasswordActivity : AppCompatActivity() {
 
@@ -35,6 +40,7 @@ class ResetPasswordActivity : AppCompatActivity() {
     private lateinit var btnToggleNewPwConfirm: ImageButton
     private lateinit var btnSave: Button
     private lateinit var btnBack: ImageButton
+    private lateinit var pbLoading: ProgressBar
     private lateinit var tvNewPwMessage: TextView
     private lateinit var tvNewPwConfirmMessage: TextView
 
@@ -51,6 +57,7 @@ class ResetPasswordActivity : AppCompatActivity() {
 
     // onCreate에서 한 번만 읽어 캐싱 — 매 TextWatcher 호출마다 Intent를 재조회하지 않도록
     private var currentMode = MODE_FIND_PW
+    private var currentUserId = ""
 
     private var dpScale = 0f
     private var cornerPx = 0f
@@ -69,20 +76,21 @@ class ResetPasswordActivity : AppCompatActivity() {
         etNewPwConfirm = findViewById(R.id.etNewPwConfirm)
         btnToggleNewPw = findViewById(R.id.btnToggleNewPw)
         btnToggleNewPwConfirm = findViewById(R.id.btnToggleNewPwConfirm)
-        btnSave = findViewById(R.id.btnSave)
-        btnBack = findViewById(R.id.btnBack)
+        btnSave    = findViewById(R.id.btnSave)
+        btnBack    = findViewById(R.id.btnBack)
+        pbLoading  = findViewById(R.id.pbLoading)
         tvNewPwMessage = findViewById(R.id.tvNewPwMessage)
         tvNewPwConfirmMessage = findViewById(R.id.tvNewPwConfirmMessage)
 
-        // 모드 확인 — 설정에서 진입 시 현재 비밀번호 칸 표시
+        // MODE_SETTINGS이면 현재 비밀번호 입력란 표시
         currentMode = intent.getStringExtra("mode") ?: MODE_FIND_PW
+        currentUserId = intent.getStringExtra("userId") ?: ""
         if (currentMode == MODE_SETTINGS) {
             layoutCurrentPw.visibility = View.VISIBLE
         }
 
         btnBack.setOnClickListener { finish() }
 
-        // 현재 비밀번호 토글
         btnToggleCurrentPw.setOnClickListener {
             isCurrentPwVisible = !isCurrentPwVisible
             etCurrentPw.transformationMethod = if (isCurrentPwVisible)
@@ -94,7 +102,6 @@ class ResetPasswordActivity : AppCompatActivity() {
             )
         }
 
-        // 새 비밀번호 토글
         btnToggleNewPw.setOnClickListener {
             isNewPwVisible = !isNewPwVisible
             etNewPw.transformationMethod = if (isNewPwVisible)
@@ -106,7 +113,6 @@ class ResetPasswordActivity : AppCompatActivity() {
             )
         }
 
-        // 비밀번호 확인 토글
         btnToggleNewPwConfirm.setOnClickListener {
             isNewPwConfirmVisible = !isNewPwConfirmVisible
             etNewPwConfirm.transformationMethod = if (isNewPwConfirmVisible)
@@ -154,18 +160,36 @@ class ResetPasswordActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // 설정 모드에서 현재 비밀번호 입력 시에도 버튼 상태 갱신
+        // MODE_SETTINGS: 현재 비밀번호 입력도 버튼 활성화 조건에 포함
         etCurrentPw.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) { updateSaveButton() }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // 저장하기
         btnSave.setOnClickListener {
-            // TODO: API 연결 - 비밀번호 변경
-            Toast.makeText(this, "비밀번호가 변경되었습니다.", Toast.LENGTH_SHORT).show()
-            finish()
+            btnSave.isEnabled = false
+            pbLoading.visibility = View.VISIBLE
+            lifecycleScope.launch {
+                try {
+                    // TODO: 백엔드 currentPassword 필드 추가 시 etCurrentPw 값도 함께 전송
+                    val response = ApiClient.api.resetPassword(
+                        ResetPasswordRequest(userId = currentUserId, newPassword = etNewPw.text.toString().trim())
+                    )
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        Toast.makeText(this@ResetPasswordActivity, "비밀번호가 변경되었습니다.", Toast.LENGTH_SHORT).show()
+                        finish()
+                    } else {
+                        Toast.makeText(this@ResetPasswordActivity, response.body()?.message ?: "비밀번호 변경에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                        btnSave.isEnabled = true
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this@ResetPasswordActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                    btnSave.isEnabled = true
+                } finally {
+                    pbLoading.visibility = View.GONE
+                }
+            }
         }
     }
 

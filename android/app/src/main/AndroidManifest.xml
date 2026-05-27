@@ -3,7 +3,20 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+    <!-- 사진/영상 접근 권한 (API 33+: READ_MEDIA_VIDEO, API ≤32: READ_EXTERNAL_STORAGE) -->
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_VIDEO"
+        android:minSdkVersion="33" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
 
     <application
         android:allowBackup="true"
@@ -14,6 +27,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.OnSafe"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
         <!-- 런처 -->
@@ -83,6 +97,16 @@
 
         <activity
             android:name="com.example.on_safe.ui.settings.EditProfileActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- 사고 이력 -->
+        <activity
+            android:name="com.example.on_safe.ui.history.AccidentHistoryActivity"
+            android:screenOrientation="portrait" />
+
+        <!-- 튜토리얼 -->
+        <activity
+            android:name="com.example.on_safe.ui.tutorial.TutorialActivity"
             android:screenOrientation="portrait" />
 
     </application>

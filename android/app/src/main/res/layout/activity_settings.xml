@@ -40,8 +40,12 @@
             android:textStyle="bold" />
 
         <ImageView
+            android:id="@+id/btnTutorial"
             android:layout_width="32dp"
             android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
             android:contentDescription="@null"
             android:src="@drawable/ic_info"
             app:tint="@color/ink_500" />
