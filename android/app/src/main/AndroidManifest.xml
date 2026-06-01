@@ -67,6 +67,11 @@
             android:name="com.example.on_safe.ui.login.RegisterStep2Activity"
             android:screenOrientation="portrait" />
 
+        <!-- 도로명주소 검색 (juso.go.kr 모바일 팝업 API WebView) -->
+        <activity
+            android:name="com.example.on_safe.ui.login.AddressSearchActivity"
+            android:screenOrientation="portrait" />
+
         <activity
             android:name="com.example.on_safe.ui.login.PermissionActivity"
             android:screenOrientation="portrait" />
