@@ -200,7 +200,9 @@ class ResetPasswordActivity : AppCompatActivity() {
                             ResetPasswordRequest(userId = currentUserId, newPassword = newPw)
                         )
                         success  = response.isSuccessful && response.body()?.success == true
-                        errorMsg = response.body()?.message ?: "비밀번호 변경에 실패했습니다."
+                        errorMsg = if (!success) ApiClient.parseErrorMessage(
+                            response.errorBody(), "비밀번호 변경에 실패했습니다."
+                        ) else null
                     }
 
                     if (success) {

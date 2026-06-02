@@ -33,6 +33,11 @@ interface ApiService {
     @POST("api/auth/reset-password")
     suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<ApiResponse<Unit>>
 
+    @POST("api/auth/refresh")
+    suspend fun refreshToken(
+        @Header("Refresh-Token") refreshToken: String
+    ): Response<ApiResponse<TokenRefreshResponse>>
+
     @POST("api/auth/logout")
     suspend fun logout(
         @Header("Authorization") token: String

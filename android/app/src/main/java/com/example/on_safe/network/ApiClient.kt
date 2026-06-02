@@ -10,17 +10,26 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
     // 에뮬레이터: 10.0.2.2 | 실기기: 실제 서버 IP로 변경
-    private const val BASE_URL = "http://10.0.2.2:8080/"
+    const val BASE_URL = "http://10.0.2.2:8080/"
 
     private val gson = GsonBuilder()
         .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
         .create()
 
-    private val httpClient = OkHttpClient.Builder()
-        .addInterceptor(HttpLoggingInterceptor { message -> Log.d("OkHttp", message) }.apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        })
-        .build()
+    private var appContext: android.content.Context? = null
+
+    fun init(context: android.content.Context) {
+        appContext = context.applicationContext
+    }
+
+    private val httpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .addInterceptor(HttpLoggingInterceptor { message -> Log.d("OkHttp", message) }.apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            })
+            .apply { appContext?.let { authenticator(TokenAuthenticator(it)) } }
+            .build()
+    }
 
     val api: ApiService by lazy {
         Retrofit.Builder()

@@ -33,3 +33,9 @@ data class NotificationSettingsResponse(
     val soundEnabled: Boolean,
     val vibrationEnabled: Boolean
 )
+
+data class TokenRefreshResponse(
+    val accessToken: String,
+    val refreshToken: String,
+    val tokenType: String
+)
