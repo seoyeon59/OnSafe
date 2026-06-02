@@ -62,10 +62,8 @@ class WithdrawAccountDialog(
     }
 
     private fun updateWithdrawButton(btn: TextView, enabled: Boolean) {
-        if (enabled) {
-            btn.setTextColor(context.getColor(R.color.status_danger))
-        } else {
-            btn.setTextColor(context.getColor(R.color.ink_500))
-        }
+        btn.isClickable  = enabled
+        btn.isFocusable  = enabled
+        btn.setTextColor(context.getColor(if (enabled) R.color.status_danger else R.color.ink_500))
     }
 }

@@ -18,8 +18,10 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
+import android.content.Context
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.ResetPasswordRequest
+import com.example.on_safe.network.dto.UserUpdateRequest
 import kotlinx.coroutines.launch
 
 class ResetPasswordActivity : AppCompatActivity() {
@@ -172,15 +174,40 @@ class ResetPasswordActivity : AppCompatActivity() {
             pbLoading.visibility = View.VISIBLE
             lifecycleScope.launch {
                 try {
-                    // TODO: 백엔드 currentPassword 필드 추가 시 etCurrentPw 값도 함께 전송
-                    val response = ApiClient.api.resetPassword(
-                        ResetPasswordRequest(userId = currentUserId, newPassword = etNewPw.text.toString().trim())
-                    )
-                    if (response.isSuccessful && response.body()?.success == true) {
+                    val newPw = etNewPw.text.toString().trim()
+                    val success: Boolean
+                    val errorMsg: String?
+
+                    if (currentMode == MODE_SETTINGS) {
+                        // 설정에서 진입: PUT /api/users/{userId} (currentPassword + password)
+                        val token = getSharedPreferences("auth", Context.MODE_PRIVATE)
+                            .getString("access_token", "") ?: ""
+                        val response = ApiClient.api.updateUser(
+                            "Bearer $token",
+                            currentUserId,
+                            UserUpdateRequest(
+                                currentPassword = etCurrentPw.text.toString().trim(),
+                                password        = newPw
+                            )
+                        )
+                        success  = response.isSuccessful
+                        errorMsg = if (!success) ApiClient.parseErrorMessage(
+                            response.errorBody(), "비밀번호 변경에 실패했습니다."
+                        ) else null
+                    } else {
+                        // 비밀번호 찾기에서 진입: POST /api/auth/reset-password
+                        val response = ApiClient.api.resetPassword(
+                            ResetPasswordRequest(userId = currentUserId, newPassword = newPw)
+                        )
+                        success  = response.isSuccessful && response.body()?.success == true
+                        errorMsg = response.body()?.message ?: "비밀번호 변경에 실패했습니다."
+                    }
+
+                    if (success) {
                         Toast.makeText(this@ResetPasswordActivity, "비밀번호가 변경되었습니다.", Toast.LENGTH_SHORT).show()
                         finish()
                     } else {
-                        Toast.makeText(this@ResetPasswordActivity, response.body()?.message ?: "비밀번호 변경에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@ResetPasswordActivity, errorMsg, Toast.LENGTH_SHORT).show()
                         btnSave.isEnabled = true
                     }
                 } catch (e: Exception) {

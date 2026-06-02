@@ -48,3 +48,23 @@ data class ResetPasswordRequest(
     val userId: String,
     val newPassword: String
 )
+
+data class NotificationSettingsRequest(
+    val notificationEnabled: Boolean? = null,
+    val soundEnabled: Boolean? = null,
+    val vibrationEnabled: Boolean? = null
+)
+
+data class VerifyPasswordRequest(
+    val currentPassword: String
+)
+
+data class UserUpdateRequest(
+    val name: String? = null,
+    val currentPassword: String? = null,
+    val password: String? = null,
+    val mail: String? = null,
+    val phone: String? = null,
+    val address: String? = null,
+    val addressDetail: String? = null
+)

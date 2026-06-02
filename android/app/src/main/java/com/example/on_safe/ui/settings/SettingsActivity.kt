@@ -2,18 +2,14 @@ package com.example.on_safe.ui.settings
 
 import android.Manifest
 import android.app.AlertDialog
-import android.app.Dialog
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
-import android.view.Window
-import android.view.WindowManager
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -22,11 +18,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.NotificationSettingsRequest
+import com.example.on_safe.network.dto.VerifyPasswordRequest
+import kotlinx.coroutines.launch
 
-// 설정 화면 (알림 토글, 개인정보 수정, 비밀번호 변경, 로그아웃, 회원탈퇴)
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var switchNotification: SwitchCompat
@@ -47,12 +47,16 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var tvUserName: TextView
 
+    // 초기 설정 로드 중 토글 변경 이벤트가 API를 중복 호출하지 않도록 방지
+    private var isLoadingSettings = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
         initViews()
         loadUserName()
+        loadNotificationSettings()
         setupToggleDependency()
         setupClickListeners()
     }
@@ -74,8 +78,67 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun loadUserName() {
-        // TODO: GET /user/profile → 이름 불러와 "${name} 보호자님" 표시
-        tvUserName.text = "보호자님"
+        val token  = getAuthToken()
+        val userId = getUserId()
+        if (token.isEmpty() || userId.isEmpty()) return
+
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.api.getUser("Bearer $token", userId)
+                if (response.isSuccessful) {
+                    val name = response.body()?.data?.name ?: return@launch
+                    tvUserName.text = "${name} 보호자님"
+                }
+            } catch (e: Exception) {
+                // 네트워크 실패 시 기본 텍스트 유지
+            }
+        }
+    }
+
+    private fun loadNotificationSettings() {
+        val token  = getAuthToken()
+        val userId = getUserId()
+        if (token.isEmpty() || userId.isEmpty()) return
+
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.api.getNotificationSettings("Bearer $token", userId)
+                if (response.isSuccessful) {
+                    val settings = response.body()?.data ?: return@launch
+                    isLoadingSettings = true
+                    switchNotification.isChecked = settings.notificationEnabled
+                    switchSound.isChecked        = settings.soundEnabled
+                    switchVibration.isChecked    = settings.vibrationEnabled
+                    switchSound.isEnabled        = settings.notificationEnabled
+                    switchVibration.isEnabled    = settings.notificationEnabled
+                    isLoadingSettings = false
+                }
+            } catch (e: Exception) {
+                // 네트워크 실패 시 기본 상태(모두 ON) 유지
+            }
+        }
+    }
+
+    private fun saveNotificationSettings() {
+        val token  = getAuthToken()
+        val userId = getUserId()
+        if (token.isEmpty() || userId.isEmpty()) return
+
+        lifecycleScope.launch {
+            try {
+                ApiClient.api.updateNotificationSettings(
+                    "Bearer $token",
+                    userId,
+                    NotificationSettingsRequest(
+                        notificationEnabled = switchNotification.isChecked,
+                        soundEnabled        = switchSound.isChecked,
+                        vibrationEnabled    = switchVibration.isChecked
+                    )
+                )
+            } catch (e: Exception) {
+                Toast.makeText(this@SettingsActivity, "설정 저장에 실패했습니다.", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     // 알림 권한 (API 33+)
@@ -127,29 +190,33 @@ class SettingsActivity : AppCompatActivity() {
                 }
                 return@setOnCheckedChangeListener
             }
-            switchSound.isEnabled = isChecked
+            switchSound.isEnabled     = isChecked
             switchVibration.isEnabled = isChecked
             if (!isChecked) {
-                switchSound.isChecked = false
+                switchSound.isChecked     = false
                 switchVibration.isChecked = false
             }
+            if (!isLoadingSettings) saveNotificationSettings()
         }
 
-        // TODO: SharedPreferences에서 알림/소리/진동 토글 상태 복원
+        switchSound.setOnCheckedChangeListener { _, _ ->
+            if (!isLoadingSettings) saveNotificationSettings()
+        }
+
+        switchVibration.setOnCheckedChangeListener { _, _ ->
+            if (!isLoadingSettings) saveNotificationSettings()
+        }
     }
 
     private fun setupClickListeners() {
         btnBack.setOnClickListener { finish() }
 
-        // 개인정보 수정
         rowEditProfile.setOnClickListener {
             startActivity(Intent(this, EditProfileActivity::class.java))
         }
 
-        // 비밀번호 변경
         rowChangePassword.setOnClickListener {
-            val userId = getSharedPreferences("auth", MODE_PRIVATE)
-                .getString("user_id", "") ?: ""
+            val userId = getUserId()
             val intent = Intent(this, ResetPasswordActivity::class.java).apply {
                 putExtra("mode", ResetPasswordActivity.MODE_SETTINGS)
                 putExtra("userId", userId)
@@ -157,23 +224,16 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // TODO: 개인정보 처리방침 웹뷰 또는 브라우저 연동
         rowPrivacyPolicy.setOnClickListener {
             Toast.makeText(this, "개인정보 처리방침 준비 중", Toast.LENGTH_SHORT).show()
         }
 
-        rowLogout.setOnClickListener {
-            showLogoutConfirm()
-        }
+        rowLogout.setOnClickListener { showVerifyForLogout() }
 
-        // 회원탈퇴
         rowWithdraw.setOnClickListener {
-            WithdrawAccountDialog(this) {
-                handleWithdraw()
-            }.show()
+            WithdrawAccountDialog(this) { handleWithdraw() }.show()
         }
 
-        // 바텀 네비: 홈
         tabHome.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -182,12 +242,10 @@ class SettingsActivity : AppCompatActivity() {
             finish()
         }
 
-        // 바텀 네비: 사고 이력
         tabHistory.setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.history.AccidentHistoryActivity::class.java))
         }
 
-        // 헤더 튜토리얼 버튼 (온보딩 완료 후에도 상시 진입)
         btnTutorial.setOnClickListener {
             startActivity(
                 com.example.on_safe.ui.tutorial.TutorialActivity.intentFromSettings(this)
@@ -195,42 +253,86 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun showLogoutConfirm() {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(R.layout.dialog_logout)
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            setLayout(
-                (resources.displayMetrics.widthPixels * 0.85).toInt(),
-                WindowManager.LayoutParams.WRAP_CONTENT
-            )
-        }
-        dialog.setCanceledOnTouchOutside(false)
+    // 로그아웃 전 비밀번호 본인 확인 (VerifyPasswordDialog 재사용)
+    private fun showVerifyForLogout() {
+        VerifyPasswordDialog(
+            context   = this,
+            onConfirm = { password -> verifyAndLogout(password) },
+            onCancel  = {}
+        ).show()
+    }
 
-        dialog.findViewById<TextView>(R.id.btnLogoutCancel).setOnClickListener {
-            dialog.dismiss()
+    private fun verifyAndLogout(password: String) {
+        val token  = getAuthToken()
+        val userId = getUserId()
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.api.verifyPassword(
+                    "Bearer $token",
+                    userId,
+                    VerifyPasswordRequest(currentPassword = password)
+                )
+                if (response.isSuccessful) {
+                    handleLogout()
+                } else {
+                    val msg = ApiClient.parseErrorMessage(response.errorBody(), "비밀번호가 일치하지 않습니다.")
+                    Toast.makeText(this@SettingsActivity, msg, Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@SettingsActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+            }
         }
-        dialog.findViewById<TextView>(R.id.btnLogoutConfirm).setOnClickListener {
-            dialog.dismiss()
-            handleLogout()
-        }
-        dialog.show()
     }
 
     private fun handleLogout() {
-        // TODO: 서버 로그아웃 API 호출 + 로컬 토큰/세션 제거
-        Toast.makeText(this, "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show()
-        val intent = Intent(this, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        val token = getAuthToken()
+        lifecycleScope.launch {
+            try {
+                if (token.isNotEmpty()) {
+                    ApiClient.api.logout("Bearer $token")
+                }
+            } catch (e: Exception) {
+                // API 실패해도 로컬 세션은 반드시 삭제
+            } finally {
+                clearSession()
+                navigateToLogin()
+            }
         }
-        startActivity(intent)
     }
 
     private fun handleWithdraw() {
-        // TODO: 서버 회원탈퇴 API 호출 + 로컬 데이터 전체 삭제
-        Toast.makeText(this, "회원탈퇴가 완료되었습니다.", Toast.LENGTH_SHORT).show()
+        val token  = getAuthToken()
+        val userId = getUserId()
+        lifecycleScope.launch {
+            try {
+                if (token.isNotEmpty() && userId.isNotEmpty()) {
+                    val response = ApiClient.api.deleteUser("Bearer $token", userId)
+                    if (!response.isSuccessful) {
+                        val msg = ApiClient.parseErrorMessage(response.errorBody(), "회원탈퇴에 실패했습니다.")
+                        Toast.makeText(this@SettingsActivity, msg, Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@SettingsActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            clearSession()
+            navigateToLogin()
+        }
+    }
 
+    private fun getAuthToken(): String =
+        getSharedPreferences("auth", Context.MODE_PRIVATE).getString("access_token", "") ?: ""
+
+    private fun getUserId(): String =
+        getSharedPreferences("auth", Context.MODE_PRIVATE).getString("user_id", "") ?: ""
+
+    private fun clearSession() {
+        getSharedPreferences("auth", Context.MODE_PRIVATE).edit().clear().apply()
+    }
+
+    private fun navigateToLogin() {
         val intent = Intent(this, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }

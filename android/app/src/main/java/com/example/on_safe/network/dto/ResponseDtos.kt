@@ -18,3 +18,18 @@ data class LoginResponse(
 data class FindIdResponse(
     val userId: String
 )
+
+data class UserResponse(
+    val userId: String,
+    val name: String,
+    val phone: String,
+    val mail: String,
+    val address: String?,
+    val addressDetail: String?
+)
+
+data class NotificationSettingsResponse(
+    val notificationEnabled: Boolean,
+    val soundEnabled: Boolean,
+    val vibrationEnabled: Boolean
+)
