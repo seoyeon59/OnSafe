@@ -222,7 +222,7 @@
             android:paddingEnd="8dp"
             android:paddingStart="8dp">
 
-            <!-- 2b: 카메라 아이콘에 반투명 흰색 배경 원형 (15% white) -->
+            <!-- 카메라 아이콘 원형 -->
             <FrameLayout
                 android:layout_width="24dp"
                 android:layout_height="24dp">
@@ -242,13 +242,25 @@
             </FrameLayout>
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
                 android:fontFamily="@font/pretendard_bold"
                 android:text="카메라 모드"
                 android:textColor="#FEFEFE"
                 android:textSize="12sp" />
+
+            <!-- 튜토리얼 버튼 (설정 화면과 동일) -->
+            <ImageView
+                android:id="@+id/btnTutorial"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="튜토리얼"
+                android:src="@drawable/ic_info"
+                android:padding="2dp"
+                app:tint="#80FEFEFE" />
+
         </LinearLayout>
 
         <!-- 패널 본문 -->

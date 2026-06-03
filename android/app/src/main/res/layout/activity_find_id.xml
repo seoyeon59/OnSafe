@@ -92,7 +92,7 @@
                 android:paddingLeft="16dp"
                 android:paddingRight="16dp"
                 android:background="@drawable/bg_input_rounded"
-                android:inputType="textPersonName"
+                android:inputType="text"
                 android:singleLine="true"
                 android:layout_marginBottom="16dp" />
 
@@ -172,6 +172,7 @@
                             android:paddingRight="72dp"
                             android:background="@drawable/bg_input_rounded"
                             android:inputType="number"
+                            android:maxLength="6"
                             android:singleLine="true" />
 
                         <!-- 타이머 텍스트 (입력칸 오른쪽 내부) -->

@@ -60,6 +60,7 @@
                 app:tint="@color/primary_blue" />
 
             <View
+                android:id="@+id/dotUnreadNotification"
                 android:layout_width="6dp"
                 android:layout_height="6dp"
                 android:layout_gravity="top|end"
@@ -70,6 +71,16 @@
         </FrameLayout>
     </LinearLayout>
 
+    <!-- 알림 권한 미동의 배너 -->
+    <include
+        android:id="@+id/bannerNotificationPermission"
+        layout="@layout/banner_notification_permission"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/header" />
+
     <!-- ============ 콘텐츠 영역 ============ -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="0dp"
@@ -78,7 +89,7 @@
         app:layout_constraintBottom_toTopOf="@id/bottomNav"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/header">
+        app:layout_constraintTop_toBottomOf="@id/bannerNotificationPermission">
 
         <LinearLayout
             android:layout_width="match_parent"

@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
+import com.example.on_safe.util.TokenManager
 
 // 설정 화면 (알림 토글, 개인정보 수정, 비밀번호 변경, 로그아웃, 회원탈퇴)
 class SettingsActivity : AppCompatActivity() {
@@ -148,8 +149,7 @@ class SettingsActivity : AppCompatActivity() {
 
         // 비밀번호 변경
         rowChangePassword.setOnClickListener {
-            val userId = getSharedPreferences("auth", MODE_PRIVATE)
-                .getString("user_id", "") ?: ""
+            val userId = TokenManager.getUserId(this)
             val intent = Intent(this, ResetPasswordActivity::class.java).apply {
                 putExtra("mode", ResetPasswordActivity.MODE_SETTINGS)
                 putExtra("userId", userId)
@@ -219,21 +219,24 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun handleLogout() {
-        // TODO: 서버 로그아웃 API 호출 + 로컬 토큰/세션 제거
+        // TODO: 서버 로그아웃 API 호출 (POST /auth/logout)
+        TokenManager.clear(this)
         Toast.makeText(this, "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show()
-        val intent = Intent(this, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        startActivity(intent)
+        startActivity(
+            Intent(this, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+        )
     }
 
     private fun handleWithdraw() {
-        // TODO: 서버 회원탈퇴 API 호출 + 로컬 데이터 전체 삭제
+        // TODO: 서버 회원탈퇴 API 호출 (DELETE /user)
+        TokenManager.clear(this)
         Toast.makeText(this, "회원탈퇴가 완료되었습니다.", Toast.LENGTH_SHORT).show()
-
-        val intent = Intent(this, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        startActivity(intent)
+        startActivity(
+            Intent(this, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+        )
     }
 }

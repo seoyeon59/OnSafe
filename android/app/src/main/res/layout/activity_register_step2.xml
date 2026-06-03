@@ -140,7 +140,7 @@
                         android:paddingLeft="16dp"
                         android:paddingRight="16dp"
                         android:background="@drawable/bg_input_rounded"
-                        android:inputType="text"
+                        android:inputType="textNoSuggestions"
                         android:singleLine="true" />
 
                     <Button
@@ -286,7 +286,7 @@
                     android:paddingLeft="16dp"
                     android:paddingRight="16dp"
                     android:background="@drawable/bg_input_rounded"
-                    android:inputType="textPersonName"
+                    android:inputType="text"
                     android:singleLine="true" />
 
                 <!-- 전화번호 -->
@@ -405,6 +405,7 @@
                                 android:paddingRight="72dp"
                                 android:background="@drawable/bg_input_rounded"
                                 android:inputType="number"
+                                android:maxLength="6"
                                 android:singleLine="true" />
 
                             <TextView
@@ -494,6 +495,7 @@
                     android:paddingLeft="16dp"
                     android:paddingRight="16dp"
                     android:background="@drawable/bg_input_rounded"
+                    android:inputType="text"
                     android:singleLine="true" />
 
             </LinearLayout>

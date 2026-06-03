@@ -22,6 +22,8 @@ import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.LoginRequest
+import com.example.on_safe.ui.tutorial.TutorialActivity
+import com.example.on_safe.util.TokenManager
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
@@ -59,6 +61,25 @@ class LoginActivity : AppCompatActivity() {
         tvRegister = findViewById(R.id.tvRegister)
         tvLoginError = findViewById(R.id.tvLoginError)
         pbLoading    = findViewById(R.id.pbLoading)
+
+        // 디버그 빌드에서만 테스트 로그인 버튼 활성화
+        // FLAG_DEBUGGABLE은 릴리즈 서명 빌드에서 자동으로 제거됨
+        val isDebug = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        if (isDebug) {
+            val btnDebugLogin = findViewById<Button>(R.id.btnDebugLogin)
+            btnDebugLogin.visibility = View.VISIBLE
+            btnDebugLogin.setOnClickListener {
+                TokenManager.saveTokens(this, "debug_token", "debug_refresh", "debug_user")
+                val next = if (!TutorialActivity.isTutorialShown(this)) {
+                    TutorialActivity.intentForLogin(this)
+                } else {
+                    Intent(this, ModeSelectActivity::class.java)
+                }
+                startActivity(next.apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                })
+            }
+        }
 
         // 입력 시 오류 상태 초기화
         val clearError = object : TextWatcher {
@@ -105,13 +126,18 @@ class LoginActivity : AppCompatActivity() {
                     val response = ApiClient.api.login(LoginRequest(userId = id, password = pw, deviceId = deviceId))
                     if (response.isSuccessful && response.body()?.success == true) {
                         val data = response.body()!!.data!!
-                        getSharedPreferences("auth", MODE_PRIVATE).edit()
-                            .putString("access_token", data.accessToken)
-                            .putString("refresh_token", data.refreshToken)
-                            .putString("user_id", data.userId)
-                            .apply()
+                        TokenManager.saveTokens(
+                            this@LoginActivity,
+                            data.accessToken, data.refreshToken, data.userId
+                        )
                         Log.d("Login", "저장 완료 — userId=${data.userId}, accessToken=${data.accessToken.take(20)}...")
-                        startActivity(Intent(this@LoginActivity, ModeSelectActivity::class.java).apply {
+                        // 최초 로그인 시 튜토리얼 표시 (기기별 1회)
+                        val next = if (!TutorialActivity.isTutorialShown(this@LoginActivity)) {
+                            TutorialActivity.intentForLogin(this@LoginActivity)
+                        } else {
+                            Intent(this@LoginActivity, ModeSelectActivity::class.java)
+                        }
+                        startActivity(next.apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         })
                     } else {
