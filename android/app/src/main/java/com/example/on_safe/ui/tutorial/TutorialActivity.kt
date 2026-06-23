@@ -11,22 +11,9 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.on_safe.R
 
-/**
- * 튜토리얼 화면.
- *
- * ┌──────────────────────────────────────────────┐
- * │ 진입 경로 1: 최초 로그인 → 권한 요구(Permission) 전 │
- * │ 진입 경로 2: 설정 우측 상단 정보 버튼 (언제든지)     │
- * └──────────────────────────────────────────────┘
- *
- * 페이지 추가 방법:
- *   pages 리스트에 TutorialPage 항목을 추가하면 진행 바·카운터·버튼이 자동 반영됨.
- *
- * 성능 고려사항:
- *   - 페이지 전환은 단순 뷰 업데이트(View.setImageResource) — ViewPager 오버헤드 없음.
- *   - SharedPreferences 쓰기는 완료(또는 건너뜀) 시 1회만 수행.
- *   - pages 리스트는 val + data class → 불변, 재할당 없음.
- */
+// 튜토리얼 화면
+// 진입 경로 1: 최초 로그인 성공 후 (fromLogin=true) → 완료 시 ModeSelectActivity 이동 + 플래그 저장
+// 진입 경로 2: 설정 / 카메라 모드 우측 상단 정보 버튼 (fromLogin=false) → 완료 시 finish()
 class TutorialActivity : AppCompatActivity() {
 
     // ──────────────────────────────────────────────
@@ -57,14 +44,10 @@ class TutorialActivity : AppCompatActivity() {
     // ──────────────────────────────────────────────
     private var currentPage = 0
 
-    /**
-     * true  → 최초 로그인 플로우 (완료 시 PermissionActivity 이동 + 플래그 저장)
-     * false → 설정에서 진입 (완료 시 그냥 finish)
-     */
+    // true: 로그인 후 최초 진입 / false: 설정·카메라 모드에서 재진입
     private var fromLogin = false
 
-    /** ModeSelectActivity에서 전달받은 모드 (1=보호자, 2=카메라) */
-    private var selectedMode = 1
+    // selectedMode는 더 이상 사용하지 않음 (튜토리얼은 모드 선택 전에 표시)
 
     // ──────────────────────────────────────────────
     // Views
@@ -83,8 +66,7 @@ class TutorialActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_tutorial)
 
-        fromLogin    = intent.getBooleanExtra(EXTRA_FROM_LOGIN, false)
-        selectedMode = intent.getIntExtra(EXTRA_SELECTED_MODE, 1)
+        fromLogin = intent.getBooleanExtra(EXTRA_FROM_LOGIN, false)
 
         progressBar = findViewById(R.id.progressBar)
         tvCounter   = findViewById(R.id.tvPageCounter)
@@ -121,14 +103,6 @@ class TutorialActivity : AppCompatActivity() {
         renderPage(currentPage)
     }
 
-    /**
-     * 주어진 페이지 인덱스에 맞춰 모든 UI 요소를 한 번에 업데이트한다.
-     * - Progress bar: (page+1)/totalPages * 100
-     * - Counter:      "page+1/totalPages"
-     * - Image:        imageResId가 있으면 표시, 없으면 placeholder
-     * - 이전 버튼:    첫 페이지는 invisible (레이아웃 공간 유지), 이후 visible
-     * - 다음 버튼:    마지막 페이지는 "완료", 이외는 "다음"
-     */
     private fun renderPage(page: Int) {
         // 진행 바
         progressBar.progress = (page + 1) * 100 / totalPages
@@ -163,14 +137,12 @@ class TutorialActivity : AppCompatActivity() {
         if (fromLogin) {
             // 최초 실행 플래그 저장 (이후에는 튜토리얼 자동 표시 안 함)
             markTutorialShown()
-            // 권한 요구 화면으로 이동
-            val intent = Intent(
-                this,
-                com.example.on_safe.ui.login.PermissionActivity::class.java
-            ).apply {
-                putExtra("selected_mode", selectedMode)
-            }
-            startActivity(intent)
+            // 모드 선택 화면으로 이동 (튜토리얼은 모드 선택 전에 표시)
+            startActivity(
+                Intent(this, com.example.on_safe.ui.login.ModeSelectActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+            )
         }
         finish()
     }
@@ -194,32 +166,21 @@ class TutorialActivity : AppCompatActivity() {
         private const val PREFS_NAME          = "app_prefs"
         const  val KEY_TUTORIAL_SHOWN         = "tutorial_shown"
 
-        private const val EXTRA_FROM_LOGIN    = "extra_from_login"
-        private const val EXTRA_SELECTED_MODE = "extra_selected_mode"
-        private const val STATE_CURRENT_PAGE  = "state_current_page"
+        private const val EXTRA_FROM_LOGIN   = "extra_from_login"
+        private const val STATE_CURRENT_PAGE = "state_current_page"
 
-        /**
-         * 최초 로그인 플로우용 Intent
-         * @param selectedMode ModeSelectActivity에서 선택한 모드 (1=보호자, 2=카메라)
-         */
-        fun intentForLogin(from: Context, selectedMode: Int): Intent =
+        // 최초 로그인 후 표시용 Intent (모드 선택 전이므로 selectedMode 불필요)
+        fun intentForLogin(from: Context): Intent =
             Intent(from, TutorialActivity::class.java).apply {
-                putExtra(EXTRA_FROM_LOGIN,    true)
-                putExtra(EXTRA_SELECTED_MODE, selectedMode)
+                putExtra(EXTRA_FROM_LOGIN, true)
             }
 
-        /**
-         * 설정 화면 정보 버튼용 Intent (언제든지 볼 수 있는 경로)
-         */
+        // 설정·카메라 모드에서 언제든지 진입하는 경로
         fun intentFromSettings(from: Context): Intent =
             Intent(from, TutorialActivity::class.java).apply {
                 putExtra(EXTRA_FROM_LOGIN, false)
             }
 
-        /**
-         * SharedPreferences에서 튜토리얼 표시 여부를 읽는다.
-         * ModeSelectActivity 등 외부에서 호출 가능.
-         */
         fun isTutorialShown(context: Context): Boolean =
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .getBoolean(KEY_TUTORIAL_SHOWN, false)

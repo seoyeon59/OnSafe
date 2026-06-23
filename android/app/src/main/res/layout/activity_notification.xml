@@ -46,6 +46,13 @@
 
     </LinearLayout>
 
+    <!-- 알림 권한 미동의 배너 -->
+    <include
+        android:id="@+id/bannerNotificationPermission"
+        layout="@layout/banner_notification_permission"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
     <!-- 알림 목록 -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_notifications"

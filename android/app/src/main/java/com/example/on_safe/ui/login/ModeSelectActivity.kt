@@ -1,19 +1,23 @@
 package com.example.on_safe.ui.login
 
 import android.content.Intent
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.view.ViewGroup
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.example.on_safe.MainActivity
-import com.example.on_safe.ui.camera.CameraModeActivity
 import com.example.on_safe.R
 
 class ModeSelectActivity : AppCompatActivity() {
 
     private lateinit var cardGuardian: LinearLayout
     private lateinit var cardCamera: LinearLayout
+    private lateinit var iconContainerGuardian: FrameLayout
+    private lateinit var iconContainerCamera: FrameLayout
+    private lateinit var tagContainerGuardian: ViewGroup
+    private lateinit var tagContainerCamera: ViewGroup
     private lateinit var btnNext: Button
 
     // 0 = 미선택, 1 = 보호자, 2 = 카메라
@@ -23,15 +27,18 @@ class ModeSelectActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_mode_select)
 
-        cardGuardian = findViewById(R.id.cardGuardian)
-        cardCamera = findViewById(R.id.cardCamera)
-        btnNext = findViewById(R.id.btnNext)
+        cardGuardian        = findViewById(R.id.cardGuardian)
+        cardCamera          = findViewById(R.id.cardCamera)
+        iconContainerGuardian = findViewById(R.id.iconContainerGuardian)
+        iconContainerCamera   = findViewById(R.id.iconContainerCamera)
+        tagContainerGuardian  = findViewById(R.id.tagContainerGuardian)
+        tagContainerCamera    = findViewById(R.id.tagContainerCamera)
+        btnNext             = findViewById(R.id.btnNext)
 
         cardGuardian.setOnClickListener {
             selectedMode = 1
             updateCardState()
         }
-
         cardCamera.setOnClickListener {
             selectedMode = 2
             updateCardState()
@@ -39,42 +46,53 @@ class ModeSelectActivity : AppCompatActivity() {
 
         btnNext.setOnClickListener {
             if (selectedMode == 0) return@setOnClickListener
-
-            // 최초 실행이면 튜토리얼 → 권한 요구 화면 순으로 이동
-            if (!com.example.on_safe.ui.tutorial.TutorialActivity.isTutorialShown(this)) {
-                startActivity(
-                    com.example.on_safe.ui.tutorial.TutorialActivity
-                        .intentForLogin(this, selectedMode)
-                )
-                return@setOnClickListener
-            }
-
-            // 이후 실행: 기존 플로우 (TODO: 로그인 화면으로 이동)
-            val intent = when (selectedMode) {
-                1 -> Intent(this, MainActivity::class.java)        // 보호자 모드
-                2 -> Intent(this, CameraModeActivity::class.java)  // 카메라 모드
-                else -> return@setOnClickListener
-            }
-            intent.putExtra("selected_mode", selectedMode)
-            startActivity(intent)
+            // 튜토리얼 체크는 LoginActivity에서 처리됨 — 여기서는 권한 화면으로 바로 진입
+            startActivity(
+                Intent(this, PermissionActivity::class.java).apply {
+                    putExtra("selected_mode", selectedMode)
+                }
+            )
         }
     }
 
     private fun updateCardState() {
-        when (selectedMode) {
-            1 -> {
-                // 보호자 선택 — 파란 테두리
-                cardGuardian.setBackgroundResource(R.drawable.bg_card_xl_selected)
-                cardCamera.setBackgroundResource(R.drawable.bg_card_xl)
-            }
-            2 -> {
-                // 카메라 선택 — 파란 테두리
-                cardCamera.setBackgroundResource(R.drawable.bg_card_xl_selected)
-                cardGuardian.setBackgroundResource(R.drawable.bg_card_xl)
-            }
-        }
+        val isGuardian = selectedMode == 1
+
+        // 카드 테두리
+        cardGuardian.setBackgroundResource(
+            if (isGuardian) R.drawable.bg_card_xl_selected else R.drawable.bg_card_xl
+        )
+        cardCamera.setBackgroundResource(
+            if (!isGuardian) R.drawable.bg_card_xl_selected else R.drawable.bg_card_xl
+        )
+
+        // 아이콘 컨테이너 배경
+        iconContainerGuardian.setBackgroundResource(
+            if (isGuardian) R.drawable.bg_container_blue else R.drawable.bg_container_gray
+        )
+        iconContainerCamera.setBackgroundResource(
+            if (!isGuardian) R.drawable.bg_container_blue else R.drawable.bg_container_gray
+        )
+
+        // 태그 텍스트 색상 + 배경 변경
+        applyTagStyle(tagContainerGuardian, isGuardian)
+        applyTagStyle(tagContainerCamera, !isGuardian)
+
         // 다음 버튼 활성화
         btnNext.isEnabled = true
         btnNext.alpha = 1.0f
+    }
+
+    // FlexboxLayout의 자식 TextView들에 selected 상태에 따라 pill 스타일 적용
+    private fun applyTagStyle(container: ViewGroup, selected: Boolean) {
+        val bgRes = if (selected) R.drawable.bg_pill_blue else R.drawable.bg_pill_gray
+        val textColor = if (selected) 0xFF4D80FF.toInt() else 0xFF6B7280.toInt()
+        for (i in 0 until container.childCount) {
+            val child = container.getChildAt(i)
+            if (child is TextView) {
+                child.setBackgroundResource(bgRes)
+                child.setTextColor(textColor)
+            }
+        }
     }
 }

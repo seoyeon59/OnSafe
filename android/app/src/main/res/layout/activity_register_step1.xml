@@ -122,12 +122,11 @@
             android:gravity="center_vertical"
             android:layout_marginBottom="12dp">
 
-            <!-- 원형 체크박스 -->
             <View
                 android:id="@+id/checkAll"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:background="@drawable/bg_circle_outline" />
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:background="@drawable/bg_check_square_unchecked" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -256,49 +255,6 @@
                     android:layout_weight="1"
                     android:layout_marginLeft="12dp"
                     android:text="민감정보(건강·위치 데이터) 처리 동의"
-                    android:textSize="11sp"
-                    android:textColor="#1A1C1E" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="(필수)"
-                    android:textSize="11sp"
-                    android:textColor="#4D80FF"
-                    android:layout_marginRight="8dp" />
-
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:src="@drawable/ic_chevron_right"
-                    android:contentDescription="약관 보기" />
-
-            </LinearLayout>
-
-            <View android:layout_width="match_parent" android:layout_height="0.5dp" android:background="#F3F4F6" />
-
-            <!-- 서비스 이용 책임 안내 동의 (필수) -->
-            <LinearLayout
-                android:id="@+id/layoutAgree4"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:orientation="horizontal"
-                android:paddingLeft="20dp"
-                android:paddingRight="16dp"
-                android:gravity="center_vertical">
-
-                <View
-                    android:id="@+id/check4"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:background="@drawable/bg_check_square_unchecked" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="12dp"
-                    android:text="서비스 이용 책임 안내 동의"
                     android:textSize="11sp"
                     android:textColor="#1A1C1E" />
 

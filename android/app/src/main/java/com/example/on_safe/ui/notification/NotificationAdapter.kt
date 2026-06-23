@@ -9,25 +9,27 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.on_safe.R
 
-// ─── 알림 타입 ────────────────────────────────────────────────
+
 enum class NotificationType {
-    FALL,    // 낙상 위험 감지 (빨강) → 화살표 + 터치 모달
-    WARNING  // 주의 상태 감지 (노랑) → 알림 전용, 터치 없음
+    FALL,    // 낙상 위험 감지 (빨강)
+    WARNING  // 주의 상태 감지 (노랑)
 }
 
 // ─── 알림 데이터 클래스 ────────────────────────────────────────
 data class NotificationItem(
     val type: NotificationType,
     val title: String,
-    val time: String,
+    val time: String,           // 표시용 문자열 (예: "오늘 · 오후 02:23")
     val riskScore: Int,
-    val isUnread: Boolean = false  // 새 알림만 true
+    val detectedAtMillis: Long, // 모달에 감지 시각 표시용 (API 연동 시 서버 timestamp 사용)
+    val isUnread: Boolean = false
 )
 
 // ─── 어댑터 ───────────────────────────────────────────────────
+// onFallItemClick: FALL 아이템 클릭 시 호출 (position, item 전달)
 class NotificationAdapter(
     private val items: MutableList<NotificationItem>,
-    private val onFallItemClick: (NotificationItem) -> Unit
+    private val onFallItemClick: (position: Int, item: NotificationItem) -> Unit
 ) : RecyclerView.Adapter<NotificationAdapter.ViewHolder>() {
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -52,8 +54,6 @@ class NotificationAdapter(
         holder.tvTitle.text = item.title
         holder.tvTime.text = item.time
         holder.tvRiskScore.text = "위험 지수 ${item.riskScore}"
-
-        // 새 알림만 파란 점
         holder.viewUnreadDot.visibility = if (item.isUnread) View.VISIBLE else View.GONE
 
         when (item.type) {
@@ -64,9 +64,12 @@ class NotificationAdapter(
                 holder.tvRiskScore.setTextColor(
                     ContextCompat.getColor(ctx, R.color.status_danger)
                 )
-                // 화살표 보이고, 터치 시 모달
+                // FALL: 화살표 표시 + 클릭 시 모달
                 holder.ivArrow.visibility = View.VISIBLE
-                holder.itemView.setOnClickListener { onFallItemClick(item) }
+                holder.itemView.setOnClickListener {
+                    val pos = holder.adapterPosition
+                    if (pos != RecyclerView.NO_POSITION) onFallItemClick(pos, items[pos])
+                }
             }
             NotificationType.WARNING -> {
                 holder.ivIcon.setImageResource(R.drawable.ic_warning)
@@ -75,16 +78,39 @@ class NotificationAdapter(
                 holder.tvRiskScore.setTextColor(
                     ContextCompat.getColor(ctx, R.color.status_warning)
                 )
-                // 화살표 숨기고, 터치 없음
+                // WARNING: 화살표 없음, 클릭 없음
                 holder.ivArrow.visibility = View.GONE
                 holder.itemView.setOnClickListener(null)
+                holder.itemView.isClickable = false
             }
         }
     }
 
     override fun getItemCount() = items.size
 
-    // API 연동 시 호출
+    // FALL 모달에서 확인/119 후 호출 — 해당 항목 읽음 처리
+    fun markAsRead(position: Int) {
+        val item = items.getOrNull(position) ?: return
+        if (!item.isUnread) return
+        items[position] = item.copy(isUnread = false)
+        notifyItemChanged(position)
+    }
+
+    // 화면 진입 시 WARNING 전체 일괄 읽음 처리
+    fun markAllWarningsAsRead() {
+        var changed = false
+        items.forEachIndexed { index, item ->
+            if (item.type == NotificationType.WARNING && item.isUnread) {
+                items[index] = item.copy(isUnread = false)
+                changed = true
+            }
+        }
+        if (changed) notifyDataSetChanged()
+    }
+
+    fun hasUnreadItems(): Boolean = items.any { it.isUnread }
+
+    // TODO: GET /notification/list API 연동 시 호출
     fun updateItems(newItems: List<NotificationItem>) {
         items.clear()
         items.addAll(newItems)
