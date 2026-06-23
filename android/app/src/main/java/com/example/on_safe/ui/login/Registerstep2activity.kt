@@ -1,5 +1,6 @@
 package com.example.on_safe.ui.login
 
+import android.app.Activity
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -77,6 +78,19 @@ class RegisterStep2Activity : AppCompatActivity() {
     private val COLOR_RED = 0xFFEF4444.toInt()
     private val COLOR_GREEN = 0xFF22C55E.toInt()
     private val COLOR_NORMAL = 0xFFF4F7FB.toInt()
+
+    // 주소 검색 Activity에서 결과를 받아오는 런처
+    private val addressLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val address = result.data?.getStringExtra(AddressSearchActivity.EXTRA_ADDRESS) ?: ""
+            val zipNo   = result.data?.getStringExtra(AddressSearchActivity.EXTRA_ZIP) ?: ""
+            etAddress.setText(if (zipNo.isNotEmpty()) "$address ($zipNo)" else address)
+            updateCompleteButton()
+        }
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -346,10 +360,15 @@ class RegisterStep2Activity : AppCompatActivity() {
             }
         }
 
-        etAddress.setOnClickListener {
-            // TODO: 도로명 주소 API 연결
-            Toast.makeText(this, "주소 검색 준비 중", Toast.LENGTH_SHORT).show()
-        }
+//        etAddress.setOnClickListener {
+//            // TODO: 도로명 주소 API 연결
+//            Toast.makeText(this, "주소 검색 준비 중", Toast.LENGTH_SHORT).show()
+//        }
+
+          // 도로명 주소 API 연결
+          etAddress.setOnClickListener {
+              addressLauncher.launch(Intent(this, AddressSearchActivity::class.java))
+          }
 
         btnComplete.setOnClickListener {
             btnComplete.isEnabled = false

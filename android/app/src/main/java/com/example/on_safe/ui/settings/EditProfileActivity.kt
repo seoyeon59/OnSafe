@@ -1,5 +1,8 @@
 package com.example.on_safe.ui.settings
 
+import android.app.Activity
+import android.content.Intent
+import com.example.on_safe.ui.login.AddressSearchActivity
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -23,6 +26,18 @@ class EditProfileActivity : AppCompatActivity() {
 
     // 인증 전에는 숨김 처리
     private lateinit var formContainer: View
+
+    // 주소 검색 결과를 받아오는 런처
+    private val addressLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val address = result.data?.getStringExtra(AddressSearchActivity.EXTRA_ADDRESS) ?: ""
+            val zipNo   = result.data?.getStringExtra(AddressSearchActivity.EXTRA_ZIP) ?: ""
+            // 도로명주소 + 우편번호 자동 입력
+            etAddress1.setText(if (zipNo.isNotEmpty()) "$address ($zipNo)" else address)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,6 +83,12 @@ class EditProfileActivity : AppCompatActivity() {
 
     private fun setupClickListeners() {
         btnBack.setOnClickListener { finish() }
+
+        //도로명 주소 검색 화면 열기
+        etAddress1.setOnClickListener {
+            addressLauncher.launch(Intent(this,
+                AddressSearchActivity::class.java))
+        }
 
         btnSave.setOnClickListener {
             val name     = etName.text.toString().trim()
