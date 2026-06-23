@@ -387,8 +387,12 @@ class RegisterStep2Activity : AppCompatActivity() {
                         )
                     )
                     if (response.isSuccessful && response.body()?.success == true) {
-                        Toast.makeText(this@RegisterStep2Activity, "회원가입이 완료되었습니다.", Toast.LENGTH_SHORT).show()
-                        finish()
+                        Toast.makeText(this@RegisterStep2Activity, "회원가입이 완료되었습니다. 로그인해주세요.", Toast.LENGTH_SHORT).show()
+                        startActivity(
+                            Intent(this@RegisterStep2Activity, LoginActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            }
+                        )
                     } else {
                         Toast.makeText(this@RegisterStep2Activity, response.body()?.message ?: "회원가입에 실패했습니다.", Toast.LENGTH_SHORT).show()
                         btnComplete.isEnabled = true

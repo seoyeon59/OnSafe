@@ -9,8 +9,11 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.example.on_safe.ui.notification.NotificationActivity
+import com.example.on_safe.util.NotificationPermissionBanner
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -52,6 +55,15 @@ class MainActivity : AppCompatActivity() {
     private val testScores = intArrayOf(32, 62, 88)
     private var testIdx = 0
 
+    // 알림 화면에서 돌아올 때 미읽음 여부에 따라 빨간 점 갱신
+    private val notificationLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val hasUnread = result.data?.getBooleanExtra(NotificationActivity.EXTRA_HAS_UNREAD, true) ?: true
+        findViewById<View>(R.id.dotUnreadNotification)?.visibility =
+            if (hasUnread) View.VISIBLE else View.GONE
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -61,12 +73,18 @@ class MainActivity : AppCompatActivity() {
         applyRiskScoreToCard(mainCard, 32)
         applyConnectionState(ConnectionState.CONNECTED)
 
+        NotificationPermissionBanner.setup(this)
         setupClickListeners()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        NotificationPermissionBanner.refresh(this)
     }
 
     private fun setupClickListeners() {
         findViewById<View>(R.id.btnNotification).setOnClickListener {
-            startActivity(Intent(this, com.example.on_safe.ui.notification.NotificationActivity::class.java))
+            notificationLauncher.launch(Intent(this, NotificationActivity::class.java))
         }
         findViewById<View>(R.id.btnFullscreen).setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.FullscreenActivity::class.java))

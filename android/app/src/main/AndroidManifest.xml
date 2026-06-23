@@ -32,7 +32,7 @@
 
         <!-- 런처 -->
         <activity
-            android:name="com.example.on_safe.ui.login.ModeSelectActivity"
+            android:name="com.example.on_safe.ui.login.LoginActivity"
             android:screenOrientation="portrait"
             android:exported="true">
             <intent-filter>
@@ -48,7 +48,7 @@
 
         <!-- 로그인 플로우 -->
         <activity
-            android:name="com.example.on_safe.ui.login.LoginActivity"
+            android:name="com.example.on_safe.ui.login.ModeSelectActivity"
             android:screenOrientation="portrait" />
 
         <activity

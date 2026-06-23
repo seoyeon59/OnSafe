@@ -28,6 +28,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.on_safe.R
 import com.example.on_safe.ui.login.LoginActivity
+import com.example.on_safe.util.TokenManager
 
 class CameraModeActivity : AppCompatActivity() {
 
@@ -48,6 +49,7 @@ class CameraModeActivity : AppCompatActivity() {
     private lateinit var sidePanel: LinearLayout
     private lateinit var btnFullscreen: FrameLayout
     private lateinit var btnHamburger: ImageButton
+    private lateinit var btnTutorial: ImageView
     private lateinit var rootLayout: FrameLayout
 
     private var isPanelVisible = true
@@ -58,9 +60,15 @@ class CameraModeActivity : AppCompatActivity() {
     private val inactivityRunnable = Runnable { triggerScreenSaver() }
     private val dimRestorationRunnable = Runnable { dimScreen() }
 
+    // 화면이 어두운 상태인지 추적
+    private var isScreenDimmed = false
+    // 어두운 상태에서 첫 터치로 밝기가 복원된 직후 플래그 (btnWakeUp 즉시 해제 방지)
+    private var justRestoredFromDim = false
+    private val clearJustRestored = Runnable { justRestoredFromDim = false }
+
     companion object {
-        private const val INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000L
-        private const val BRIGHTNESS_RESTORE_MS  = 5_000L
+        private const val INACTIVITY_TIMEOUT_MS  = 10 * 60 * 1000L
+        private const val BRIGHTNESS_RESTORE_MS  = 10_000L  // 터치 후 밝기 유지 시간
         private const val BRIGHTNESS_DIM         = 0.01f
         private const val BRIGHTNESS_SYSTEM      = -1f
     }
@@ -129,12 +137,19 @@ class CameraModeActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         screenHandler.removeCallbacksAndMessages(null)
+        justRestoredFromDim = false
     }
 
     override fun onUserInteraction() {
         super.onUserInteraction()
         if (screenSaverView != null) {
-            // 화면 보호기 표시 중 터치 → 5초간 밝기 복원, 보호기는 유지
+            if (isScreenDimmed) {
+                // 화면 어두울 때 첫 터치 → 밝기만 복원, 보호기 유지
+                // justRestoredFromDim 플래그를 켜서 같은 터치의 btnWakeUp 클릭이 해제 동작 못 하게 막음
+                justRestoredFromDim = true
+                screenHandler.removeCallbacks(clearJustRestored)
+                screenHandler.postDelayed(clearJustRestored, 300)
+            }
             restoreBrightnessTemporarily()
         } else {
             resetInactivityTimer()
@@ -160,6 +175,7 @@ class CameraModeActivity : AppCompatActivity() {
         sidePanel               = findViewById(R.id.sidePanel)
         btnFullscreen           = findViewById(R.id.btnFullscreen)
         btnHamburger            = findViewById(R.id.btnHamburger)
+        btnTutorial             = findViewById(R.id.btnTutorial)
 
         layoutStatusBadge.background = statusBadgeBg
 
@@ -170,7 +186,7 @@ class CameraModeActivity : AppCompatActivity() {
         btnToggleRecording.setOnClickListener {
             when (currentState) {
                 CameraState.STANDBY, CameraState.FAILED -> startRecording()
-                CameraState.STREAMING -> stopRecording()
+                CameraState.STREAMING -> showStopRecordingDialog()
                 CameraState.CONNECTING -> { /* 연결 중 무시 */ }
             }
         }
@@ -185,6 +201,11 @@ class CameraModeActivity : AppCompatActivity() {
 
         btnFullscreen.setOnClickListener { toggleFullscreen() }
         btnHamburger.setOnClickListener { toggleFullscreen() }
+        btnTutorial.setOnClickListener {
+            startActivity(
+                com.example.on_safe.ui.tutorial.TutorialActivity.intentFromSettings(this)
+            )
+        }
     }
 
     private fun toggleFullscreen() {
@@ -219,6 +240,24 @@ class CameraModeActivity : AppCompatActivity() {
         setState(CameraState.CONNECTING)
         // TODO: CameraX 카메라 시작 + 서버 스트리밍 연결 로직으로 교체
         Handler(Looper.getMainLooper()).postDelayed({ setState(CameraState.STREAMING) }, 2000)
+    }
+
+    private fun showStopRecordingDialog() {
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_stop_recording)
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            val maxWidth = resources.getDimensionPixelSize(R.dimen.logout_dialog_max_width)
+            setLayout(maxWidth, WindowManager.LayoutParams.WRAP_CONTENT)
+        }
+        dialog.setCanceledOnTouchOutside(false)
+        dialog.findViewById<TextView>(R.id.btnStopCancel).setOnClickListener { dialog.dismiss() }
+        dialog.findViewById<TextView>(R.id.btnStopConfirm).setOnClickListener {
+            dialog.dismiss()
+            stopRecording()
+        }
+        dialog.show()
     }
 
     private fun stopRecording() {
@@ -308,6 +347,8 @@ class CameraModeActivity : AppCompatActivity() {
     }
 
     private fun handleLogout() {
+        // TODO: 서버 로그아웃 API 호출 (POST /auth/logout)
+        TokenManager.clear(this)
         startActivity(Intent(this, LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         })
@@ -315,6 +356,7 @@ class CameraModeActivity : AppCompatActivity() {
 
     fun showScreenSaver() {
         if (screenSaverView != null) return
+        // TODO: 번인 방지 — 픽셀 시프트 구현 (Handler + postDelayed로 60초마다 콘텐츠 위치를 ±5px 범위에서 랜덤 이동)
         val overlay = LayoutInflater.from(this).inflate(R.layout.activity_screen_saver, rootLayout, false)
         overlay.findViewById<View>(R.id.btnWakeUp).setOnClickListener { hideScreenSaver() }
         rootLayout.addView(overlay)
@@ -322,11 +364,14 @@ class CameraModeActivity : AppCompatActivity() {
     }
 
     fun hideScreenSaver() {
+        // 화면이 어두운 상태에서의 첫 터치로 밝기가 방금 복원된 경우 → 해제 차단
+        if (justRestoredFromDim) return
         screenSaverView?.let {
             rootLayout.removeView(it)
             screenSaverView = null
         }
         screenHandler.removeCallbacks(dimRestorationRunnable)
+        screenHandler.removeCallbacks(clearJustRestored)
         restoreBrightness()
         resetInactivityTimer()
     }
@@ -342,16 +387,19 @@ class CameraModeActivity : AppCompatActivity() {
     }
 
     private fun dimScreen() {
+        isScreenDimmed = true
         window.attributes = window.attributes.also { it.screenBrightness = BRIGHTNESS_DIM }
     }
 
     private fun restoreBrightness() {
+        isScreenDimmed = false
         screenHandler.removeCallbacks(dimRestorationRunnable)
         window.attributes = window.attributes.also { it.screenBrightness = BRIGHTNESS_SYSTEM }
     }
 
-    // 5초간 밝기 복원 후 다시 어둡게 (화면 보호기 유지 중 터치 시)
+    // 터치 시 밝기 10초간 복원 후 다시 어둡게 (화면 보호기 유지)
     private fun restoreBrightnessTemporarily() {
+        isScreenDimmed = false
         screenHandler.removeCallbacks(dimRestorationRunnable)
         window.attributes = window.attributes.also { it.screenBrightness = BRIGHTNESS_SYSTEM }
         screenHandler.postDelayed(dimRestorationRunnable, BRIGHTNESS_RESTORE_MS)

@@ -23,16 +23,18 @@ class PermissionActivity : AppCompatActivity() {
 
     private var selectedMode = 1
 
-    // API 버전에 따라 요청 권한 목록 결정 (lazy — API 레벨 체크를 onCreate 이전에 하지 않기 위함)
+    // 권한 요청 순서: 카메라 → 사진/영상 → 마이크 → 알림 (UI 목록 순서와 일치)
     private val requiredPermissions: Array<String> by lazy {
         buildList {
             add(Manifest.permission.CAMERA)
-            add(Manifest.permission.RECORD_AUDIO)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                add(Manifest.permission.POST_NOTIFICATIONS)
                 add(Manifest.permission.READ_MEDIA_VIDEO)
             } else {
                 add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+            add(Manifest.permission.RECORD_AUDIO)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
             }
         }.toTypedArray()
     }
