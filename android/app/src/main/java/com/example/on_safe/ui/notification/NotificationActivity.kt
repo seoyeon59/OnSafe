@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.on_safe.R
 import com.example.on_safe.util.NotificationPermissionBanner
+import com.example.on_safe.util.RiskScoreCardBinder
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import android.widget.TextView
 import java.text.SimpleDateFormat
@@ -81,44 +82,14 @@ class NotificationActivity : AppCompatActivity() {
         view.findViewById<TextView>(R.id.tvDetectedTime).text =
             "감지 시각 · ${timeFormat.format(Date(item.detectedAtMillis))}"
 
-        val tvScore = view.findViewById<TextView>(R.id.tvRiskScore)
-        val tvBadge = view.findViewById<TextView>(R.id.tvRiskStatusBadge)
-        val tvRange = view.findViewById<TextView>(R.id.tvRiskRange)
-        val tvMsg   = view.findViewById<TextView>(R.id.tvRiskMessage)
-        val progressFill = view.findViewById<View>(R.id.progressFill)
-
-        val (label, rangeText, message, colorRes) = when {
-            item.riskScore > 75 -> RiskDisplay("위험", "위험 지수 76~100",
-                "낙상이 의심됩니다. 즉시 확인이 필요합니다.", R.color.status_danger)
-            item.riskScore > 50 -> RiskDisplay("주의", "위험 지수 51~75",
-                "어르신의 움직임에 주의가 필요합니다.", R.color.status_warning)
-            else -> RiskDisplay("정상", "위험 지수 0~50",
-                "어르신이 안정적인 상태입니다.", R.color.status_normal)
-        }
-        val color = androidx.core.content.ContextCompat.getColor(this, colorRes)
-        tvScore.text = item.riskScore.toString()
-        tvScore.setTextColor(color)
-        tvBadge.text = label
-        tvBadge.backgroundTintList = android.content.res.ColorStateList.valueOf(color)
-        tvRange.text = rangeText
-        tvMsg.text = message
-
-        val progressContainer = progressFill.parent as android.widget.FrameLayout
-        progressContainer.post {
-            val ratio = item.riskScore.coerceIn(0, 100) / 100f
-            progressFill.layoutParams = progressFill.layoutParams.also {
-                it.width = (progressContainer.width * ratio).toInt()
-            }
-            progressFill.backgroundTintList = android.content.res.ColorStateList.valueOf(color)
-        }
-
-        val cardBg = view.findViewById<View>(R.id.alertRiskScoreCard).background?.mutate()
-                as? android.graphics.drawable.GradientDrawable
-        if (item.riskScore > 75) {
-            cardBg?.setStroke((2 * resources.displayMetrics.density).toInt(), color)
-        }
+        // 점수 카드 바인딩 (색상·배지·메시지·프로그레스·stroke 일괄 처리)
+        RiskScoreCardBinder.bind(view.findViewById(R.id.alertRiskScoreCard), item.riskScore)
 
         // 119 또는 확인했습니다 → 읽음 처리 후 dismiss
+        // TODO: 현재 position을 캡처하여 읽음 처리하므로, 실시간 알림 API 연동 후 목록이
+        //       동적으로 변경될 경우 position이 실제 항목과 어긋날 수 있습니다.
+        //       API 연동 시에는 position 대신 item.id(서버 고유 식별자)를 기준으로
+        //       읽음 처리하도록 adapter.markAsReadById(item.id) 형태로 수정해주세요.
         val markReadAndDismiss = {
             adapter.markAsRead(position)
             dialog.dismiss()
@@ -136,10 +107,4 @@ class NotificationActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private data class RiskDisplay(
-        val label: String,
-        val rangeText: String,
-        val message: String,
-        val colorRes: Int
-    )
 }

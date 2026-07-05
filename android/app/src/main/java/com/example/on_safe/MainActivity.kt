@@ -3,10 +3,8 @@ package com.example.on_safe
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.net.Uri
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
-import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,32 +12,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.on_safe.ui.notification.NotificationActivity
 import com.example.on_safe.util.NotificationPermissionBanner
+import com.example.on_safe.util.RiskScoreCardBinder
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
-
-    // 위험 단계
-    private enum class RiskLevel(
-        val label: String,
-        val rangeText: String,
-        val message: String,
-        val colorRes: Int
-    ) {
-        NORMAL("정상", "위험 지수 0~50", "어르신이 안정적인 상태입니다.", R.color.status_normal),
-        WARNING("주의", "위험 지수 51~75", "어르신의 움직임에 주의가 필요합니다.", R.color.status_warning),
-        DANGER("위험", "위험 지수 76~100", "낙상이 의심됩니다. 즉시 확인이 필요합니다.", R.color.status_danger);
-
-        companion object {
-            fun fromScore(score: Int): RiskLevel = when {
-                score <= 50 -> NORMAL
-                score <= 75 -> WARNING
-                else -> DANGER
-            }
-        }
-    }
 
     // 연결 상태
     private enum class ConnectionState(val label: String, val colorRes: Int) {
@@ -70,7 +49,7 @@ class MainActivity : AppCompatActivity() {
 
         // TODO: 서버 실시간 점수/연결 상태로 교체
         val mainCard = findViewById<View>(R.id.riskScoreCard)
-        applyRiskScoreToCard(mainCard, 32)
+        RiskScoreCardBinder.bind(mainCard, 32)
         applyConnectionState(ConnectionState.CONNECTED)
 
         NotificationPermissionBanner.setup(this)
@@ -80,6 +59,13 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         NotificationPermissionBanner.refresh(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // 모달이 열린 채로 Activity가 소멸되면 WindowLeak 발생 → 명시적으로 dismiss
+        alertDialog?.dismiss()
+        alertDialog = null
     }
 
     private fun setupClickListeners() {
@@ -104,57 +90,13 @@ class MainActivity : AppCompatActivity() {
         mainCard.findViewById<View>(R.id.tvRiskScore).setOnLongClickListener {
             testIdx = (testIdx + 1) % testScores.size
             val score = testScores[testIdx]
-            applyRiskScoreToCard(mainCard, score)
+            RiskScoreCardBinder.bind(mainCard, score)
 
             // 위험 단계면 그 시점 점수 + 현재 시각으로 모달 표시
-            if (RiskLevel.fromScore(score) == RiskLevel.DANGER) {
+            if (RiskScoreCardBinder.RiskLevel.fromScore(score) == RiskScoreCardBinder.RiskLevel.DANGER) {
                 showFallAlertDialog(score, System.currentTimeMillis())
             }
             true
-        }
-    }
-
-    // 위험 지수 카드 갱신 — DANGER이면 빨강 stroke, 아니면 제거 (include 어디서든 재사용)
-    private fun applyRiskScoreToCard(cardRoot: View, score: Int) {
-        val level = RiskLevel.fromScore(score)
-        val color = ContextCompat.getColor(this, level.colorRes)
-
-        val tvScore = cardRoot.findViewById<TextView>(R.id.tvRiskScore)
-        val tvBadge = cardRoot.findViewById<TextView>(R.id.tvRiskStatusBadge)
-        val tvRange = cardRoot.findViewById<TextView>(R.id.tvRiskRange)
-        val tvMessage = cardRoot.findViewById<TextView>(R.id.tvRiskMessage)
-        val progressFill = cardRoot.findViewById<View>(R.id.progressFill)
-        val progressContainer = progressFill.parent as FrameLayout
-
-        tvScore.text = score.toString()
-        tvScore.setTextColor(color)
-
-        tvBadge.text = level.label
-        // backgroundTintList 사용 — 공유 Drawable 인스턴스를 직접 변조하지 않음
-        tvBadge.backgroundTintList = ColorStateList.valueOf(color)
-
-        tvRange.text = level.rangeText
-        tvMessage.text = level.message
-
-        // 프로그레스 fill (점수 비율만큼)
-        progressContainer.post {
-            val maxWidth = progressContainer.width
-            val ratio = score.coerceIn(0, 100) / 100f
-            val params = progressFill.layoutParams
-            params.width = (maxWidth * ratio).toInt()
-            progressFill.layoutParams = params
-            progressFill.backgroundTintList = ColorStateList.valueOf(color)
-        }
-
-        // 위험 단계면 카드에 빨강 stroke, 아니면 제거
-        // mutate() 로 이 뷰 전용 Drawable 복사본을 만들어 다른 bg_card 뷰에 영향 없도록 처리
-        val cardBg = cardRoot.background.mutate() as? GradientDrawable
-        if (cardBg != null) {
-            if (level == RiskLevel.DANGER) {
-                cardBg.setStroke(dp(2), color)
-            } else {
-                cardBg.setStroke(0, 0)
-            }
         }
     }
 
@@ -180,9 +122,9 @@ class MainActivity : AppCompatActivity() {
         view.findViewById<TextView>(R.id.tvDetectedTime).text =
             "감지 시각 · ${timeFormat.format(Date(detectedAtMillis))}"
 
-        // 모달 안의 점수 카드 (스냅샷, 갱신 없음)
+        // 모달 안의 점수 카드 (감지 시점 스냅샷, 이후 갱신 없음)
         val alertCard = view.findViewById<View>(R.id.alertRiskScoreCard)
-        applyRiskScoreToCard(alertCard, score)
+        RiskScoreCardBinder.bind(alertCard, score)
 
         view.findViewById<View>(R.id.btn119Alert).setOnClickListener {
             startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:119")))
@@ -196,6 +138,4 @@ class MainActivity : AppCompatActivity() {
         alertDialog = dialog
     }
 
-    private fun dp(value: Int): Int =
-        (value * resources.displayMetrics.density).toInt()
 }

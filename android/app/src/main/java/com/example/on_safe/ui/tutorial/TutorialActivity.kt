@@ -137,9 +137,9 @@ class TutorialActivity : AppCompatActivity() {
         if (fromLogin) {
             // 최초 실행 플래그 저장 (이후에는 튜토리얼 자동 표시 안 함)
             markTutorialShown()
-            // 모드 선택 화면으로 이동 (튜토리얼은 모드 선택 전에 표시)
+            // 권한 요청 화면으로 이동 (플로우: 튜토리얼 → 권한 → 모드 선택)
             startActivity(
-                Intent(this, com.example.on_safe.ui.login.ModeSelectActivity::class.java).apply {
+                Intent(this, com.example.on_safe.ui.login.PermissionActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 }
             )

@@ -8,7 +8,9 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.example.on_safe.MainActivity
 import com.example.on_safe.R
+import com.example.on_safe.ui.camera.CameraModeActivity
 
 class ModeSelectActivity : AppCompatActivity() {
 
@@ -46,12 +48,16 @@ class ModeSelectActivity : AppCompatActivity() {
 
         btnNext.setOnClickListener {
             if (selectedMode == 0) return@setOnClickListener
-            // 튜토리얼 체크는 LoginActivity에서 처리됨 — 여기서는 권한 화면으로 바로 진입
-            startActivity(
-                Intent(this, PermissionActivity::class.java).apply {
-                    putExtra("selected_mode", selectedMode)
-                }
-            )
+            // 권한 요청은 온보딩(Tutorial → Permission)에서 이미 완료됨
+            // 모드 선택 후 바로 해당 모드 화면으로 진입
+            val intent = when (selectedMode) {
+                2 -> Intent(this, CameraModeActivity::class.java)
+                else -> Intent(this, MainActivity::class.java)
+            }.apply {
+                putExtra("selected_mode", selectedMode)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            startActivity(intent)
         }
     }
 

@@ -47,6 +47,26 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 디버그 빌드 여부 — FLAG_DEBUGGABLE은 릴리즈 서명 빌드에서 자동으로 제거됨
+        val isDebug = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+
+        // ── 자동 로그인 체크 ──────────────────────────────────────────────────────
+        // 토큰이 살아있고 마지막 로그인으로부터 30일 이내 → 로그인 화면 건너뜀
+        // TODO: 테스팅 완료 후 isDebug 조건 제거하여 자동 로그인 활성화
+        if (!isDebug && TokenManager.isLoggedIn(this) && !TokenManager.isSessionExpired(this)) {
+            val next = if (!TutorialActivity.isTutorialShown(this)) {
+                TutorialActivity.intentForLogin(this)
+            } else {
+                Intent(this, ModeSelectActivity::class.java)
+            }
+            startActivity(next.apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+            return
+        }
+        // ─────────────────────────────────────────────────────────────────────────
+
         setContentView(R.layout.activity_login)
 
         dpScale = resources.displayMetrics.density
@@ -63,21 +83,21 @@ class LoginActivity : AppCompatActivity() {
         pbLoading    = findViewById(R.id.pbLoading)
 
         // 디버그 빌드에서만 테스트 로그인 버튼 활성화
-        // FLAG_DEBUGGABLE은 릴리즈 서명 빌드에서 자동으로 제거됨
-        val isDebug = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
         if (isDebug) {
             val btnDebugLogin = findViewById<Button>(R.id.btnDebugLogin)
             btnDebugLogin.visibility = View.VISIBLE
             btnDebugLogin.setOnClickListener {
+                // 테스트 토큰 저장
                 TokenManager.saveTokens(this, "debug_token", "debug_refresh", "debug_user")
-                val next = if (!TutorialActivity.isTutorialShown(this)) {
-                    TutorialActivity.intentForLogin(this)
-                } else {
-                    Intent(this, ModeSelectActivity::class.java)
-                }
-                startActivity(next.apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                })
+                // 온보딩 전체 플로우(튜토리얼 → 권한 → 모드 선택) 테스트를 위해 튜토리얼 표시 여부 초기화
+                getSharedPreferences("app_prefs", MODE_PRIVATE)
+                    .edit().remove(TutorialActivity.KEY_TUTORIAL_SHOWN).apply()
+                // 항상 온보딩 첫 화면(튜토리얼)부터 시작
+                startActivity(
+                    TutorialActivity.intentForLogin(this).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                )
             }
         }
 
