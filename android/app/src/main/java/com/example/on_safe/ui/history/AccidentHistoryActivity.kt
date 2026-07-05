@@ -229,10 +229,14 @@ class AccidentHistoryActivity : AppCompatActivity() {
     }
 
     private fun handleWatchVideo(entry: HistoryListItem.HistoryEntry) {
-        val intent = Intent(this, FullscreenActivity::class.java).apply {
-            entry.videoUri?.let { putExtra(EXTRA_VIDEO_URI, it) }
+        // TODO: API 연동 후 실제 영상 URI가 채워지면 아래 null 체크는 자동으로 통과됨
+        if (entry.videoUri.isNullOrEmpty()) {
+            Toast.makeText(this, "재생할 영상이 없습니다.", Toast.LENGTH_SHORT).show()
+            return
         }
-        startActivity(intent)
+        startActivity(Intent(this, FullscreenActivity::class.java).apply {
+            putExtra(EXTRA_VIDEO_URI, entry.videoUri)
+        })
     }
 
     // TODO: 파일 복사 로직은 Coroutine IO 스레드로 이동
@@ -242,12 +246,12 @@ class AccidentHistoryActivity : AppCompatActivity() {
             return
         }
 
-        // API 29+는 MediaStore 삽입에 WRITE 권한 불필요; READ 권한만 체크
-        val needsPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+        // API 29+(Q)부터는 MediaStore 삽입에 외부 저장소 권한 불필요 (Scoped Storage)
+        // API 28 이하에서만 READ_EXTERNAL_STORAGE 권한 확인
+        val needsPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
                 ContextCompat.checkSelfPermission(this, mediaPermission) != PackageManager.PERMISSION_GRANTED
 
-        if (needsPermission && ContextCompat.checkSelfPermission(this, mediaPermission)
-                != PackageManager.PERMISSION_GRANTED) {
+        if (needsPermission) {
             pendingDownloadEntry = entry
             requestMediaPermission.launch(mediaPermission)
             return

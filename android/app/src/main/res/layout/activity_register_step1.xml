@@ -181,10 +181,14 @@
                     android:layout_marginRight="8dp" />
 
                 <ImageView
+                    android:id="@+id/btnViewAgree1"
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    android:contentDescription="약관 보기" />
+                    android:contentDescription="약관 보기"
+                    android:padding="4dp"
+                    android:clickable="true"
+                    android:focusable="true" />
 
             </LinearLayout>
 
@@ -224,10 +228,14 @@
                     android:layout_marginRight="8dp" />
 
                 <ImageView
+                    android:id="@+id/btnViewAgree2"
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    android:contentDescription="약관 보기" />
+                    android:contentDescription="약관 보기"
+                    android:padding="4dp"
+                    android:clickable="true"
+                    android:focusable="true" />
 
             </LinearLayout>
 
@@ -267,10 +275,14 @@
                     android:layout_marginRight="8dp" />
 
                 <ImageView
+                    android:id="@+id/btnViewAgree3"
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    android:contentDescription="약관 보기" />
+                    android:contentDescription="약관 보기"
+                    android:padding="4dp"
+                    android:clickable="true"
+                    android:focusable="true" />
 
             </LinearLayout>
 
@@ -310,10 +322,14 @@
                     android:layout_marginRight="8dp" />
 
                 <ImageView
+                    android:id="@+id/btnViewAgree5"
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:src="@drawable/ic_chevron_right"
-                    android:contentDescription="약관 보기" />
+                    android:contentDescription="약관 보기"
+                    android:padding="4dp"
+                    android:clickable="true"
+                    android:focusable="true" />
 
             </LinearLayout>
 

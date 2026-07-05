@@ -23,6 +23,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -120,6 +121,18 @@ class CameraModeActivity : AppCompatActivity() {
 
         setupClickListeners()
         resetInactivityTimer()
+
+        // 패널이 닫혀 있으면 뒤로가기로 패널 복귀, 열려 있으면 기본 동작(finish)
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (!isPanelVisible) {
+                    toggleFullscreen()
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
     }
 
     override fun onResume() {
@@ -229,11 +242,6 @@ class CameraModeActivity : AppCompatActivity() {
             btnHamburger.visibility = View.GONE
             isPanelVisible = true
         }
-    }
-
-    @Suppress("OVERRIDE_DEPRECATION")
-    override fun onBackPressed() {
-        if (!isPanelVisible) toggleFullscreen() else super.onBackPressed()
     }
 
     private fun startRecording() {

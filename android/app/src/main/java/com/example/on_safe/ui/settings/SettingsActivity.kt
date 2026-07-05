@@ -48,6 +48,12 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var tvUserName: TextView
 
+    // TODO: 현재 알림·소리·진동 토글 상태는 테스트용으로 기기 공용 SharedPreferences("settings")에 저장합니다.
+    //       나중에 서버 API에서 사용자 ID 별로 설정을 관리하게 되면,
+    //       아래 "settings" 키를 "settings_${userId}" 형태로 바꾸거나
+    //       서버에서 받아온 값으로 초기화하는 방식으로 수정해주세요.
+    private val settingsPrefs by lazy { getSharedPreferences("settings", android.content.Context.MODE_PRIVATE) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
@@ -56,6 +62,22 @@ class SettingsActivity : AppCompatActivity() {
         loadUserName()
         setupToggleDependency()
         setupClickListeners()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 시스템 설정에서 알림 권한이 취소된 경우 토글 강제 OFF 동기화
+        if (!isNotificationPermissionGranted()) {
+            if (switchNotification.isChecked) {
+                switchNotification.isChecked = false
+                // 저장값도 함께 업데이트 (리스너가 아직 attach 안 된 경우를 대비해 직접 저장)
+                settingsPrefs.edit()
+                    .putBoolean("notify_enabled",     false)
+                    .putBoolean("sound_enabled",      false)
+                    .putBoolean("vibration_enabled",  false)
+                    .apply()
+            }
+        }
     }
 
     private fun initViews() {
@@ -72,6 +94,15 @@ class SettingsActivity : AppCompatActivity() {
         tabHome            = findViewById(R.id.tabHome)
         tvUserName         = findViewById(R.id.tvUserName)
         btnTutorial        = findViewById(R.id.btnTutorial)
+
+        // 저장된 토글 상태 복원
+        val notifyOn = settingsPrefs.getBoolean("notify_enabled", true)
+        switchNotification.isChecked = notifyOn
+        switchSound.isChecked       = settingsPrefs.getBoolean("sound_enabled",     true)
+        switchVibration.isChecked   = settingsPrefs.getBoolean("vibration_enabled", true)
+        // 알림이 꺼져 있으면 소리·진동도 비활성화
+        switchSound.isEnabled     = notifyOn
+        switchVibration.isEnabled = notifyOn
     }
 
     private fun loadUserName() {
@@ -128,15 +159,26 @@ class SettingsActivity : AppCompatActivity() {
                 }
                 return@setOnCheckedChangeListener
             }
-            switchSound.isEnabled = isChecked
+            switchSound.isEnabled     = isChecked
             switchVibration.isEnabled = isChecked
             if (!isChecked) {
-                switchSound.isChecked = false
+                switchSound.isChecked     = false
                 switchVibration.isChecked = false
+                settingsPrefs.edit()
+                    .putBoolean("sound_enabled",     false)
+                    .putBoolean("vibration_enabled", false)
+                    .apply()
             }
+            settingsPrefs.edit().putBoolean("notify_enabled", isChecked).apply()
         }
 
-        // TODO: SharedPreferences에서 알림/소리/진동 토글 상태 복원
+        switchSound.setOnCheckedChangeListener { _, isChecked ->
+            settingsPrefs.edit().putBoolean("sound_enabled", isChecked).apply()
+        }
+
+        switchVibration.setOnCheckedChangeListener { _, isChecked ->
+            settingsPrefs.edit().putBoolean("vibration_enabled", isChecked).apply()
+        }
     }
 
     private fun setupClickListeners() {
