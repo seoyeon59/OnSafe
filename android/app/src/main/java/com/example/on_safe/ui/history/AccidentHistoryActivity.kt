@@ -28,6 +28,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.on_safe.R
 import com.example.on_safe.ui.FullscreenActivity
+import com.example.on_safe.data.fake.FakeAccidentHistoryRepository
+import com.example.on_safe.data.repository.AccidentHistoryRepository
 
 // 사고 이력 화면 (전체/낙상/경고 필터, 영상 보기, 다운로드, 삭제)
 class AccidentHistoryActivity : AppCompatActivity() {
@@ -75,14 +77,11 @@ class AccidentHistoryActivity : AppCompatActivity() {
         else
             Manifest.permission.READ_EXTERNAL_STORAGE
 
-    // TODO: GET /accident/history API로 교체 (현재 더미 데이터)
-    private val rawEntries: MutableList<HistoryListItem.HistoryEntry> = mutableListOf(
-        HistoryListItem.HistoryEntry("1", HistoryType.FALL,    "14:32", "2025.01.15"),
-        HistoryListItem.HistoryEntry("2", HistoryType.WARNING, "09:17", "2025.01.15"),
-        HistoryListItem.HistoryEntry("3", HistoryType.FALL,    "22:05", "2025.01.14"),
-        HistoryListItem.HistoryEntry("4", HistoryType.WARNING, "11:44", "2025.01.13"),
-        HistoryListItem.HistoryEntry("5", HistoryType.FALL,    "07:30", "2025.01.13"),
-    )
+    // TODO: API 연동 시 Real 구현체로 교체
+    private val historyRepository: AccidentHistoryRepository = FakeAccidentHistoryRepository()
+    private val rawEntries: MutableList<HistoryListItem.HistoryEntry> by lazy {
+        historyRepository.getHistoryEntries()
+    }
 
     private var currentFilter = FilterType.ALL
 
