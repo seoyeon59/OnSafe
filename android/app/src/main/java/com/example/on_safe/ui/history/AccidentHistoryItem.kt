@@ -27,4 +27,5 @@ sealed class HistoryListItem {
     ) : HistoryListItem()
 }
 
-enum class FilterType { ALL, FALL, WARNING }
+// 정렬 순서 (최신순 기본)
+enum class SortOrder { NEWEST_FIRST, OLDEST_FIRST }

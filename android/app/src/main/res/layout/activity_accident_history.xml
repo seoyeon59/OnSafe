@@ -12,6 +12,7 @@
         android:layout_width="0dp"
         android:layout_height="52dp"
         android:background="@color/surface_white"
+        android:elevation="3dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
@@ -46,124 +47,106 @@
 
     </LinearLayout>
 
-    <!-- ============ 필터 탭 바 ============ -->
+    <!-- ============ 건수 + 정렬 행 ============ -->
     <LinearLayout
-        android:id="@+id/tabBar"
+        android:id="@+id/filterRow"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
         android:paddingTop="12dp"
-        android:paddingBottom="12dp"
+        android:paddingBottom="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/header">
 
-        <!-- 전체 탭 -->
+        <!-- 총 건수: 라벨(크게) + 숫자(작게·차콜) -->
         <LinearLayout
-            android:id="@+id/tabAll"
-            android:layout_width="wrap_content"
-            android:layout_height="32dp"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="6dp"
-            android:clickable="true"
-            android:focusable="true">
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/tvTabAllLabel"
+                android:id="@+id/tvHistoryLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="전체"
-                android:textSize="13sp"
+                android:text="위험 이력"
+                android:textColor="@color/ink_900"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/tvTabAllCount"
+                android:id="@+id/tvHistoryCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:background="@drawable/bg_pill"
-                android:paddingHorizontal="5dp"
-                android:paddingVertical="1dp"
-                android:textSize="11sp" />
-
+                android:layout_marginStart="5dp"
+                android:text="0건"
+                android:textColor="#6B7280"
+                android:textSize="12sp" />
         </LinearLayout>
 
-        <View
-            android:layout_width="8dp"
-            android:layout_height="1dp" />
-
-        <!-- 위험 탭 -->
-        <LinearLayout
-            android:id="@+id/tabFall"
+        <!-- 최신순 칩 -->
+        <TextView
+            android:id="@+id/chipNewest"
             android:layout_width="wrap_content"
             android:layout_height="32dp"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="6dp"
             android:clickable="true"
-            android:focusable="true">
+            android:focusable="true"
+            android:gravity="center"
+            android:paddingHorizontal="12dp"
+            android:text="최신순"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvTabFallLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="위험"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvTabFallCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:background="@drawable/bg_pill"
-                android:paddingHorizontal="5dp"
-                android:paddingVertical="1dp"
-                android:textSize="11sp" />
-
-        </LinearLayout>
-
-        <View
-            android:layout_width="8dp"
-            android:layout_height="1dp" />
-
-        <!-- 주의 탭 -->
-        <LinearLayout
-            android:id="@+id/tabWarning"
+        <!-- 오래된순 칩 -->
+        <TextView
+            android:id="@+id/chipOldest"
             android:layout_width="wrap_content"
             android:layout_height="32dp"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="6dp"
+            android:layout_marginStart="6dp"
             android:clickable="true"
-            android:focusable="true">
+            android:focusable="true"
+            android:gravity="center"
+            android:paddingHorizontal="12dp"
+            android:text="오래된순"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvTabWarningLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="주의"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+    </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvTabWarningCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:background="@drawable/bg_pill"
-                android:paddingHorizontal="5dp"
-                android:paddingVertical="1dp"
-                android:textSize="11sp" />
+    <!-- ============ 보관 기간 안내 배너 ============ -->
+    <LinearLayout
+        android:id="@+id/retentionBanner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/bg_sub_section"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/filterRow">
 
-        </LinearLayout>
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_info"
+            app:tint="@color/ink_500" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:text="사고 이력은 발생일로부터 최대 30일간 보관됩니다."
+            android:textColor="@color/ink_500"
+            android:textSize="11sp" />
 
     </LinearLayout>
 
@@ -174,12 +157,12 @@
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:paddingHorizontal="16dp"
-        android:paddingTop="4dp"
+        android:paddingTop="8dp"
         android:paddingBottom="100dp"
         app:layout_constraintBottom_toTopOf="@id/bottomNav"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tabBar" />
+        app:layout_constraintTop_toBottomOf="@id/retentionBanner" />
 
     <!-- 빈 상태 뷰 -->
     <TextView
@@ -193,15 +176,15 @@
         app:layout_constraintBottom_toTopOf="@id/bottomNav"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tabBar" />
+        app:layout_constraintTop_toBottomOf="@id/retentionBanner" />
 
-    <!-- ============ 하단 네비게이션 (메인 화면과 동일 스타일) ============ -->
+    <!-- ============ 하단 네비게이션 ============ -->
     <LinearLayout
         android:id="@+id/bottomNav"
         android:layout_width="0dp"
         android:layout_height="85dp"
         android:background="@drawable/bg_sheet_top_rounded"
-        android:elevation="8dp"
+        android:elevation="4dp"
         android:gravity="center"
         android:orientation="horizontal"
         android:paddingHorizontal="40dp"

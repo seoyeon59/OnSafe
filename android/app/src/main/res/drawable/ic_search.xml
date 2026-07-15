@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 돋보기 아이콘: 원 center(10.5,10.5) radius 6.5, 손잡이 끝점 (20,20) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- 돋보기 원형 (4-segment bezier 근사, k=0.5523×6.5≈3.59) -->
+    <path
+        android:pathData="M10.5,17 C14.09,17 17,14.09 17,10.5 C17,6.91 14.09,4 10.5,4 C6.91,4 4,6.91 4,10.5 C4,14.09 6.91,17 10.5,17 Z"
+        android:strokeColor="#9FA6AC"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent" />
+
+    <!-- 돋보기 손잡이: 원 테두리(45° 방향 ≈15.1,15.1)에서 (20,20)으로 -->
+    <path
+        android:pathData="M15.1,15.1 L20,20"
+        android:strokeColor="#9FA6AC"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+
+</vector>

@@ -7,6 +7,9 @@
         <item name="colorOnPrimary">@color/white</item>
         <!-- 앱 전체 기본 폰트: Pretendard (400/500/600/700 자동 매핑) -->
         <item name="android:fontFamily">@font/pretendard</item>
+        <!-- Android 15(API 35)에서 강제되는 edge-to-edge 모드 옵트아웃 -->
+        <!-- 레이아웃이 edge-to-edge 대응 완료 전까지 시스템 바 겹침 방지 -->
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>
 
     <style name="Theme.OnSafe" parent="Base.Theme.OnSafe" />

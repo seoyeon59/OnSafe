@@ -57,7 +57,7 @@
             android:lineSpacingMultiplier="1.4" />
     </LinearLayout>
 
-    <!-- On-Safe 로고 (좌상단) -->
+    <!-- 늘봄 로고 (좌상단) -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -87,7 +87,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
-            android:text="On-Safe"
+            android:text="늘봄"
             android:textSize="16sp"
             android:textColor="#4D80FF"
             android:fontFamily="@font/gmarket_sans_bold" />
