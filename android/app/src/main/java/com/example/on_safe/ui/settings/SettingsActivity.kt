@@ -31,6 +31,8 @@ import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.NotificationSettingsRequest
 import com.example.on_safe.util.TokenManager
 import kotlinx.coroutines.launch
+import com.example.on_safe.data.fake.FakeUserRepository
+import com.example.on_safe.data.repository.UserRepository
 
 // 설정 화면 (알림 토글, 개인정보 수정, 비밀번호 변경, 로그아웃, 회원탈퇴)
 //
@@ -63,6 +65,15 @@ class SettingsActivity : AppCompatActivity() {
     private var suppressToggleListeners = false
 
     private val settingsPrefs by lazy { getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
+
+    // TODO: API 연동 시 Real 구현체로 교체
+    private val userRepository: UserRepository = FakeUserRepository()
+
+    // TODO: 현재 알림·소리·진동 토글 상태는 테스트용으로 기기 공용 SharedPreferences("settings")에 저장합니다.
+    //       나중에 서버 API에서 사용자 ID 별로 설정을 관리하게 되면,
+    //       아래 "settings" 키를 "settings_${userId}" 형태로 바꾸거나
+    //       서버에서 받아온 값으로 초기화하는 방식으로 수정해주세요.
+    private val settingsPrefs by lazy { getSharedPreferences("settings", android.content.Context.MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -197,6 +208,8 @@ class SettingsActivity : AppCompatActivity() {
                 Toast.makeText(this@SettingsActivity, "설정 저장 실패", Toast.LENGTH_SHORT).show()
             }
         }
+        // TODO: 실제 이름 연동 시 "${이름} 보호자님" 형식으로 표시 (현재 Fake는 "보호자" 반환 → "보호자님"으로 표시됨)
+        tvUserName.text = "${userRepository.getUserName()}님"
     }
 
     // 알림 권한 (API 33+)
