@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 오른쪽에서 왼쪽으로 진입 (홈 → 설정 진입 시 새 화면) -->
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="220"
+    android:fromXDelta="100%p"
+    android:interpolator="@android:interpolator/decelerate_cubic"
+    android:toXDelta="0" />

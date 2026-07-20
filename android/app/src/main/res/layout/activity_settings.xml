@@ -12,6 +12,7 @@
         android:layout_width="0dp"
         android:layout_height="52dp"
         android:background="@color/surface_white"
+        android:elevation="3dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
@@ -158,8 +159,7 @@
                             android:layout_height="wrap_content"
                             android:text="알림"
                             android:textColor="@color/ink_900"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
+                            android:textSize="14sp" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -187,6 +187,7 @@
                     android:layout_marginHorizontal="8dp" />
 
                 <LinearLayout
+                    android:id="@+id/subSectionNotify"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_sub_section"
@@ -468,13 +469,71 @@
                         android:src="@drawable/ic_info"
                         app:tint="@color/ink_500" />
                 </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#F3F4F6" />
+
+                <!-- 자주 묻는 질문(FAQ) 행 -->
+                <LinearLayout
+                    android:id="@+id/rowFaq"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp">
+
+                    <FrameLayout
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/bg_icon_item">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_notification"
+                            app:tint="@color/ink_500" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="자주 묻는 질문"
+                        android:textColor="@color/ink_900"
+                        android:textSize="13sp" />
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_chevron_right" />
+                </LinearLayout>
             </LinearLayout>
 
-            <!-- ── 로그아웃 + 회원탈퇴 ── -->
+            <!-- ── 계정 관리 ── -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginBottom="8dp"
+                android:text="계정 관리"
+                android:textColor="@color/ink_500"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
                 android:background="@drawable/bg_card"
                 android:orientation="vertical">
 
@@ -566,7 +625,8 @@
                 android:layout_marginTop="12dp"
                 android:gravity="center"
                 android:paddingTop="12dp"
-                android:text="On-Safe v1.0.0"
+                android:fontFamily="@font/gmarket_sans_bold"
+                android:text="늘봄 v1.0.0"
                 android:textColor="@color/ink_500"
                 android:textSize="12sp" />
 

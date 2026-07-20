@@ -11,6 +11,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center_horizontal"
+        android:clipToPadding="false"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:paddingTop="64dp"
@@ -36,7 +37,7 @@
                     android:layout_height="48dp"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_shield"
-                    android:contentDescription="OnSafe 로고"
+                    android:contentDescription="늘봄 로고"
                     app:tint="@color/surface_white" />
             </FrameLayout>
 
@@ -44,10 +45,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="On-Safe"
+                android:text="늘봄"
                 android:textSize="24sp"
                 android:textColor="#4D80FF"
-                android:textStyle="bold"
+                android:fontFamily="@font/gmarket_sans_bold"
                 android:layout_marginTop="12dp"
                 android:letterSpacing="-0.025" />
 
@@ -75,10 +76,11 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@drawable/bg_card"
+                android:elevation="2dp"
                 android:paddingLeft="20dp"
                 android:paddingRight="20dp"
-                android:paddingTop="16dp"
-                android:paddingBottom="16dp">
+                android:paddingTop="20dp"
+                android:paddingBottom="20dp">
 
                 <!-- 아이디 라벨 -->
                 <TextView

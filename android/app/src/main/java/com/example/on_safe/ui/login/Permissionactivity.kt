@@ -1,13 +1,17 @@
 package com.example.on_safe.ui.login
 
 import android.Manifest
-import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.Window
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -77,19 +81,33 @@ class PermissionActivity : AppCompatActivity() {
         }
 
     private fun showGoToSettingsDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("권한 설정 필요")
-            .setMessage("일부 권한이 '다시 묻지 않음'으로 거부되었습니다.\n앱 설정에서 직접 허용해주세요.")
-            .setPositiveButton("설정으로 이동") { _, _ ->
-                openSettings.launch(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.fromParts("package", packageName, null)
-                    }
-                )
-            }
-            .setNegativeButton("나중에") { dialog, _ -> dialog.dismiss() }
-            .setCancelable(false)
-            .show()
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_permission_settings)
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setLayout(
+                (resources.displayMetrics.widthPixels * 0.85).toInt(),
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+        }
+        dialog.setCanceledOnTouchOutside(false)
+
+        dialog.findViewById<TextView>(R.id.tvPermDialogMessage).text =
+            "일부 권한이 '다시 묻지 않음'으로\n거부되었습니다. 앱 설정에서 직접 허용해주세요."
+
+        dialog.findViewById<TextView>(R.id.btnPermDialogCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.findViewById<TextView>(R.id.btnPermDialogConfirm).setOnClickListener {
+            dialog.dismiss()
+            openSettings.launch(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+            )
+        }
+        dialog.show()
     }
 
     // 권한 요청 완료(허용·거부·건너뛰기 모두) → 모드 선택 화면으로 이동

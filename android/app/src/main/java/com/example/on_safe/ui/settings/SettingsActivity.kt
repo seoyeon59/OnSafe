@@ -1,7 +1,6 @@
 package com.example.on_safe.ui.settings
 
 import android.Manifest
-import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -36,9 +35,13 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var switchSound: SwitchCompat
     private lateinit var switchVibration: SwitchCompat
 
+    // 알림 OFF 상태에서 소리·진동 스위치를 프로그래밍 방식으로 되돌릴 때 리스너 중복 호출 방지
+    private var isUpdatingToggles = false
+
     private lateinit var rowEditProfile: LinearLayout
     private lateinit var rowChangePassword: LinearLayout
     private lateinit var rowPrivacyPolicy: LinearLayout
+    private lateinit var rowFaq: LinearLayout
     private lateinit var rowLogout: LinearLayout
     private lateinit var rowWithdraw: LinearLayout
 
@@ -94,6 +97,7 @@ class SettingsActivity : AppCompatActivity() {
         rowEditProfile     = findViewById(R.id.rowEditProfile)
         rowChangePassword  = findViewById(R.id.rowChangePassword)
         rowPrivacyPolicy   = findViewById(R.id.rowPrivacyPolicy)
+        rowFaq             = findViewById(R.id.rowFaq)
         rowLogout          = findViewById(R.id.rowLogout)
         rowWithdraw        = findViewById(R.id.rowWithdraw)
         tabHistory         = findViewById(R.id.tabHistory)
@@ -106,9 +110,9 @@ class SettingsActivity : AppCompatActivity() {
         switchNotification.isChecked = notifyOn
         switchSound.isChecked       = settingsPrefs.getBoolean("sound_enabled",     true)
         switchVibration.isChecked   = settingsPrefs.getBoolean("vibration_enabled", true)
-        // 알림이 꺼져 있으면 소리·진동도 비활성화
-        switchSound.isEnabled     = notifyOn
-        switchVibration.isEnabled = notifyOn
+        // 알림이 꺼져 있으면 소리·진동 시각적 비활성화 (alpha)
+        switchSound.alpha     = if (notifyOn) 1f else 0.38f
+        switchVibration.alpha = if (notifyOn) 1f else 0.38f
     }
 
     private fun loadUserName() {
@@ -142,21 +146,36 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun showNotificationSettingsDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("알림 권한 설정 필요")
-            .setMessage("알림 권한이 '다시 묻지 않음'으로 거부되었습니다.\n앱 설정에서 직접 허용해주세요.")
-            .setPositiveButton("설정으로 이동") { _, _ ->
-                openNotificationSettings.launch(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.fromParts("package", packageName, null)
-                    }
-                )
-            }
-            .setNegativeButton("취소", null)
-            .show()
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_permission_settings)
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setLayout(
+                (resources.displayMetrics.widthPixels * 0.85).toInt(),
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+        }
+        dialog.setCanceledOnTouchOutside(false)
+
+        dialog.findViewById<TextView>(R.id.tvPermDialogMessage).text =
+            "알림 권한이 '다시 묻지 않음'으로\n거부되었습니다. 앱 설정에서 직접 허용해주세요."
+
+        dialog.findViewById<TextView>(R.id.btnPermDialogCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.findViewById<TextView>(R.id.btnPermDialogConfirm).setOnClickListener {
+            dialog.dismiss()
+            openNotificationSettings.launch(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+            )
+        }
+        dialog.show()
     }
 
-    // 알림 OFF 시 소리/진동 함께 비활성화, ON 시 API 33+ 권한 먼저 요청
+    // 알림 ON → 소리·진동도 함께 ON / 알림 OFF → 소리·진동 함께 OFF·비활성화
     private fun setupToggleDependency() {
         switchNotification.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked && !isNotificationPermissionGranted()) {
@@ -165,9 +184,19 @@ class SettingsActivity : AppCompatActivity() {
                 }
                 return@setOnCheckedChangeListener
             }
-            switchSound.isEnabled     = isChecked
-            switchVibration.isEnabled = isChecked
-            if (!isChecked) {
+            switchSound.alpha     = if (isChecked) 1f else 0.38f
+            switchVibration.alpha = if (isChecked) 1f else 0.38f
+            isUpdatingToggles = true
+            if (isChecked) {
+                // 알림 ON → 소리·진동도 자동으로 ON (앱 기본 상태)
+                switchSound.isChecked     = true
+                switchVibration.isChecked = true
+                settingsPrefs.edit()
+                    .putBoolean("sound_enabled",     true)
+                    .putBoolean("vibration_enabled", true)
+                    .apply()
+            } else {
+                // 알림 OFF → 소리·진동도 함께 OFF
                 switchSound.isChecked     = false
                 switchVibration.isChecked = false
                 settingsPrefs.edit()
@@ -175,14 +204,33 @@ class SettingsActivity : AppCompatActivity() {
                     .putBoolean("vibration_enabled", false)
                     .apply()
             }
+            isUpdatingToggles = false
             settingsPrefs.edit().putBoolean("notify_enabled", isChecked).apply()
         }
 
+        // 소리 스위치: 알림 OFF 상태에서 토글 시도 → 상태 되돌리고 토스트 (isUpdatingToggles로 무한 루프 방지)
         switchSound.setOnCheckedChangeListener { _, isChecked ->
+            if (isUpdatingToggles) return@setOnCheckedChangeListener
+            if (!switchNotification.isChecked) {
+                isUpdatingToggles = true
+                switchSound.isChecked = !isChecked
+                isUpdatingToggles = false
+                Toast.makeText(this, "알림을 먼저 켜야 소리 설정을 변경할 수 있습니다.", Toast.LENGTH_SHORT).show()
+                return@setOnCheckedChangeListener
+            }
             settingsPrefs.edit().putBoolean("sound_enabled", isChecked).apply()
         }
 
+        // 진동 스위치: 동일 패턴
         switchVibration.setOnCheckedChangeListener { _, isChecked ->
+            if (isUpdatingToggles) return@setOnCheckedChangeListener
+            if (!switchNotification.isChecked) {
+                isUpdatingToggles = true
+                switchVibration.isChecked = !isChecked
+                isUpdatingToggles = false
+                Toast.makeText(this, "알림을 먼저 켜야 진동 설정을 변경할 수 있습니다.", Toast.LENGTH_SHORT).show()
+                return@setOnCheckedChangeListener
+            }
             settingsPrefs.edit().putBoolean("vibration_enabled", isChecked).apply()
         }
     }
@@ -210,6 +258,11 @@ class SettingsActivity : AppCompatActivity() {
             Toast.makeText(this, "개인정보 처리방침 준비 중", Toast.LENGTH_SHORT).show()
         }
 
+        // TODO: FAQ 페이지 구현 (WebView 또는 전용 Activity)
+        rowFaq.setOnClickListener {
+            Toast.makeText(this, "자주 묻는 질문 준비 중입니다.", Toast.LENGTH_SHORT).show()
+        }
+
         rowLogout.setOnClickListener {
             showLogoutConfirm()
         }
@@ -221,18 +274,20 @@ class SettingsActivity : AppCompatActivity() {
             }.show()
         }
 
-        // 바텀 네비: 홈
+        // 바텀 네비: 홈 (설정은 오른쪽 탭 → 홈 복귀 시 왼쪽으로 슬라이드 아웃)
         tabHome.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
             startActivity(intent)
+            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
             finish()
         }
 
-        // 바텀 네비: 사고 이력
+        // 바텀 네비: 사고 이력 (왼쪽 탭 → 왼쪽에서 슬라이드 인)
         tabHistory.setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.history.AccidentHistoryActivity::class.java))
+            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }
 
         // 헤더 튜토리얼 버튼 (온보딩 완료 후에도 상시 진입)

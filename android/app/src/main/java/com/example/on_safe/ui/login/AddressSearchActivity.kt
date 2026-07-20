@@ -4,9 +4,11 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -27,11 +29,12 @@ class AddressSearchActivity : AppCompatActivity() {
         private const val CONFM_KEY = "devU01TX0FVVEgyMDI2MDYwMjAyMDEyODExODk3NTM="
     }
 
-    private lateinit var etKeyword: EditText
-    private lateinit var btnSearch: Button
-    private lateinit var btnBack: ImageButton
-    private lateinit var rvAddress: RecyclerView
-    private lateinit var tvEmpty: TextView
+    private lateinit var etKeyword:  EditText
+    private lateinit var btnSearch:  Button
+    private lateinit var btnBack:    ImageButton
+    private lateinit var rvAddress:  RecyclerView
+    private lateinit var tvEmpty:    TextView
+    private lateinit var tipCard:    LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,47 +45,60 @@ class AddressSearchActivity : AppCompatActivity() {
         btnBack   = findViewById(R.id.btnBack)
         rvAddress = findViewById(R.id.rvAddress)
         tvEmpty   = findViewById(R.id.tvEmpty)
+        tipCard   = findViewById(R.id.tipCard)
 
         rvAddress.layoutManager = LinearLayoutManager(this)
+        // 카드 간 마진(item_address.xml layout_marginBottom)으로만 구분 — 별도 구분선 없음
 
         btnBack.setOnClickListener { finish() }
         btnSearch.setOnClickListener { search() }
+
+        // 키보드 검색 버튼으로도 검색 실행
+        etKeyword.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                search(); true
+            } else false
+        }
+
+        // 초기 상태: 팁 카드 표시
+        showTip()
     }
 
     private fun search() {
         val keyword = etKeyword.text.toString().trim()
-        if (keyword.length < 2) {
-            Toast.makeText(this, "두 글자 이상 입력해주세요.", Toast.LENGTH_SHORT).show()
+        if (keyword.isEmpty()) {
+            Toast.makeText(this, "검색어를 입력해주세요.", Toast.LENGTH_SHORT).show()
             return
         }
 
         lifecycleScope.launch {
             try {
                 val response = JusoApiClient.api.searchAddress(
-                    confmKey = CONFM_KEY,
-                    currentPage = 1,
+                    confmKey     = CONFM_KEY,
+                    currentPage  = 1,
                     countPerPage = 20,
-                    keyword = keyword
+                    keyword      = keyword
                 )
                 val results = response.body()?.results
                 if (response.isSuccessful && results?.common?.errorCode == "0") {
                     val list = results.juso ?: emptyList()
                     if (list.isEmpty()) {
-                        showEmpty("검색 결과가 없습니다")
+                        showEmpty("'$keyword' 검색 결과가 없습니다.\n도로명, 건물명, 지번으로 다시 검색해보세요.")
                     } else {
                         showResults(list)
                     }
                 } else {
-                    showEmpty(results?.common?.errorMessage ?: "검색에 실패했습니다")
+                    showEmpty(results?.common?.errorMessage ?: "검색에 실패했습니다.")
                 }
             } catch (e: Exception) {
-                showEmpty("네트워크 오류가 발생했습니다")
+                showEmpty("네트워크 오류가 발생했습니다.\n연결 상태를 확인해주세요.")
             }
         }
     }
 
     private fun showResults(list: List<JusoItem>) {
-        tvEmpty.visibility = View.GONE
+        tipCard.visibility   = View.GONE
+        tvEmpty.visibility   = View.GONE
         rvAddress.visibility = View.VISIBLE
         rvAddress.adapter = AddressAdapter(list) { item ->
             val result = Intent().apply {
@@ -95,8 +111,15 @@ class AddressSearchActivity : AppCompatActivity() {
     }
 
     private fun showEmpty(msg: String) {
+        tipCard.visibility   = View.GONE
         rvAddress.visibility = View.GONE
-        tvEmpty.visibility = View.VISIBLE
-        tvEmpty.text = msg
+        tvEmpty.visibility   = View.VISIBLE
+        tvEmpty.text         = msg
+    }
+
+    private fun showTip() {
+        tipCard.visibility   = View.VISIBLE
+        rvAddress.visibility = View.GONE
+        tvEmpty.visibility   = View.GONE
     }
 }

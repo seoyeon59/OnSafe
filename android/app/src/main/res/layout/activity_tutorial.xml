@@ -13,7 +13,7 @@
     <LinearLayout
         android:id="@+id/progressRow"
         android:layout_width="0dp"
-        android:layout_height="21dp"
+        android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:weightSum="1"
@@ -40,6 +40,17 @@
             android:textColor="#414752"
             android:textSize="14sp"
             android:textStyle="bold" />
+
+        <!-- X 건너뛰기 버튼 (완료 전에 이탈) -->
+        <ImageButton
+            android:id="@+id/btnSkipTutorial"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="10dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="튜토리얼 건너뛰기"
+            android:padding="6dp"
+            android:src="@drawable/ic_close" />
 
     </LinearLayout>
 

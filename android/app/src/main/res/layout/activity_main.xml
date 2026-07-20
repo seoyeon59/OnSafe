@@ -13,6 +13,7 @@
         android:layout_width="0dp"
         android:layout_height="52dp"
         android:background="@color/surface_white"
+        android:elevation="3dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
@@ -33,10 +34,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
-            android:text="On-Safe"
+            android:fontFamily="@font/gmarket_sans_bold"
+            android:text="늘봄"
             android:textColor="@color/primary_blue"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textSize="16sp" />
 
         <View
             android:layout_width="0dp"
@@ -95,6 +96,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:clipToPadding="false"
             android:paddingHorizontal="16dp"
             android:paddingTop="16dp"
             android:paddingBottom="20dp">
@@ -103,7 +105,8 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_card"
+                android:background="@drawable/bg_card_shadow_only"
+                android:elevation="2dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="12dp">
@@ -268,28 +271,26 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:background="@drawable/bg_card"
-                android:backgroundTint="@color/surface_bg"
-                android:gravity="center"
+                android:background="@drawable/bg_sub_section"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="8dp">
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
                     android:contentDescription="@null"
-                    android:src="@android:drawable/ic_dialog_info"
+                    android:src="@drawable/ic_info"
                     app:tint="@color/ink_500" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:text="이상 감지 시 자동으로 알림이 발송됩니다.\n앱을 항상 백그라운드에 유지해주세요."
+                    android:layout_marginStart="6dp"
+                    android:text="이상 감지 시 자동으로 알림이 발송됩니다. 앱을 항상 백그라운드에 유지해주세요."
                     android:textColor="@color/ink_500"
-                    android:textSize="12sp"
-                    android:gravity="center" />
+                    android:textSize="11sp" />
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

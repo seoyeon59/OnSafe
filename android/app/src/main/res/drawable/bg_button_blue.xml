@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- res/drawable/bg_button_blue.xml -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="#4D80FF" />
-    <corners android:radius="48dp" />
-</shape>
+<!--
+    파란 버튼 배경: 기본 파란색 + 누를 때 흰색 반투명 ripple 효과
+    minSdk 24 이상이므로 RippleDrawable 직접 사용 가능
+-->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#33FFFFFF">
+
+    <!-- mask: ripple이 번지는 영역의 경계 (버튼 둥근 모서리와 동일하게) -->
+    <item android:id="@android:id/mask">
+        <shape android:shape="rectangle">
+            <corners android:radius="48dp" />
+            <solid android:color="#FFFFFF" />
+        </shape>
+    </item>
+
+    <!-- 실제 버튼 배경 -->
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="48dp" />
+            <solid android:color="#4D80FF" />
+        </shape>
+    </item>
+
+</ripple>

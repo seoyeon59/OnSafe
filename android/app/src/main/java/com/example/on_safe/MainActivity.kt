@@ -75,11 +75,15 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnFullscreen).setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.FullscreenActivity::class.java))
         }
+        // 사고이력: 왼쪽 탭 → 왼쪽에서 슬라이드 인
         findViewById<View>(R.id.tabHistory).setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.history.AccidentHistoryActivity::class.java))
+            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }
+        // 설정: 오른쪽 탭 → 오른쪽에서 슬라이드 인
         findViewById<View>(R.id.tabSettings).setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.settings.SettingsActivity::class.java))
+            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
         findViewById<View>(R.id.btn119).setOnClickListener {
             startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:119")))
