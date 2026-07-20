@@ -31,6 +31,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.example.on_safe.R
 import com.example.on_safe.ui.FullscreenActivity
+import com.example.on_safe.data.fake.FakeAccidentHistoryRepository
+import com.example.on_safe.data.repository.AccidentHistoryRepository
 
 // 사고 이력 화면 (위험 이력만 표시 / 최신순·오래된순 정렬 / 영상 보기·다운로드·삭제)
 class AccidentHistoryActivity : AppCompatActivity() {
@@ -73,12 +75,11 @@ class AccidentHistoryActivity : AppCompatActivity() {
         else
             Manifest.permission.READ_EXTERNAL_STORAGE
 
-    // TODO: GET /accident/history API로 교체 (현재 더미 데이터 — 위험 타입만 포함)
-    private val rawEntries: MutableList<HistoryListItem.HistoryEntry> = mutableListOf(
-        HistoryListItem.HistoryEntry("1", HistoryType.FALL, "14:32", "2025.01.15"),
-        HistoryListItem.HistoryEntry("3", HistoryType.FALL, "22:05", "2025.01.14"),
-        HistoryListItem.HistoryEntry("5", HistoryType.FALL, "07:30", "2025.01.13"),
-    )
+    // TODO: API 연동 시 Real 구현체로 교체
+    private val historyRepository: AccidentHistoryRepository = FakeAccidentHistoryRepository()
+    private val rawEntries: MutableList<HistoryListItem.HistoryEntry> by lazy {
+        historyRepository.getHistoryEntries()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

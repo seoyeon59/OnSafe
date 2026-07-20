@@ -25,6 +25,8 @@ import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.data.fake.FakeUserRepository
+import com.example.on_safe.data.repository.UserRepository
 
 // 설정 화면 (알림 토글, 개인정보 수정, 비밀번호 변경, 로그아웃, 회원탈퇴)
 class SettingsActivity : AppCompatActivity() {
@@ -50,6 +52,10 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var tabHome: LinearLayout
 
     private lateinit var tvUserName: TextView
+
+
+    // TODO: API 연동 시 Real 구현체로 교체
+    private val userRepository: UserRepository = FakeUserRepository()
 
     // TODO: 현재 알림·소리·진동 토글 상태는 테스트용으로 기기 공용 SharedPreferences("settings")에 저장합니다.
     //       나중에 서버 API에서 사용자 ID 별로 설정을 관리하게 되면,
@@ -110,8 +116,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun loadUserName() {
-        // TODO: GET /user/profile → 이름 불러와 "${name} 보호자님" 표시
-        tvUserName.text = "보호자님"
+        // TODO: 실제 이름 연동 시 "${이름} 보호자님" 형식으로 표시 (현재 Fake는 "보호자" 반환 → "보호자님"으로 표시됨)
+        tvUserName.text = "${userRepository.getUserName()}님"
     }
 
     // 알림 권한 (API 33+)

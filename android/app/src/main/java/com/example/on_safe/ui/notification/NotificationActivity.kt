@@ -14,6 +14,8 @@ import com.example.on_safe.util.NotificationPermissionBanner
 import com.example.on_safe.util.RiskScoreCardBinder
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import android.widget.TextView
+import com.example.on_safe.data.fake.FakeNotificationRepository
+import com.example.on_safe.data.repository.NotificationRepository
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -22,6 +24,9 @@ class NotificationActivity : AppCompatActivity() {
 
     private lateinit var adapter: NotificationAdapter
 
+    // TODO: API 연동 시 Real 구현체로 교체
+    private val notificationRepository: NotificationRepository = FakeNotificationRepository()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_notification)
@@ -29,21 +34,8 @@ class NotificationActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
         NotificationPermissionBanner.setup(this)
 
-        // TODO: GET /notification/list API로 교체 (현재 더미 데이터)
-        val now = System.currentTimeMillis()
-        val min = 60_000L
-        val sampleData = mutableListOf(
-            NotificationItem(NotificationType.FALL,    "낙상 위험 감지", "오늘 · 오후 02:23", 91, now - 3  * min, isUnread = true),
-            NotificationItem(NotificationType.WARNING, "주의 상태 감지", "오늘 · 오후 01:47", 68, now - 36 * min, isUnread = true),
-            NotificationItem(NotificationType.WARNING, "주의 상태 감지", "오늘 · 오전 11:05", 54, now - 3  * 60 * min, isUnread = true),
-            NotificationItem(NotificationType.FALL,    "낙상 위험 감지", "어제 · 오후 08:30", 88, now - 18 * 60 * min, isUnread = false),
-            NotificationItem(NotificationType.WARNING, "주의 상태 감지", "어제 · 오후 03:12", 61, now - 23 * 60 * min, isUnread = false),
-            NotificationItem(NotificationType.FALL,    "낙상 위험 감지", "어제 · 오전 09:44", 95, now - 29 * 60 * min, isUnread = false),
-            NotificationItem(NotificationType.WARNING, "주의 상태 감지", "2일 전 · 오후 06:20", 57, now - 44 * 60 * min, isUnread = false),
-            NotificationItem(NotificationType.WARNING, "주의 상태 감지", "2일 전 · 오전 10:15", 63, now - 52 * 60 * min, isUnread = false),
-        )
-
-        adapter = NotificationAdapter(sampleData) { position, item ->
+        val notifications = notificationRepository.getNotifications()
+        adapter = NotificationAdapter(notifications) { position, item ->
             showFallAlertDialog(position, item)
         }
 
