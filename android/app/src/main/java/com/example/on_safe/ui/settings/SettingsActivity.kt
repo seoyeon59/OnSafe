@@ -66,6 +66,9 @@ class SettingsActivity : AppCompatActivity() {
 
     private val settingsPrefs by lazy { getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
 
+    // 테스트용 로컬 더미 저장소 (로그인 정보 없을 때 이름 표시)
+    private val userRepository: UserRepository = FakeUserRepository()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
