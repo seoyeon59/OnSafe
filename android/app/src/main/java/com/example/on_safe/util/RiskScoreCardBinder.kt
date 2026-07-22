@@ -24,8 +24,8 @@ object RiskScoreCardBinder {
         val message: String,
         val colorRes: Int
     ) {
-        NORMAL ("정상", "위험 지수 0~50",   "어르신이 안정적인 상태입니다.",             R.color.status_normal),
-        WARNING("주의", "위험 지수 51~75",  "어르신의 움직임에 주의가 필요합니다.",        R.color.status_warning),
+        NORMAL ("정상", "위험 지수 0~50",   "안정적인 상태입니다.",             R.color.status_normal),
+        WARNING("주의", "위험 지수 51~75",  "움직임에 주의가 필요합니다.",        R.color.status_warning),
         DANGER ("위험", "위험 지수 76~100", "낙상이 의심됩니다. 즉시 확인이 필요합니다.", R.color.status_danger);
 
         companion object {

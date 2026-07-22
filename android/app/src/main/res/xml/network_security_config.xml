@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 개발 환경: 에뮬레이터 및 로컬 서버 HTTP 허용 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+    <!-- 기본: cleartext 불허 (릴리즈 보안) -->
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

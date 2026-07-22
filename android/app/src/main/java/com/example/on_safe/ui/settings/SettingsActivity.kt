@@ -45,7 +45,8 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var rowLogout: LinearLayout
     private lateinit var rowWithdraw: LinearLayout
 
-    private lateinit var btnBack: ImageButton
+    // btnBack은 레이아웃에서 제거됨
+    // private lateinit var btnBack: ImageButton
     private lateinit var btnTutorial: android.widget.ImageView
 
     private lateinit var tabHistory: LinearLayout
@@ -90,7 +91,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
-        btnBack            = findViewById(R.id.btnBack)
+        // btnBack은 레이아웃에서 제거됨
         switchNotification = findViewById(R.id.switchNotification)
         switchSound        = findViewById(R.id.switchSound)
         switchVibration    = findViewById(R.id.switchVibration)
@@ -236,8 +237,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupClickListeners() {
-        btnBack.setOnClickListener { finish() }
-
         // 개인정보 수정
         rowEditProfile.setOnClickListener {
             startActivity(Intent(this, EditProfileActivity::class.java))

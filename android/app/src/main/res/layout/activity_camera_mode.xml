@@ -110,17 +110,17 @@
 
         <!-- 늘봄 로고 아이콘 -->
         <FrameLayout
-            android:layout_width="28dp"
-            android:layout_height="28dp">
+            android:layout_width="36dp"
+            android:layout_height="36dp">
 
             <View
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:background="@drawable/bg_logo" />
 
             <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_shield"
@@ -134,7 +134,7 @@
             android:fontFamily="@font/gmarket_sans_bold"
             android:text="늘봄"
             android:textColor="@color/primary_blue"
-            android:textSize="16sp" />
+            android:textSize="20sp" />
 
         <!-- LIVE 뱃지 (전송 중에만 표시) -->
         <LinearLayout
@@ -205,7 +205,7 @@
     <!-- ============ 우측 사이드 패널 ============ -->
     <LinearLayout
         android:id="@+id/sidePanel"
-        android:layout_width="200dp"
+        android:layout_width="240dp"
         android:layout_height="match_parent"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -215,26 +215,21 @@
         <!-- 패널 헤더 -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="36dp"
+            android:layout_height="52dp"
             android:background="#202327"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingEnd="8dp"
             android:paddingStart="8dp">
 
-            <!-- 카메라 아이콘 원형 -->
+            <!-- 카메라 아이콘 (배경 없이) -->
             <FrameLayout
-                android:layout_width="24dp"
-                android:layout_height="24dp">
-
-                <View
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:background="@drawable/bg_circle_white_tint" />
+                android:layout_width="32dp"
+                android:layout_height="32dp">
 
                 <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
                     android:layout_gravity="center"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_camera"
@@ -245,17 +240,17 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="6dp"
+                android:layout_marginStart="2dp"
                 android:fontFamily="@font/pretendard_bold"
                 android:text="카메라 모드"
                 android:textColor="#FEFEFE"
-                android:textSize="12sp" />
+                android:textSize="15sp" />
 
             <!-- 튜토리얼 버튼 (설정 화면과 동일) -->
             <ImageView
                 android:id="@+id/btnTutorial"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:contentDescription="튜토리얼"
                 android:src="@drawable/ic_info"
                 android:padding="2dp"
@@ -290,13 +285,13 @@
                     android:letterSpacing="0.09"
                     android:text="연결 상태"
                     android:textColor="#4DFFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="12sp" />
 
                 <!-- 2c: 상태 뱃지 — cornerRadius=48 pill 유지 -->
                 <LinearLayout
                     android:id="@+id/layoutStatusBadge"
                     android:layout_width="match_parent"
-                    android:layout_height="26dp"
+                    android:layout_height="32dp"
                     android:layout_marginTop="4dp"
                     android:background="@drawable/bg_badge_standby"
                     android:gravity="center_vertical"
@@ -318,7 +313,7 @@
                         android:fontFamily="@font/pretendard_semibold"
                         android:text="대기 중"
                         android:textColor="@color/status_standby"
-                        android:textSize="10sp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -338,7 +333,7 @@
                     android:letterSpacing="0.09"
                     android:text="연결 정보"
                     android:textColor="#4DFFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="12sp" />
 
                 <!-- 연결 보호자 -->
                 <LinearLayout
@@ -354,8 +349,8 @@
                         android:orientation="horizontal">
 
                         <ImageView
-                            android:layout_width="10dp"
-                            android:layout_height="10dp"
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
                             android:alpha="0.25"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_person"
@@ -368,7 +363,7 @@
                             android:fontFamily="@font/pretendard_regular"
                             android:text="연결 보호자"
                             android:textColor="#4DFFFFFF"
-                            android:textSize="9sp" />
+                            android:textSize="11sp" />
                     </LinearLayout>
 
                     <TextView
@@ -380,7 +375,7 @@
                         android:fontFamily="@font/pretendard_semibold"
                         android:text="박지영"
                         android:textColor="#BFFFFFFF"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
                 </LinearLayout>
 
                 <!-- 기기 ID -->
@@ -397,8 +392,8 @@
                         android:orientation="horizontal">
 
                         <ImageView
-                            android:layout_width="10dp"
-                            android:layout_height="10dp"
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
                             android:alpha="0.25"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_devices"
@@ -411,7 +406,7 @@
                             android:fontFamily="@font/pretendard_regular"
                             android:text="기기 ID"
                             android:textColor="#4DFFFFFF"
-                            android:textSize="9sp" />
+                            android:textSize="11sp" />
                     </LinearLayout>
 
                     <TextView
@@ -423,7 +418,7 @@
                         android:fontFamily="@font/pretendard_semibold"
                         android:text="ONS-2026-0417"
                         android:textColor="#BFFFFFFF"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -445,7 +440,7 @@
                 <LinearLayout
                     android:id="@+id/btnToggleRecording"
                     android:layout_width="match_parent"
-                    android:layout_height="34dp"
+                    android:layout_height="48dp"
                     android:background="@drawable/bg_pill"
                     android:backgroundTint="@color/primary_blue"
                     android:clickable="true"
@@ -455,8 +450,8 @@
 
                     <ImageView
                         android:id="@+id/ivToggleIcon"
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_camera"
                         app:tint="@color/surface_white" />
@@ -465,18 +460,18 @@
                         android:id="@+id/tvToggleText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
+                        android:layout_marginStart="6dp"
                         android:fontFamily="@font/pretendard_bold"
                         android:text="촬영 시작하기"
                         android:textColor="@color/surface_white"
-                        android:textSize="12sp" />
+                        android:textSize="14sp" />
                 </LinearLayout>
 
                 <!-- 2c/2d: 로그아웃 버튼 — pill outline + icon -->
                 <LinearLayout
                     android:id="@+id/btnLogout"
                     android:layout_width="match_parent"
-                    android:layout_height="33dp"
+                    android:layout_height="48dp"
                     android:layout_marginTop="4dp"
                     android:background="@drawable/bg_pill_outline_white"
                     android:clickable="true"
@@ -485,8 +480,8 @@
                     android:orientation="horizontal">
 
                     <ImageView
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
                         android:alpha="0.35"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_logout"
@@ -499,7 +494,7 @@
                         android:fontFamily="@font/pretendard_semibold"
                         android:text="로그아웃"
                         android:textColor="#59FFFFFF"
-                        android:textSize="10sp" />
+                        android:textSize="13sp" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

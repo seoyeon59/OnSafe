@@ -50,7 +50,7 @@
                 android:paddingVertical="2dp"
                 android:text="정상"
                 android:textColor="@color/surface_white"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
             <View
@@ -64,7 +64,7 @@
                 android:layout_height="wrap_content"
                 android:text="위험 지수 0~50"
                 android:textColor="@color/ink_500"
-                android:textSize="12sp" />
+                android:textSize="13sp" />
         </LinearLayout>
 
         <FrameLayout
@@ -86,8 +86,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="어르신이 안정적인 상태입니다."
+            android:text="안정적인 상태입니다."
             android:textColor="@color/ink_900"
-            android:textSize="10sp" />
+            android:textSize="13sp" />
     </LinearLayout>
 </LinearLayout>

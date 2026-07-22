@@ -10,7 +10,7 @@
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="0dp"
-        android:layout_height="52dp"
+        android:layout_height="64dp"
         android:background="@color/surface_white"
         android:elevation="3dp"
         android:gravity="center_vertical"
@@ -21,15 +21,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageButton
-            android:id="@+id/btnBack"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="@color/primary_blue" />
-
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -37,13 +28,8 @@
             android:gravity="center"
             android:text="사고 이력"
             android:textColor="@color/ink_900"
-            android:textSize="18sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
-
-        <!-- 우측 자리맞춤 플레이스홀더 -->
-        <View
-            android:layout_width="32dp"
-            android:layout_height="32dp" />
 
     </LinearLayout>
 
@@ -66,7 +52,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:gravity="center_vertical"
+            android:gravity="bottom"
             android:orientation="horizontal">
 
             <TextView
@@ -75,44 +61,44 @@
                 android:layout_height="wrap_content"
                 android:text="위험 이력"
                 android:textColor="@color/ink_900"
-                android:textSize="16sp"
+                android:textSize="18sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvHistoryCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="5dp"
+                android:layout_marginStart="8dp"
                 android:text="0건"
                 android:textColor="#6B7280"
-                android:textSize="12sp" />
+                android:textSize="14sp" />
         </LinearLayout>
 
         <!-- 최신순 칩 -->
         <TextView
             android:id="@+id/chipNewest"
             android:layout_width="wrap_content"
-            android:layout_height="32dp"
+            android:layout_height="36dp"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
             android:paddingHorizontal="12dp"
             android:text="최신순"
-            android:textSize="12sp"
+            android:textSize="13sp"
             android:textStyle="bold" />
 
         <!-- 오래된순 칩 -->
         <TextView
             android:id="@+id/chipOldest"
             android:layout_width="wrap_content"
-            android:layout_height="32dp"
+            android:layout_height="36dp"
             android:layout_marginStart="6dp"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
             android:paddingHorizontal="12dp"
             android:text="오래된순"
-            android:textSize="12sp"
+            android:textSize="13sp"
             android:textStyle="bold" />
 
     </LinearLayout>
@@ -134,8 +120,8 @@
         app:layout_constraintTop_toBottomOf="@id/filterRow">
 
         <ImageView
-            android:layout_width="14dp"
-            android:layout_height="14dp"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
             android:contentDescription="@null"
             android:src="@drawable/ic_info"
             app:tint="@color/ink_500" />
@@ -143,10 +129,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="10dp"
             android:text="사고 이력은 발생일로부터 최대 30일간 보관됩니다."
             android:textColor="@color/ink_500"
-            android:textSize="11sp" />
+            android:textSize="13sp" />
 
     </LinearLayout>
 

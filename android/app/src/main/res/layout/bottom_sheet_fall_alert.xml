@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_sheet_top_rounded"
+    android:clipToOutline="true"
     android:orientation="vertical"
     android:paddingBottom="24dp">
 
@@ -37,7 +38,7 @@
             android:layout_marginTop="8dp"
             android:text="낙상 위험 감지!"
             android:textColor="@color/surface_white"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
         <TextView
@@ -46,7 +47,7 @@
             android:layout_marginTop="4dp"
             android:text="피보호자에게 이상 동작이 감지되었습니다."
             android:textColor="@color/surface_white"
-            android:textSize="12sp" />
+            android:textSize="14sp" />
     </LinearLayout>
 
     <!-- ② 흰 배경 본문 -->
@@ -55,7 +56,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="16dp"
-        android:paddingTop="16dp">
+        android:paddingTop="20dp">
 
         <!-- 감지 시각 행 -->
         <LinearLayout
@@ -86,7 +87,7 @@
                 android:layout_marginStart="12dp"
                 android:text="감지 시각 · 오후 02:23"
                 android:textColor="@color/ink_900"
-                android:textSize="13sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -95,7 +96,7 @@
             android:id="@+id/alertRiskScoreCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/bg_card"
             android:gravity="center_vertical"
             android:orientation="horizontal"
@@ -142,7 +143,7 @@
                         android:paddingVertical="2dp"
                         android:text="위험"
                         android:textColor="@color/surface_white"
-                        android:textSize="13sp"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <View
@@ -156,7 +157,7 @@
                         android:layout_height="wrap_content"
                         android:text="위험 지수 76~100"
                         android:textColor="@color/ink_500"
-                        android:textSize="12sp" />
+                        android:textSize="13sp" />
                 </LinearLayout>
 
                 <FrameLayout
@@ -180,7 +181,7 @@
                     android:layout_marginTop="8dp"
                     android:text="낙상이 의심됩니다. 즉시 확인이 필요합니다."
                     android:textColor="@color/ink_900"
-                    android:textSize="10sp" />
+                    android:textSize="13sp" />
             </LinearLayout>
         </LinearLayout>
 
@@ -189,7 +190,7 @@
             android:id="@+id/btn119Alert"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="24dp"
             android:background="@drawable/bg_pill"
             android:backgroundTint="@color/status_danger"
             android:clickable="true"
@@ -211,7 +212,7 @@
                 android:layout_marginStart="8dp"
                 android:text="119 신고하기"
                 android:textColor="@color/surface_white"
-                android:textSize="15sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -228,6 +229,6 @@
             android:padding="8dp"
             android:text="확인했습니다 (긴급상황 아님)"
             android:textColor="@color/ink_500"
-            android:textSize="12sp" />
+            android:textSize="13sp" />
     </LinearLayout>
 </LinearLayout>

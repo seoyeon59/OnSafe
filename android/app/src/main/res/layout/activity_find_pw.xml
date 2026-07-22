@@ -9,19 +9,20 @@
     <!-- 상단 네비게이션 바 -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="64dp"
         android:orientation="horizontal"
         android:background="#FEFEFE"
+        android:elevation="3dp"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:gravity="center_vertical">
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@drawable/ic_arrow_back"
-            android:background="@null"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="뒤로가기"
             app:tint="@color/primary_blue" />
 
@@ -30,7 +31,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="비밀번호 찾기"
-            android:textSize="18sp"
+            android:textSize="20sp"
             android:textColor="#1A1C1E"
             android:textStyle="bold"
             android:gravity="center" />
@@ -66,7 +67,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="가입한 아이디와 이메일 주소로 비밀번호 재설정 코드를 보내드립니다."
+                android:text="가입한 아이디와 이메일 주소로 비밀번호 재설정 코드를 보냅니다."
                 android:textSize="13sp"
                 android:textColor="#6B7280"
                 android:lineSpacingExtra="4dp"

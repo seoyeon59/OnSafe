@@ -11,6 +11,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center_horizontal"
+        android:clipChildren="false"
         android:clipToPadding="false"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
@@ -24,7 +25,7 @@
             android:orientation="vertical"
             android:gravity="center_horizontal"
             android:paddingTop="32dp"
-            android:paddingBottom="32dp">
+            android:paddingBottom="24dp">
 
             <!-- 로고 아이콘 (파란 원형 배경) -->
             <FrameLayout
@@ -46,20 +47,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="늘봄"
-                android:textSize="24sp"
+                android:textSize="28sp"
                 android:textColor="#4D80FF"
                 android:fontFamily="@font/gmarket_sans_bold"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="10dp"
                 android:letterSpacing="-0.025" />
 
             <!-- 서브타이틀 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="실시간 낙상 감지 · 보호자 모니터링"
-                android:textSize="12sp"
+                android:text="가족의 안전을 언제나 함께 지켜드립니다"
+                android:textSize="14sp"
                 android:textColor="#6B7280"
-                android:layout_marginTop="4dp" />
+                android:layout_marginTop="8dp" />
 
         </LinearLayout>
 
@@ -87,7 +88,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="아이디"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textColor="#6B7280"
                     android:textStyle="bold"
                     android:layout_marginBottom="6dp" />
@@ -125,7 +126,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="비밀번호"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textColor="#6B7280"
                     android:textStyle="bold"
                     android:layout_marginTop="16dp"
@@ -232,7 +233,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="아이디 찾기"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textColor="#6B7280"
                     android:paddingLeft="8dp"
                     android:paddingRight="8dp" />
@@ -247,7 +248,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="비밀번호 찾기"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textColor="#6B7280"
                     android:paddingLeft="8dp"
                     android:paddingRight="8dp" />
@@ -262,7 +263,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="회원가입"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textColor="#4D80FF"
                     android:textStyle="bold"
                     android:paddingLeft="8dp"
@@ -278,7 +279,7 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="12dp"
                 android:text="로그인 시 이용약관 및 개인정보 처리방침에 동의합니다."
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:textColor="#9FA6AC"
                 android:gravity="center" />
 

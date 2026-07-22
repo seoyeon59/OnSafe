@@ -9,13 +9,13 @@
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingHorizontal="16dp"
-    android:paddingVertical="10dp"
+    android:paddingVertical="12dp"
     android:visibility="gone">
 
     <!-- 벨 아이콘 -->
     <ImageView
-        android:layout_width="18dp"
-        android:layout_height="18dp"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
         android:contentDescription="@null"
         android:src="@drawable/ic_notification"
         app:tint="@color/primary_blue" />
@@ -28,7 +28,7 @@
         android:layout_marginStart="8dp"
         android:text="위험 감지 알림을 받으려면 알림 권한이 필요합니다."
         android:textColor="@color/primary_blue"
-        android:textSize="12sp"
+        android:textSize="13sp"
         android:lineSpacingMultiplier="1.3" />
 
     <!-- 허용하기 버튼 -->
@@ -38,11 +38,11 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:background="@drawable/bg_button_blue"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="5dp"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="8dp"
         android:text="허용하기"
         android:textColor="@color/surface_white"
-        android:textSize="11sp"
+        android:textSize="13sp"
         android:textStyle="bold" />
 
 </LinearLayout>
