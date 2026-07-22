@@ -13,11 +13,8 @@ import com.example.on_safe.R
 
 /**
  * 사고 이력 RecyclerView 어댑터.
- *
- * 성능 고려사항:
- * - DiffUtil로 최소 변경만 반영 (전체 notifyDataSetChanged 지양)
- * - ViewHolder 패턴으로 View 재생성 최소화
- * - 배경 drawable은 mutate() 없이 backgroundTintList로 관리
+ * - 위험(FALL) 항목만 표시 (주의 타입은 저장 안 함)
+ * - DiffUtil로 최소 변경만 반영
  * - 날짜 헤더 / 이력 아이템 두 가지 ViewType 사용
  */
 class AccidentHistoryAdapter(
@@ -27,6 +24,7 @@ class AccidentHistoryAdapter(
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val items = mutableListOf<HistoryListItem>()
+    private var currentSortOrder: SortOrder = SortOrder.NEWEST_FIRST
 
     companion object {
         private const val VIEW_TYPE_HEADER = 0
@@ -37,37 +35,23 @@ class AccidentHistoryAdapter(
     // Public API
     // ──────────────────────────────────────────────
 
-    /**
-     * 전체 raw 데이터에서 필터를 적용하고 날짜 헤더를 삽입한 뒤
-     * DiffUtil로 최소 변경만 RecyclerView에 반영한다.
-     */
-    fun submitFilteredList(rawEntries: List<HistoryListItem.HistoryEntry>, filter: FilterType) {
-        val filtered = when (filter) {
-            FilterType.ALL     -> rawEntries
-            FilterType.FALL    -> rawEntries.filter { it.type == HistoryType.FALL }
-            FilterType.WARNING -> rawEntries.filter { it.type == HistoryType.WARNING }
-        }
-
-        val newItems = buildSectionedList(filtered)
-        val diffResult = DiffUtil.calculateDiff(HistoryDiffCallback(items, newItems))
-        items.clear()
-        items.addAll(newItems)
-        diffResult.dispatchUpdatesTo(this)
+    fun submitList(
+        rawEntries: List<HistoryListItem.HistoryEntry>,
+        sortOrder: SortOrder = currentSortOrder
+    ) {
+        currentSortOrder = sortOrder
+        // 위험(FALL) 항목만 표시
+        val filtered = rawEntries.filter { it.type == HistoryType.FALL }
+        val newItems = buildSectionedList(filtered, sortOrder)
+        applyDiff(newItems)
     }
 
-    /**
-     * 특정 id 항목을 목록에서 제거하고 빈 날짜 헤더도 정리한다.
-     * O(n)이지만 최신 이력 수준에서는 충분히 빠르다.
-     */
     fun removeItem(id: String) {
         val updated = items
             .filterIsInstance<HistoryListItem.HistoryEntry>()
             .filter { it.id != id }
-        val newItems = buildSectionedList(updated)
-        val diffResult = DiffUtil.calculateDiff(HistoryDiffCallback(items, newItems))
-        items.clear()
-        items.addAll(newItems)
-        diffResult.dispatchUpdatesTo(this)
+        val newItems = buildSectionedList(updated, currentSortOrder)
+        applyDiff(newItems)
     }
 
     fun isEmpty(): Boolean = items.isEmpty()
@@ -95,7 +79,7 @@ class AccidentHistoryAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val item = items[position]) {
-            is HistoryListItem.DateHeader  -> (holder as HeaderViewHolder).bind(item)
+            is HistoryListItem.DateHeader   -> (holder as HeaderViewHolder).bind(item)
             is HistoryListItem.HistoryEntry -> (holder as ItemViewHolder).bind(item)
         }
     }
@@ -112,30 +96,17 @@ class AccidentHistoryAdapter(
     }
 
     inner class ItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        private val ivThumbnail:  ImageView   = view.findViewById(R.id.ivThumbnail)
-        private val tvStatusBadge: TextView   = view.findViewById(R.id.tvStatusBadge)
-        private val tvTime:        TextView   = view.findViewById(R.id.tvTime)
+        private val tvStatusBadge: TextView    = view.findViewById(R.id.tvStatusBadge)
+        private val tvTime:        TextView    = view.findViewById(R.id.tvTime)
         private val btnWatchVideo: LinearLayout = view.findViewById(R.id.btnWatchVideo)
         private val btnDownload:   ImageButton  = view.findViewById(R.id.btnDownload)
         private val btnDelete:     ImageButton  = view.findViewById(R.id.btnDelete)
 
         fun bind(entry: HistoryListItem.HistoryEntry) {
             tvTime.text = entry.time
-
-            // 배지 색상 + 텍스트
-            when (entry.type) {
-                HistoryType.FALL -> {
-                    tvStatusBadge.text = "위험"
-                    tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_danger)
-                }
-                HistoryType.WARNING -> {
-                    tvStatusBadge.text = "주의"
-                    tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_warning)
-                }
-            }
-
-            // 썸네일 (현재는 placeholder; 나중에 Glide/Coil 등으로 교체)
-            ivThumbnail.setImageDrawable(null)
+            // 위험 배지 (항상 FALL 타입만 표시되므로 고정)
+            tvStatusBadge.text = "위험"
+            tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_danger)
 
             btnWatchVideo.setOnClickListener { onWatchVideo(entry) }
             btnDownload.setOnClickListener   { onDownload(entry) }
@@ -148,24 +119,42 @@ class AccidentHistoryAdapter(
     // ──────────────────────────────────────────────
 
     /**
-     * 항목 리스트를 날짜별로 그룹화하여 DateHeader + HistoryEntry 형태로 변환한다.
-     * 날짜 내림차순 정렬 후 항목 내 시간 내림차순 정렬.
+     * 항목 리스트를 날짜별로 그룹화하여 DateHeader + HistoryEntry 형태로 변환.
+     * sortOrder에 따라 날짜 및 시간 정렬 방향이 달라진다.
      */
     private fun buildSectionedList(
-        entries: List<HistoryListItem.HistoryEntry>
+        entries: List<HistoryListItem.HistoryEntry>,
+        sortOrder: SortOrder
     ): List<HistoryListItem> {
         if (entries.isEmpty()) return emptyList()
 
+        val sorted = when (sortOrder) {
+            SortOrder.NEWEST_FIRST ->
+                entries.sortedWith(
+                    compareByDescending<HistoryListItem.HistoryEntry> { it.date }
+                        .thenByDescending { it.time }
+                )
+            SortOrder.OLDEST_FIRST ->
+                entries.sortedWith(
+                    compareBy<HistoryListItem.HistoryEntry> { it.date }
+                        .thenBy { it.time }
+                )
+        }
+
         return buildList {
-            entries
-                .sortedWith(compareByDescending<HistoryListItem.HistoryEntry> { it.date }
-                    .thenByDescending { it.time })
-                .groupBy { it.date }
+            sorted.groupBy { it.date }
                 .forEach { (date, group) ->
                     add(HistoryListItem.DateHeader(date))
                     addAll(group)
                 }
         }
+    }
+
+    private fun applyDiff(newItems: List<HistoryListItem>) {
+        val diffResult = DiffUtil.calculateDiff(HistoryDiffCallback(items, newItems))
+        items.clear()
+        items.addAll(newItems)
+        diffResult.dispatchUpdatesTo(this)
     }
 
     // ──────────────────────────────────────────────
@@ -184,7 +173,7 @@ class AccidentHistoryAdapter(
             val old = oldList[oldPos]
             val new = newList[newPos]
             return when {
-                old is HistoryListItem.DateHeader  && new is HistoryListItem.DateHeader  -> old.date == new.date
+                old is HistoryListItem.DateHeader   && new is HistoryListItem.DateHeader   -> old.date == new.date
                 old is HistoryListItem.HistoryEntry && new is HistoryListItem.HistoryEntry -> old.id == new.id
                 else -> false
             }

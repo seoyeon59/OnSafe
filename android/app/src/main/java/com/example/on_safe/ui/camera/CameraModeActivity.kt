@@ -1,7 +1,6 @@
 package com.example.on_safe.ui.camera
 
 import android.Manifest
-import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -96,10 +95,7 @@ class CameraModeActivity : AppCompatActivity() {
                     .filter { !it.value }
                     .any { !shouldShowRequestPermissionRationale(it.key) }
                 if (permanentlyDenied) showPermissionSettingsDialog()
-                else {
-                    Toast.makeText(this, "카메라·마이크 권한이 필요합니다.", Toast.LENGTH_LONG).show()
-                    finish()
-                }
+                else showPermissionRationaleDialog()
             }
         }
 
@@ -418,19 +414,63 @@ class CameraModeActivity : AppCompatActivity() {
             ContextCompat.checkSelfPermission(this, perm) == PackageManager.PERMISSION_GRANTED
         }
 
+    // 권한 완전 거부 ('다시 묻지 않음') → 설정 화면으로 안내
     private fun showPermissionSettingsDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("권한 설정 필요")
-            .setMessage("카메라·마이크 권한이 '다시 묻지 않음'으로 거부되었습니다.\n앱 설정에서 직접 허용해주세요.")
-            .setPositiveButton("설정으로 이동") { _, _ ->
-                openSettings.launch(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.fromParts("package", packageName, null)
-                    }
-                )
-            }
-            .setNegativeButton("취소") { _, _ -> finish() }
-            .setCancelable(false)
-            .show()
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_permission_settings)
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setLayout(
+                (resources.displayMetrics.widthPixels * 0.85).toInt(),
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+        }
+        dialog.setCanceledOnTouchOutside(false)
+
+        dialog.findViewById<TextView>(R.id.tvPermDialogMessage).text =
+            "카메라·마이크 권한이 '다시 묻지 않음'으로\n거부되었습니다. 앱 설정에서 직접 허용해주세요."
+
+        dialog.findViewById<TextView>(R.id.btnPermDialogCancel).setOnClickListener {
+            dialog.dismiss()
+            finish()
+        }
+        dialog.findViewById<TextView>(R.id.btnPermDialogConfirm).setOnClickListener {
+            dialog.dismiss()
+            openSettings.launch(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+            )
+        }
+        dialog.show()
+    }
+
+    // 권한 일시 거부 → 재요청 안내 다이얼로그
+    private fun showPermissionRationaleDialog() {
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_permission_settings)
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setLayout(
+                (resources.displayMetrics.widthPixels * 0.85).toInt(),
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+        }
+        dialog.setCanceledOnTouchOutside(false)
+
+        dialog.findViewById<TextView>(R.id.tvPermDialogMessage).text =
+            "카메라·마이크 권한이 필요합니다.\n권한을 허용해야 카메라 모드를 사용할 수 있습니다."
+
+        dialog.findViewById<TextView>(R.id.btnPermDialogCancel).setOnClickListener {
+            dialog.dismiss()
+            finish()
+        }
+        dialog.findViewById<TextView>(R.id.btnPermDialogConfirm).setOnClickListener {
+            dialog.dismiss()
+            requestCameraPermissions.launch(cameraPermissions)
+        }
+        dialog.show()
     }
 }

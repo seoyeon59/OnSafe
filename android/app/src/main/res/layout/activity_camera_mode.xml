@@ -108,7 +108,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- On-Safe 로고 아이콘 -->
+        <!-- 늘봄 로고 아이콘 -->
         <FrameLayout
             android:layout_width="28dp"
             android:layout_height="28dp">
@@ -132,7 +132,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
             android:fontFamily="@font/gmarket_sans_bold"
-            android:text="On-Safe"
+            android:text="늘봄"
             android:textColor="@color/primary_blue"
             android:textSize="16sp" />
 

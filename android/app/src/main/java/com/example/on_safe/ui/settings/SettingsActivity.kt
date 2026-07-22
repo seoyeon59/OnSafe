@@ -1,7 +1,6 @@
 package com.example.on_safe.ui.settings
 
 import android.Manifest
-import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
 import android.content.Intent
@@ -50,6 +49,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var rowEditProfile: LinearLayout
     private lateinit var rowChangePassword: LinearLayout
     private lateinit var rowPrivacyPolicy: LinearLayout
+    private lateinit var rowFaq: LinearLayout
     private lateinit var rowLogout: LinearLayout
     private lateinit var rowWithdraw: LinearLayout
 
@@ -65,15 +65,6 @@ class SettingsActivity : AppCompatActivity() {
     private var suppressToggleListeners = false
 
     private val settingsPrefs by lazy { getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
-
-    // TODO: API 연동 시 Real 구현체로 교체
-    private val userRepository: UserRepository = FakeUserRepository()
-
-    // TODO: 현재 알림·소리·진동 토글 상태는 테스트용으로 기기 공용 SharedPreferences("settings")에 저장합니다.
-    //       나중에 서버 API에서 사용자 ID 별로 설정을 관리하게 되면,
-    //       아래 "settings" 키를 "settings_${userId}" 형태로 바꾸거나
-    //       서버에서 받아온 값으로 초기화하는 방식으로 수정해주세요.
-    private val settingsPrefs by lazy { getSharedPreferences("settings", android.content.Context.MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -104,6 +95,7 @@ class SettingsActivity : AppCompatActivity() {
         rowEditProfile     = findViewById(R.id.rowEditProfile)
         rowChangePassword  = findViewById(R.id.rowChangePassword)
         rowPrivacyPolicy   = findViewById(R.id.rowPrivacyPolicy)
+        rowFaq             = findViewById(R.id.rowFaq)
         rowLogout          = findViewById(R.id.rowLogout)
         rowWithdraw        = findViewById(R.id.rowWithdraw)
         tabHistory         = findViewById(R.id.tabHistory)
@@ -142,7 +134,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun loadUserName() {
         val userId = TokenManager.getUserId(this)
         if (userId.isBlank()) {
-            tvUserName.text = "보호자님"
+            tvUserName.text = "${userRepository.getUserName()}님"
             return
         }
         lifecycleScope.launch {
@@ -208,8 +200,6 @@ class SettingsActivity : AppCompatActivity() {
                 Toast.makeText(this@SettingsActivity, "설정 저장 실패", Toast.LENGTH_SHORT).show()
             }
         }
-        // TODO: 실제 이름 연동 시 "${이름} 보호자님" 형식으로 표시 (현재 Fake는 "보호자" 반환 → "보호자님"으로 표시됨)
-        tvUserName.text = "${userRepository.getUserName()}님"
     }
 
     // 알림 권한 (API 33+)
@@ -238,21 +228,36 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun showNotificationSettingsDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("알림 권한 설정 필요")
-            .setMessage("알림 권한이 '다시 묻지 않음'으로 거부되었습니다.\n앱 설정에서 직접 허용해주세요.")
-            .setPositiveButton("설정으로 이동") { _, _ ->
-                openNotificationSettings.launch(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.fromParts("package", packageName, null)
-                    }
-                )
-            }
-            .setNegativeButton("취소", null)
-            .show()
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_permission_settings)
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setLayout(
+                (resources.displayMetrics.widthPixels * 0.85).toInt(),
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+        }
+        dialog.setCanceledOnTouchOutside(false)
+
+        dialog.findViewById<TextView>(R.id.tvPermDialogMessage).text =
+            "알림 권한이 '다시 묻지 않음'으로\n거부되었습니다. 앱 설정에서 직접 허용해주세요."
+
+        dialog.findViewById<TextView>(R.id.btnPermDialogCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.findViewById<TextView>(R.id.btnPermDialogConfirm).setOnClickListener {
+            dialog.dismiss()
+            openNotificationSettings.launch(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+            )
+        }
+        dialog.show()
     }
 
-    // 알림 OFF 시 소리/진동 함께 비활성화, ON 시 API 33+ 권한 먼저 요청
+    // 알림 ON → 소리·진동도 함께 ON / 알림 OFF → 소리·진동 함께 OFF·비활성화
     private fun setupToggleDependency() {
         switchNotification.setOnCheckedChangeListener { _, isChecked ->
             if (suppressToggleListeners) return@setOnCheckedChangeListener
@@ -281,12 +286,14 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
+        // 소리 스위치: 알림 OFF 상태에서 토글 시도 → 상태 되돌리고 토스트 (isUpdatingToggles로 무한 루프 방지)
         switchSound.setOnCheckedChangeListener { _, isChecked ->
             if (suppressToggleListeners) return@setOnCheckedChangeListener
             writeCache(notification = null, sound = isChecked, vibration = null)
             updateNotificationSetting(sound = isChecked)
         }
 
+        // 진동 스위치: 동일 패턴
         switchVibration.setOnCheckedChangeListener { _, isChecked ->
             if (suppressToggleListeners) return@setOnCheckedChangeListener
             writeCache(notification = null, sound = null, vibration = isChecked)
@@ -317,6 +324,11 @@ class SettingsActivity : AppCompatActivity() {
             Toast.makeText(this, "개인정보 처리방침 준비 중", Toast.LENGTH_SHORT).show()
         }
 
+        // TODO: FAQ 페이지 구현 (WebView 또는 전용 Activity)
+        rowFaq.setOnClickListener {
+            Toast.makeText(this, "자주 묻는 질문 준비 중입니다.", Toast.LENGTH_SHORT).show()
+        }
+
         rowLogout.setOnClickListener {
             showLogoutConfirm()
         }
@@ -328,18 +340,20 @@ class SettingsActivity : AppCompatActivity() {
             }.show()
         }
 
-        // 바텀 네비: 홈
+        // 바텀 네비: 홈 (설정은 오른쪽 탭 → 홈 복귀 시 왼쪽으로 슬라이드 아웃)
         tabHome.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
             startActivity(intent)
+            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
             finish()
         }
 
-        // 바텀 네비: 사고 이력
+        // 바텀 네비: 사고 이력 (왼쪽 탭 → 왼쪽에서 슬라이드 인)
         tabHistory.setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.history.AccidentHistoryActivity::class.java))
+            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }
 
         // 헤더 튜토리얼 버튼 (온보딩 완료 후에도 상시 진입)
