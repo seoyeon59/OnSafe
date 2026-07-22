@@ -2,12 +2,19 @@ package com.example.on_safe.ui.login
 
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.text.Editable
+import android.text.SpannableString
+import android.text.Spanned
 import android.text.TextWatcher
 import android.text.method.HideReturnsTransformationMethod
+import android.text.method.LinkMovementMethod
 import android.text.method.PasswordTransformationMethod
+import android.text.style.ClickableSpan
+import android.text.style.ForegroundColorSpan
+import android.text.style.UnderlineSpan
 import android.util.Log
 import android.view.View
 import android.widget.Button
@@ -18,7 +25,9 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.example.on_safe.BuildConfig
 import com.example.on_safe.R
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.LoginRequest
@@ -47,6 +56,26 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 디버그 빌드 여부 — FLAG_DEBUGGABLE은 릴리즈 서명 빌드에서 자동으로 제거됨
+        val isDebug = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+
+        // ── 자동 로그인 체크 ──────────────────────────────────────────────────────
+        // 토큰이 살아있고 마지막 로그인으로부터 30일 이내 → 로그인 화면 건너뜀
+        // TODO: 테스팅 완료 후 isDebug 조건 제거하여 자동 로그인 활성화
+        if (!isDebug && TokenManager.isLoggedIn(this) && !TokenManager.isSessionExpired(this)) {
+            val next = if (!TutorialActivity.isTutorialShown(this)) {
+                TutorialActivity.intentForLogin(this)
+            } else {
+                Intent(this, ModeSelectActivity::class.java)
+            }
+            startActivity(next.apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+            return
+        }
+        // ─────────────────────────────────────────────────────────────────────────
+
         setContentView(R.layout.activity_login)
 
         dpScale = resources.displayMetrics.density
@@ -63,21 +92,21 @@ class LoginActivity : AppCompatActivity() {
         pbLoading    = findViewById(R.id.pbLoading)
 
         // 디버그 빌드에서만 테스트 로그인 버튼 활성화
-        // FLAG_DEBUGGABLE은 릴리즈 서명 빌드에서 자동으로 제거됨
-        val isDebug = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
         if (isDebug) {
             val btnDebugLogin = findViewById<Button>(R.id.btnDebugLogin)
             btnDebugLogin.visibility = View.VISIBLE
             btnDebugLogin.setOnClickListener {
+                // 테스트 토큰 저장
                 TokenManager.saveTokens(this, "debug_token", "debug_refresh", "debug_user")
-                val next = if (!TutorialActivity.isTutorialShown(this)) {
-                    TutorialActivity.intentForLogin(this)
-                } else {
-                    Intent(this, ModeSelectActivity::class.java)
-                }
-                startActivity(next.apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                })
+                // 온보딩 전체 플로우(튜토리얼 → 권한 → 모드 선택) 테스트를 위해 튜토리얼 표시 여부 초기화
+                getSharedPreferences("app_prefs", MODE_PRIVATE)
+                    .edit().remove(TutorialActivity.KEY_TUTORIAL_SHOWN).apply()
+                // 항상 온보딩 첫 화면(튜토리얼)부터 시작
+                startActivity(
+                    TutorialActivity.intentForLogin(this).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                )
             }
         }
 
@@ -130,7 +159,7 @@ class LoginActivity : AppCompatActivity() {
                             this@LoginActivity,
                             data.accessToken, data.refreshToken, data.userId
                         )
-                        Log.d("Login", "저장 완료 — userId=${data.userId}, accessToken=${data.accessToken.take(20)}...")
+                        if (BuildConfig.DEBUG) Log.d("Login", "저장 완료 — userId=${data.userId}")
                         // 최초 로그인 시 튜토리얼 표시 (기기별 1회)
                         val next = if (!TutorialActivity.isTutorialShown(this@LoginActivity)) {
                             TutorialActivity.intentForLogin(this@LoginActivity)
@@ -165,6 +194,54 @@ class LoginActivity : AppCompatActivity() {
         tvRegister.setOnClickListener {
             startActivity(Intent(this, RegisterStep1Activity::class.java))
         }
+
+        setupTermsLinks()
+    }
+
+    // 이용약관·개인정보 처리방침 텍스트를 파란 밑줄 링크로 표시
+    private fun setupTermsLinks() {
+        val tvTerms = findViewById<TextView>(R.id.tvTerms)
+        val fullText = "로그인 시 이용약관 및 개인정보 처리방침에 동의합니다."
+        val spannable = SpannableString(fullText)
+        val linkColor = ContextCompat.getColor(this, R.color.primary_blue)
+
+        fun applyLink(keyword: String, url: String) {
+            val start = fullText.indexOf(keyword)
+            if (start < 0) return
+            val end = start + keyword.length
+            spannable.setSpan(ForegroundColorSpan(linkColor), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(UnderlineSpan(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(object : ClickableSpan() {
+                override fun onClick(widget: View) {
+                    if (url.isBlank()) {
+                        Toast.makeText(this@LoginActivity, "약관 페이지가 아직 준비 중입니다.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        try {
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        } catch (e: Exception) {
+                            Toast.makeText(this@LoginActivity, "약관 페이지를 열 수 없습니다.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                override fun updateDrawState(ds: android.text.TextPaint) {
+                    ds.color = linkColor
+                    ds.isUnderlineText = true
+                }
+            }, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+
+        applyLink("이용약관", TERMS_URL_SERVICE)
+        applyLink("개인정보 처리방침", TERMS_URL_PRIVACY)
+
+        tvTerms.text = spannable
+        tvTerms.movementMethod = LinkMovementMethod.getInstance()
+        tvTerms.highlightColor = android.graphics.Color.TRANSPARENT
+    }
+
+    companion object {
+        // TODO: 약관 URL 확정 후 채우기 (RegisterStep1Activity 상수와 함께 일괄 교체)
+        private const val TERMS_URL_SERVICE = ""   // 이용약관
+        private const val TERMS_URL_PRIVACY = ""   // 개인정보 처리방침
     }
 
     private fun showLoginError(message: String) {

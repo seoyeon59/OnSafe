@@ -26,6 +26,7 @@ import com.example.on_safe.network.dto.CheckIdRequest
 import com.example.on_safe.network.dto.RegisterRequest
 import com.example.on_safe.network.dto.SendEmailCodeRequest
 import com.example.on_safe.network.dto.VerifyEmailCodeRequest
+import com.example.on_safe.util.PasswordValidator
 import kotlinx.coroutines.launch
 
 class RegisterStep2Activity : AppCompatActivity() {
@@ -169,13 +170,12 @@ class RegisterStep2Activity : AppCompatActivity() {
                     setInputBorderNormal(etPw)
                     isPwValid = false
                 } else {
-                    val regex = Regex("^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@\$!%*#?&])[A-Za-z\\d@\$!%*#?&]{8,}$")
-                    isPwValid = regex.matches(pw)
+                    isPwValid = PasswordValidator.isValid(pw)
                     if (isPwValid) {
-                        showMessage(tvPwMessage, "✓ 사용 가능한 비밀번호입니다.", COLOR_GREEN)
+                        showMessage(tvPwMessage, PasswordValidator.SUCCESS_MSG, COLOR_GREEN)
                         setInputBorderColor(etPw, COLOR_GREEN)
                     } else {
-                        showMessage(tvPwMessage, "영문, 숫자, 특수문자 포함 8자 이상 입력해주세요.", COLOR_RED)
+                        showMessage(tvPwMessage, PasswordValidator.ERROR_MSG, COLOR_RED)
                         setInputBorderColor(etPw, COLOR_RED)
                     }
                 }
@@ -253,9 +253,8 @@ class RegisterStep2Activity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // 나머지 필드
+        // 나머지 필드 (etAddressDetail은 선택 항목이므로 watcher 불필요)
         etName.addTextChangedListener(simpleWatcher())
-        etAddressDetail.addTextChangedListener(simpleWatcher())  // 추가
 
         // 아이디 중복 확인
         btnCheckId.setOnClickListener {
@@ -455,10 +454,10 @@ class RegisterStep2Activity : AppCompatActivity() {
         }
         isPwConfirmValid = pw == confirm
         if (isPwConfirmValid) {
-            showMessage(tvPwConfirmMessage, "✓ 비밀번호가 일치합니다.", COLOR_GREEN)
+            showMessage(tvPwConfirmMessage, PasswordValidator.MATCH_MSG, COLOR_GREEN)
             setInputBorderColor(etPwConfirm, COLOR_GREEN)
         } else {
-            showMessage(tvPwConfirmMessage, "비밀번호가 일치하지 않습니다.", COLOR_RED)
+            showMessage(tvPwConfirmMessage, PasswordValidator.MISMATCH_MSG, COLOR_RED)
             setInputBorderColor(etPwConfirm, COLOR_RED)
         }
     }
@@ -488,6 +487,7 @@ class RegisterStep2Activity : AppCompatActivity() {
     }
 
     private fun updateCompleteButton() {
+        // etAddressDetail은 RegisterRequest에서 nullable 선택 항목 → 필수 조건 제외
         val allValid = etId.text.isNotEmpty()
                 && isIdChecked
                 && isPwValid
@@ -497,7 +497,6 @@ class RegisterStep2Activity : AppCompatActivity() {
                 && isEmailValid
                 && isEmailVerified
                 && etAddress.text.isNotEmpty()
-                && etAddressDetail.text.isNotEmpty()
 
         btnComplete.isEnabled = allValid
         btnComplete.alpha = if (allValid) 1.0f else 0.4f

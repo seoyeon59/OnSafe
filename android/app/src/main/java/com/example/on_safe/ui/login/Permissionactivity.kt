@@ -1,27 +1,27 @@
 package com.example.on_safe.ui.login
 
 import android.Manifest
-import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.Window
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.example.on_safe.MainActivity
 import com.example.on_safe.R
-import com.example.on_safe.ui.camera.CameraModeActivity
 
-// 온보딩 권한 요청 화면 (TutorialActivity → 이 화면 → MainActivity or CameraModeActivity)
-// selected_mode: 1 = 보호자 모드, 2 = 카메라 모드
+// 온보딩 권한 요청 화면 (TutorialActivity → 이 화면 → ModeSelectActivity)
+// 플로우: 로그인 → 튜토리얼 → 권한 요청 → 모드 선택 → MainActivity or CameraModeActivity
 class PermissionActivity : AppCompatActivity() {
-
-    private var selectedMode = 1
 
     // 권한 요청 순서: 카메라 → 사진/영상 → 마이크 → 알림 (UI 목록 순서와 일치)
     private val requiredPermissions: Array<String> by lazy {
@@ -47,29 +47,27 @@ class PermissionActivity : AppCompatActivity() {
     // 앱 설정에서 돌아왔을 때 권한 재확인
     private val openSettings =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (areAllPermissionsGranted()) goToMain()
+            if (areAllPermissionsGranted()) goToModeSelect()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_permission)
 
-        selectedMode = intent.getIntExtra("selected_mode", 1)
-
         findViewById<Button>(R.id.btnAllow).setOnClickListener { requestAllPermissions() }
-        findViewById<TextView>(R.id.tvSkip).setOnClickListener { goToMain() }
+        findViewById<TextView>(R.id.tvSkip).setOnClickListener { goToModeSelect() }
 
-        if (areAllPermissionsGranted()) goToMain()
+        if (areAllPermissionsGranted()) goToModeSelect()
     }
 
     private fun requestAllPermissions() {
-        if (areAllPermissionsGranted()) { goToMain(); return }
+        if (areAllPermissionsGranted()) { goToModeSelect(); return }
         requestPermissions.launch(requiredPermissions)
     }
 
     private fun handlePermissionResults(results: Map<String, Boolean>) {
         val denied = results.filter { !it.value }.keys
-        if (denied.isEmpty()) { goToMain(); return }
+        if (denied.isEmpty()) { goToModeSelect(); return }
 
         // 영구 거부된 항목이 하나라도 있으면 설정 화면으로 유도
         val permanentlyDenied = denied.any { !shouldShowRequestPermissionRationale(it) }
@@ -83,31 +81,43 @@ class PermissionActivity : AppCompatActivity() {
         }
 
     private fun showGoToSettingsDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("권한 설정 필요")
-            .setMessage("일부 권한이 '다시 묻지 않음'으로 거부되었습니다.\n앱 설정에서 직접 허용해주세요.")
-            .setPositiveButton("설정으로 이동") { _, _ ->
-                openSettings.launch(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data = Uri.fromParts("package", packageName, null)
-                    }
-                )
-            }
-            .setNegativeButton("나중에") { dialog, _ -> dialog.dismiss() }
-            .setCancelable(false)
-            .show()
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_permission_settings)
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setLayout(
+                (resources.displayMetrics.widthPixels * 0.85).toInt(),
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+        }
+        dialog.setCanceledOnTouchOutside(false)
+
+        dialog.findViewById<TextView>(R.id.tvPermDialogMessage).text =
+            "일부 권한이 '다시 묻지 않음'으로\n거부되었습니다. 앱 설정에서 직접 허용해주세요."
+
+        dialog.findViewById<TextView>(R.id.btnPermDialogCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.findViewById<TextView>(R.id.btnPermDialogConfirm).setOnClickListener {
+            dialog.dismiss()
+            openSettings.launch(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+            )
+        }
+        dialog.show()
     }
 
-    private fun goToMain() {
-        val intent = when (selectedMode) {
-            2 -> Intent(this, CameraModeActivity::class.java)
-            else -> Intent(this, MainActivity::class.java)
-        }.apply {
-            putExtra("selected_mode", selectedMode)
-            // 온보딩 백스택 전부 종료
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        startActivity(intent)
+    // 권한 요청 완료(허용·거부·건너뛰기 모두) → 모드 선택 화면으로 이동
+    // 온보딩 백스택(Login → Tutorial → Permission) 전부 종료
+    private fun goToModeSelect() {
+        startActivity(
+            Intent(this, ModeSelectActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+        )
         finish()
     }
 }

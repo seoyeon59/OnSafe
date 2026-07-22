@@ -10,6 +10,7 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import com.example.on_safe.R
 
 // 개인정보 수정 화면 — 진입 시 비밀번호 확인 후 폼 활성화
@@ -23,9 +24,14 @@ class EditProfileActivity : AppCompatActivity() {
     private lateinit var etAddress2: EditText
     private lateinit var btnSave: Button
     private lateinit var btnBack: ImageButton
+    private lateinit var switchMarketing: SwitchCompat
 
     // 인증 전에는 숨김 처리
     private lateinit var formContainer: View
+
+    private val settingsPrefs by lazy {
+        getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+    }
 
     // 주소 검색 결과를 받아오는 런처
     private val addressLauncher = registerForActivityResult(
@@ -48,14 +54,21 @@ class EditProfileActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
-        etName        = findViewById(R.id.etName)
-        etPhone       = findViewById(R.id.etPhone)
-        etEmail       = findViewById(R.id.etEmail)
-        etAddress1    = findViewById(R.id.etAddress1)
-        etAddress2    = findViewById(R.id.etAddress2)
-        btnSave       = findViewById(R.id.btnSave)
-        btnBack       = findViewById(R.id.btnBack)
-        formContainer = findViewById(R.id.scrollContent)
+        etName          = findViewById(R.id.etName)
+        etPhone         = findViewById(R.id.etPhone)
+        etEmail         = findViewById(R.id.etEmail)
+        etAddress1      = findViewById(R.id.etAddress1)
+        etAddress2      = findViewById(R.id.etAddress2)
+        btnSave         = findViewById(R.id.btnSave)
+        btnBack         = findViewById(R.id.btnBack)
+        switchMarketing = findViewById(R.id.switchMarketing)
+        formContainer   = findViewById(R.id.scrollContent)
+
+        // 저장된 마케팅 수신 동의 상태 복원
+        switchMarketing.isChecked = settingsPrefs.getBoolean("marketing_enabled", false)
+        switchMarketing.setOnCheckedChangeListener { _, isChecked ->
+            settingsPrefs.edit().putBoolean("marketing_enabled", isChecked).apply()
+        }
 
         // 인증 전: 폼 숨김
         formContainer.visibility = View.INVISIBLE

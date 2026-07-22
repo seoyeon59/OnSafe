@@ -12,6 +12,7 @@
         android:layout_width="0dp"
         android:layout_height="52dp"
         android:background="@color/surface_white"
+        android:elevation="3dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
@@ -265,6 +266,49 @@
                     android:text="입력하신 정보는 긴급 상황 시 연락처로 사용됩니다.\n정확한 정보를 입력해주세요."
                     android:textColor="@color/primary_blue"
                     android:textSize="11sp" />
+            </LinearLayout>
+
+            <!-- 마케팅 수신 동의 카드 -->
+            <LinearLayout
+                android:id="@+id/cardMarketing"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_card"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="14dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="마케팅 정보 수신 동의"
+                        android:textColor="@color/ink_900"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="업데이트·이벤트 알림을 받습니다 (선택)"
+                        android:textColor="@color/ink_500"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switchMarketing"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:showText="false"
+                    app:thumbTint="@color/switch_thumb_tint"
+                    app:trackTint="@color/switch_track_tint" />
             </LinearLayout>
 
         </LinearLayout>

@@ -20,6 +20,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.ResetPasswordRequest
+import com.example.on_safe.util.PasswordValidator
 import kotlinx.coroutines.launch
 
 class ResetPasswordActivity : AppCompatActivity() {
@@ -133,13 +134,12 @@ class ResetPasswordActivity : AppCompatActivity() {
                     setInputBorderNormal(etNewPw)
                     isNewPwValid = false
                 } else {
-                    val regex = Regex("^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@\$!%*#?&])[A-Za-z\\d@\$!%*#?&]{8,}$")
-                    isNewPwValid = regex.matches(pw)
+                    isNewPwValid = PasswordValidator.isValid(pw)
                     if (isNewPwValid) {
-                        showMessage(tvNewPwMessage, "✓ 사용 가능한 비밀번호입니다.", COLOR_GREEN)
+                        showMessage(tvNewPwMessage, PasswordValidator.SUCCESS_MSG, COLOR_GREEN)
                         setInputBorderColor(etNewPw, COLOR_GREEN)
                     } else {
-                        showMessage(tvNewPwMessage, "영문, 숫자, 특수문자 포함 8자 이상 입력해주세요.", COLOR_RED)
+                        showMessage(tvNewPwMessage, PasswordValidator.ERROR_MSG, COLOR_RED)
                         setInputBorderColor(etNewPw, COLOR_RED)
                     }
                 }
@@ -203,10 +203,10 @@ class ResetPasswordActivity : AppCompatActivity() {
         }
         isNewPwConfirmValid = pw == confirm
         if (isNewPwConfirmValid) {
-            showMessage(tvNewPwConfirmMessage, "✓ 비밀번호가 일치합니다.", COLOR_GREEN)
+            showMessage(tvNewPwConfirmMessage, PasswordValidator.MATCH_MSG, COLOR_GREEN)
             setInputBorderColor(etNewPwConfirm, COLOR_GREEN)
         } else {
-            showMessage(tvNewPwConfirmMessage, "비밀번호가 일치하지 않습니다.", COLOR_RED)
+            showMessage(tvNewPwConfirmMessage, PasswordValidator.MISMATCH_MSG, COLOR_RED)
             setInputBorderColor(etNewPwConfirm, COLOR_RED)
         }
     }

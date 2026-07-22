@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- bg_card와 동일하되 stroke 없음 — elevation 그림자만으로 구분하는 카드 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/surface_white" />
+    <corners android:radius="16dp" />
+</shape>

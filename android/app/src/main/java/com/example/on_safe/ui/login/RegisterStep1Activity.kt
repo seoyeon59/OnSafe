@@ -1,16 +1,26 @@
 package com.example.on_safe.ui.login
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.on_safe.R
 
 // 회원가입 Step1 — 서비스 이용 동의 (필수 3개 + 선택 1개)
 class RegisterStep1Activity : AppCompatActivity() {
+
+    // TODO: 서비스 약관 페이지 URL이 확정되면 아래 빈 문자열을 실제 URL로 채워주세요.
+    //       URL이 비어 있거나 잘못된 경우 openTermsUrl()이 공통 오류 메시지를 표시합니다.
+    private val TERMS_URL_AGREE1 = ""  // 이용약관
+    private val TERMS_URL_AGREE2 = ""  // 개인정보 수집 및 이용
+    private val TERMS_URL_AGREE3 = ""  // 민감정보(건강·위치 데이터) 처리
+    private val TERMS_URL_AGREE5 = ""  // 마케팅 정보 수신
 
     private lateinit var btnBack: ImageButton
     private lateinit var btnNext: Button
@@ -27,6 +37,11 @@ class RegisterStep1Activity : AppCompatActivity() {
     private lateinit var check3: View
     private lateinit var check5: View
 
+    private lateinit var btnViewAgree1: ImageView
+    private lateinit var btnViewAgree2: ImageView
+    private lateinit var btnViewAgree3: ImageView
+    private lateinit var btnViewAgree5: ImageView
+
     private var isCheck1 = false
     private var isCheck2 = false
     private var isCheck3 = false
@@ -38,6 +53,7 @@ class RegisterStep1Activity : AppCompatActivity() {
 
         bindViews()
         setupListeners()
+        refreshUI() // 초기 버튼 상태 보장 (XML 설정에만 의존하지 않도록)
     }
 
     private fun bindViews() {
@@ -53,6 +69,11 @@ class RegisterStep1Activity : AppCompatActivity() {
         check2        = findViewById(R.id.check2)
         check3        = findViewById(R.id.check3)
         check5        = findViewById(R.id.check5)
+
+        btnViewAgree1 = findViewById(R.id.btnViewAgree1)
+        btnViewAgree2 = findViewById(R.id.btnViewAgree2)
+        btnViewAgree3 = findViewById(R.id.btnViewAgree3)
+        btnViewAgree5 = findViewById(R.id.btnViewAgree5)
     }
 
     private fun setupListeners() {
@@ -74,6 +95,12 @@ class RegisterStep1Activity : AppCompatActivity() {
         layoutAgree3.setOnClickListener { setCheck(3, !isCheck3); refreshUI() }
         layoutAgree5.setOnClickListener { setCheck(5, !isCheck5); refreshUI() }
 
+        // 각 약관의 화살표 버튼 클릭 → URL 열기 (체크박스 토글과 독립 동작)
+        btnViewAgree1.setOnClickListener { openTermsUrl(TERMS_URL_AGREE1) }
+        btnViewAgree2.setOnClickListener { openTermsUrl(TERMS_URL_AGREE2) }
+        btnViewAgree3.setOnClickListener { openTermsUrl(TERMS_URL_AGREE3) }
+        btnViewAgree5.setOnClickListener { openTermsUrl(TERMS_URL_AGREE5) }
+
         btnNext.setOnClickListener {
             startActivity(Intent(this, RegisterStep2Activity::class.java))
         }
@@ -90,6 +117,19 @@ class RegisterStep1Activity : AppCompatActivity() {
             2 -> { isCheck2 = checked; check2.setBackgroundResource(res) }
             3 -> { isCheck3 = checked; check3.setBackgroundResource(res) }
             5 -> { isCheck5 = checked; check5.setBackgroundResource(res) }
+        }
+    }
+
+    // 약관 URL 열기 — URL이 없거나 브라우저를 열 수 없을 때 공통 오류 메시지 표시
+    private fun openTermsUrl(url: String) {
+        if (url.isBlank()) {
+            Toast.makeText(this, "약관 페이지가 아직 준비 중입니다.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: Exception) {
+            Toast.makeText(this, "약관 페이지를 열 수 없습니다.", Toast.LENGTH_SHORT).show()
         }
     }
 

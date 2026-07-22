@@ -11,6 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="52dp"
         android:background="#FEFEFE"
+        android:elevation="3dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="16dp"

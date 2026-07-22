@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -52,11 +53,12 @@ class TutorialActivity : AppCompatActivity() {
     // ──────────────────────────────────────────────
     // Views
     // ──────────────────────────────────────────────
-    private lateinit var progressBar:  ProgressBar
-    private lateinit var tvCounter:    TextView
-    private lateinit var ivPage:       ImageView
-    private lateinit var btnPrev:      Button
-    private lateinit var btnNext:      Button
+    private lateinit var progressBar:      ProgressBar
+    private lateinit var tvCounter:        TextView
+    private lateinit var ivPage:           ImageView
+    private lateinit var btnPrev:          Button
+    private lateinit var btnNext:          Button
+    private lateinit var btnSkipTutorial:  ImageButton
 
     // ──────────────────────────────────────────────
     // Lifecycle
@@ -68,11 +70,12 @@ class TutorialActivity : AppCompatActivity() {
 
         fromLogin = intent.getBooleanExtra(EXTRA_FROM_LOGIN, false)
 
-        progressBar = findViewById(R.id.progressBar)
-        tvCounter   = findViewById(R.id.tvPageCounter)
-        ivPage      = findViewById(R.id.ivPageImage)
-        btnPrev     = findViewById(R.id.btnPrev)
-        btnNext     = findViewById(R.id.btnNext)
+        progressBar      = findViewById(R.id.progressBar)
+        tvCounter        = findViewById(R.id.tvPageCounter)
+        ivPage           = findViewById(R.id.ivPageImage)
+        btnPrev          = findViewById(R.id.btnPrev)
+        btnNext          = findViewById(R.id.btnNext)
+        btnSkipTutorial  = findViewById(R.id.btnSkipTutorial)
 
         btnPrev.setOnClickListener { navigateTo(currentPage - 1) }
         btnNext.setOnClickListener {
@@ -82,6 +85,9 @@ class TutorialActivity : AppCompatActivity() {
                 onTutorialComplete()
             }
         }
+
+        // X 버튼: 튜토리얼을 끝까지 보지 않고 이탈
+        btnSkipTutorial.setOnClickListener { onSkipTutorial() }
 
         // 저장된 상태 복원 (화면 회전 등)
         currentPage = savedInstanceState?.getInt(STATE_CURRENT_PAGE) ?: 0
@@ -137,9 +143,22 @@ class TutorialActivity : AppCompatActivity() {
         if (fromLogin) {
             // 최초 실행 플래그 저장 (이후에는 튜토리얼 자동 표시 안 함)
             markTutorialShown()
-            // 모드 선택 화면으로 이동 (튜토리얼은 모드 선택 전에 표시)
+            // 권한 요청 화면으로 이동 (플로우: 튜토리얼 → 권한 → 모드 선택)
             startActivity(
-                Intent(this, com.example.on_safe.ui.login.ModeSelectActivity::class.java).apply {
+                Intent(this, com.example.on_safe.ui.login.PermissionActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+            )
+        }
+        finish()
+    }
+
+    // X 버튼으로 중간 이탈 — markTutorialShown() 호출 안 함 (다음 로그인 때 다시 보임)
+    private fun onSkipTutorial() {
+        if (fromLogin) {
+            // 로그인 플로우 중이므로 PermissionActivity로 넘어가야 앱이 계속 진행됨
+            startActivity(
+                Intent(this, com.example.on_safe.ui.login.PermissionActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 }
             )
