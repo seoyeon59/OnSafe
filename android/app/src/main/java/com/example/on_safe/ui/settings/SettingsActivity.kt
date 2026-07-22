@@ -2,6 +2,7 @@ package com.example.on_safe.ui.settings
 
 import android.Manifest
 import android.app.Dialog
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -21,22 +22,29 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.NotificationSettingsRequest
 import com.example.on_safe.util.TokenManager
+import kotlinx.coroutines.launch
 import com.example.on_safe.data.fake.FakeUserRepository
 import com.example.on_safe.data.repository.UserRepository
 
 // 설정 화면 (알림 토글, 개인정보 수정, 비밀번호 변경, 로그아웃, 회원탈퇴)
+//
+// [알림 토글 저장 전략]
+// 서버(백엔드 DB)가 진실의 원천이며, SharedPreferences("settings")는 오프라인 캐시.
+// 진입 시 캐시를 즉시 보여주고 → 서버에서 최신 값을 받아 캐시·UI를 갱신한다.
+// 사용자 조작 시엔 캐시를 먼저 갱신(optimistic)하고 → 서버에 PUT.
+// PUT 실패 시엔 캐시를 그대로 두어 다음 서버 GET 성공 시점에 자동 재동기화.
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var switchNotification: SwitchCompat
     private lateinit var switchSound: SwitchCompat
     private lateinit var switchVibration: SwitchCompat
-
-    // 알림 OFF 상태에서 소리·진동 스위치를 프로그래밍 방식으로 되돌릴 때 리스너 중복 호출 방지
-    private var isUpdatingToggles = false
 
     private lateinit var rowEditProfile: LinearLayout
     private lateinit var rowChangePassword: LinearLayout
@@ -53,39 +61,29 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var tvUserName: TextView
 
+    // 프로그래밍적으로 토글을 세팅할 때 리스너 재발화(재-PUT) 방지
+    private var suppressToggleListeners = false
 
-    // TODO: API 연동 시 Real 구현체로 교체
-    private val userRepository: UserRepository = FakeUserRepository()
-
-    // TODO: 현재 알림·소리·진동 토글 상태는 테스트용으로 기기 공용 SharedPreferences("settings")에 저장합니다.
-    //       나중에 서버 API에서 사용자 ID 별로 설정을 관리하게 되면,
-    //       아래 "settings" 키를 "settings_${userId}" 형태로 바꾸거나
-    //       서버에서 받아온 값으로 초기화하는 방식으로 수정해주세요.
-    private val settingsPrefs by lazy { getSharedPreferences("settings", android.content.Context.MODE_PRIVATE) }
+    private val settingsPrefs by lazy { getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
         initViews()
-        loadUserName()
         setupToggleDependency()
         setupClickListeners()
+
+        loadUserName()
+        loadNotificationSettings()
     }
 
     override fun onResume() {
         super.onResume()
         // 시스템 설정에서 알림 권한이 취소된 경우 토글 강제 OFF 동기화
-        if (!isNotificationPermissionGranted()) {
-            if (switchNotification.isChecked) {
-                switchNotification.isChecked = false
-                // 저장값도 함께 업데이트 (리스너가 아직 attach 안 된 경우를 대비해 직접 저장)
-                settingsPrefs.edit()
-                    .putBoolean("notify_enabled",     false)
-                    .putBoolean("sound_enabled",      false)
-                    .putBoolean("vibration_enabled",  false)
-                    .apply()
-            }
+        // (프로그래밍 방식 변경이지만 리스너 발화가 필요 — 캐시·서버 모두 반영)
+        if (!isNotificationPermissionGranted() && switchNotification.isChecked) {
+            switchNotification.isChecked = false
         }
     }
 
@@ -105,19 +103,103 @@ class SettingsActivity : AppCompatActivity() {
         tvUserName         = findViewById(R.id.tvUserName)
         btnTutorial        = findViewById(R.id.btnTutorial)
 
-        // 저장된 토글 상태 복원
-        val notifyOn = settingsPrefs.getBoolean("notify_enabled", true)
-        switchNotification.isChecked = notifyOn
-        switchSound.isChecked       = settingsPrefs.getBoolean("sound_enabled",     true)
-        switchVibration.isChecked   = settingsPrefs.getBoolean("vibration_enabled", true)
-        // 알림이 꺼져 있으면 소리·진동 시각적 비활성화 (alpha)
-        switchSound.alpha     = if (notifyOn) 1f else 0.38f
-        switchVibration.alpha = if (notifyOn) 1f else 0.38f
+        // 캐시에서 즉시 복원 (오프라인/서버 응답 전에도 정확한 마지막 값 표시)
+        applyNotificationValues(
+            notification = settingsPrefs.getBoolean(KEY_NOTIFY, true),
+            sound = settingsPrefs.getBoolean(KEY_SOUND, true),
+            vibration = settingsPrefs.getBoolean(KEY_VIBRATION, true)
+        )
+    }
+
+    // UI 3개 토글과 활성 상태를 리스너 억제 상태로 일괄 적용
+    private fun applyNotificationValues(notification: Boolean, sound: Boolean, vibration: Boolean) {
+        suppressToggleListeners = true
+        switchNotification.isChecked = notification
+        switchSound.isChecked = sound
+        switchVibration.isChecked = vibration
+        switchSound.isEnabled = notification
+        switchVibration.isEnabled = notification
+        suppressToggleListeners = false
+    }
+
+    // 캐시 저장 (서버 저장과 별개의 단순 로컬 미러)
+    private fun writeCache(notification: Boolean?, sound: Boolean?, vibration: Boolean?) {
+        val editor = settingsPrefs.edit()
+        if (notification != null) editor.putBoolean(KEY_NOTIFY, notification)
+        if (sound != null) editor.putBoolean(KEY_SOUND, sound)
+        if (vibration != null) editor.putBoolean(KEY_VIBRATION, vibration)
+        editor.apply()
     }
 
     private fun loadUserName() {
-        // TODO: 실제 이름 연동 시 "${이름} 보호자님" 형식으로 표시 (현재 Fake는 "보호자" 반환 → "보호자님"으로 표시됨)
-        tvUserName.text = "${userRepository.getUserName()}님"
+        val userId = TokenManager.getUserId(this)
+        if (userId.isBlank()) {
+            tvUserName.text = "${userRepository.getUserName()}님"
+            return
+        }
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.api.getUser(userId)
+                val body = response.body()
+                if (response.isSuccessful && body?.success == true && body.data != null) {
+                    tvUserName.text = "${body.data.name} 보호자님"
+                } else {
+                    tvUserName.text = "보호자님"
+                }
+            } catch (_: Exception) {
+                tvUserName.text = "보호자님"
+            }
+        }
+    }
+
+    // 서버 최신 값으로 UI + 캐시 갱신. 실패 시 캐시로 표시한 값 그대로 둠.
+    private fun loadNotificationSettings() {
+        val userId = TokenManager.getUserId(this)
+        if (userId.isBlank()) return
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.api.getNotificationSettings(userId)
+                val body = response.body()
+                if (response.isSuccessful && body?.success == true && body.data != null) {
+                    val data = body.data
+                    applyNotificationValues(
+                        notification = data.notificationEnabled,
+                        sound = data.soundEnabled,
+                        vibration = data.vibrationEnabled
+                    )
+                    writeCache(data.notificationEnabled, data.soundEnabled, data.vibrationEnabled)
+                }
+            } catch (_: Exception) {
+                // 조회 실패 → 캐시로 이미 표시된 값 유지
+            }
+        }
+    }
+
+    // 사용자 조작 시 서버 PUT (부분 업데이트). 실패해도 캐시는 갱신된 상태 유지.
+    private fun updateNotificationSetting(
+        notification: Boolean? = null,
+        sound: Boolean? = null,
+        vibration: Boolean? = null
+    ) {
+        val userId = TokenManager.getUserId(this)
+        if (userId.isBlank()) return
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.api.updateNotificationSettings(
+                    userId,
+                    NotificationSettingsRequest(
+                        notificationEnabled = notification,
+                        soundEnabled = sound,
+                        vibrationEnabled = vibration
+                    )
+                )
+                if (!response.isSuccessful || response.body()?.success != true) {
+                    Toast.makeText(this@SettingsActivity, "설정 저장 실패", Toast.LENGTH_SHORT).show()
+                }
+            } catch (_: Exception) {
+                Toast.makeText(this@SettingsActivity, "설정 저장 실패", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     // 알림 권한 (API 33+)
@@ -178,60 +260,44 @@ class SettingsActivity : AppCompatActivity() {
     // 알림 ON → 소리·진동도 함께 ON / 알림 OFF → 소리·진동 함께 OFF·비활성화
     private fun setupToggleDependency() {
         switchNotification.setOnCheckedChangeListener { _, isChecked ->
+            if (suppressToggleListeners) return@setOnCheckedChangeListener
+
             if (isChecked && !isNotificationPermissionGranted()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
                 return@setOnCheckedChangeListener
             }
-            switchSound.alpha     = if (isChecked) 1f else 0.38f
-            switchVibration.alpha = if (isChecked) 1f else 0.38f
-            isUpdatingToggles = true
-            if (isChecked) {
-                // 알림 ON → 소리·진동도 자동으로 ON (앱 기본 상태)
-                switchSound.isChecked     = true
-                switchVibration.isChecked = true
-                settingsPrefs.edit()
-                    .putBoolean("sound_enabled",     true)
-                    .putBoolean("vibration_enabled", true)
-                    .apply()
-            } else {
-                // 알림 OFF → 소리·진동도 함께 OFF
-                switchSound.isChecked     = false
+
+            switchSound.isEnabled = isChecked
+            switchVibration.isEnabled = isChecked
+
+            if (!isChecked) {
+                // 알림 OFF → 소리/진동도 함께 OFF. 리스너 억제하고 한 번의 PUT으로 처리
+                suppressToggleListeners = true
+                switchSound.isChecked = false
                 switchVibration.isChecked = false
-                settingsPrefs.edit()
-                    .putBoolean("sound_enabled",     false)
-                    .putBoolean("vibration_enabled", false)
-                    .apply()
+                suppressToggleListeners = false
+                writeCache(notification = false, sound = false, vibration = false)
+                updateNotificationSetting(notification = false, sound = false, vibration = false)
+            } else {
+                writeCache(notification = true, sound = null, vibration = null)
+                updateNotificationSetting(notification = true)
             }
-            isUpdatingToggles = false
-            settingsPrefs.edit().putBoolean("notify_enabled", isChecked).apply()
         }
 
         // 소리 스위치: 알림 OFF 상태에서 토글 시도 → 상태 되돌리고 토스트 (isUpdatingToggles로 무한 루프 방지)
         switchSound.setOnCheckedChangeListener { _, isChecked ->
-            if (isUpdatingToggles) return@setOnCheckedChangeListener
-            if (!switchNotification.isChecked) {
-                isUpdatingToggles = true
-                switchSound.isChecked = !isChecked
-                isUpdatingToggles = false
-                Toast.makeText(this, "알림을 먼저 켜야 소리 설정을 변경할 수 있습니다.", Toast.LENGTH_SHORT).show()
-                return@setOnCheckedChangeListener
-            }
-            settingsPrefs.edit().putBoolean("sound_enabled", isChecked).apply()
+            if (suppressToggleListeners) return@setOnCheckedChangeListener
+            writeCache(notification = null, sound = isChecked, vibration = null)
+            updateNotificationSetting(sound = isChecked)
         }
 
         // 진동 스위치: 동일 패턴
         switchVibration.setOnCheckedChangeListener { _, isChecked ->
-            if (isUpdatingToggles) return@setOnCheckedChangeListener
-            if (!switchNotification.isChecked) {
-                isUpdatingToggles = true
-                switchVibration.isChecked = !isChecked
-                isUpdatingToggles = false
-                Toast.makeText(this, "알림을 먼저 켜야 진동 설정을 변경할 수 있습니다.", Toast.LENGTH_SHORT).show()
-                return@setOnCheckedChangeListener
-            }
-            settingsPrefs.edit().putBoolean("vibration_enabled", isChecked).apply()
+            if (suppressToggleListeners) return@setOnCheckedChangeListener
+            writeCache(notification = null, sound = null, vibration = isChecked)
+            updateNotificationSetting(vibration = isChecked)
         }
     }
 
@@ -321,25 +387,58 @@ class SettingsActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    // 서버 로그아웃 → 로컬 토큰 정리 → 로그인 화면 이동
+    // 서버 호출이 실패해도 로컬 로그아웃은 진행 (사용자 관점에서 항상 성공해야 함)
     private fun handleLogout() {
-        // TODO: 서버 로그아웃 API 호출 (POST /auth/logout)
-        TokenManager.clear(this)
-        Toast.makeText(this, "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show()
-        startActivity(
-            Intent(this, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        lifecycleScope.launch {
+            try {
+                ApiClient.api.logout()
+            } catch (_: Exception) {
+                // 무시하고 로컬 정리로 진행
             }
-        )
+            TokenManager.clear(this@SettingsActivity)
+            Toast.makeText(this@SettingsActivity, "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show()
+            startActivity(
+                Intent(this@SettingsActivity, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+            )
+        }
     }
 
+    // 서버 회원탈퇴 성공 시에만 로컬 정리. 실패 시 계정이 살아있으므로 상태 유지.
     private fun handleWithdraw() {
-        // TODO: 서버 회원탈퇴 API 호출 (DELETE /user)
-        TokenManager.clear(this)
-        Toast.makeText(this, "회원탈퇴가 완료되었습니다.", Toast.LENGTH_SHORT).show()
-        startActivity(
-            Intent(this, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        val userId = TokenManager.getUserId(this)
+        if (userId.isBlank()) {
+            Toast.makeText(this, "로그인 정보가 없습니다.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.api.deleteUser(userId)
+                val body = response.body()
+                if (response.isSuccessful && body?.success == true) {
+                    TokenManager.clear(this@SettingsActivity)
+                    Toast.makeText(this@SettingsActivity, "회원탈퇴가 완료되었습니다.", Toast.LENGTH_SHORT).show()
+                    startActivity(
+                        Intent(this@SettingsActivity, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                    )
+                } else {
+                    val message = ApiClient.parseErrorMessage(response.errorBody(), "회원탈퇴에 실패했습니다.")
+                    Toast.makeText(this@SettingsActivity, message, Toast.LENGTH_SHORT).show()
+                }
+            } catch (_: Exception) {
+                Toast.makeText(this@SettingsActivity, "네트워크 오류로 회원탈퇴에 실패했습니다.", Toast.LENGTH_SHORT).show()
             }
-        )
+        }
+    }
+
+    companion object {
+        private const val PREFS_NAME = "settings"
+        private const val KEY_NOTIFY = "notify_enabled"
+        private const val KEY_SOUND = "sound_enabled"
+        private const val KEY_VIBRATION = "vibration_enabled"
     }
 }
