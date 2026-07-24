@@ -43,28 +43,32 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:minHeight="88dp"
+            android:minHeight="120dp"
             android:orientation="vertical"
             android:paddingStart="12dp"
-            android:paddingTop="8dp"
+            android:paddingTop="10dp"
             android:paddingEnd="12dp"
-            android:paddingBottom="12dp">
+            android:paddingBottom="16dp">
 
-            <!-- 상단: 배지 + 시간 -->
+            <!-- 상단: 낙상 감지 표시 + 시간 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_dot_danger" />
+
                 <TextView
-                    android:id="@+id/tvStatusBadge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="3dp"
-                    android:textColor="@color/surface_white"
-                    android:textSize="11sp"
+                    android:layout_marginStart="8dp"
+                    android:text="낙상 감지"
+                    android:textColor="#1A1C1E"
+                    android:textSize="15sp"
                     android:textStyle="bold" />
 
                 <View
@@ -77,7 +81,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="#9FA6AC"
-                    android:textSize="11sp" />
+                    android:textSize="13sp" />
 
             </LinearLayout>
 
@@ -89,7 +93,7 @@
             <!-- 하단: 버튼 행 (우측 끝 정렬) -->
             <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
+                android:layout_height="wrap_content"
                 android:layout_gravity="end"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
@@ -97,8 +101,8 @@
                 <!-- 영상 보기 버튼 -->
                 <LinearLayout
                     android:id="@+id/btnWatchVideo"
-                    android:layout_width="96dp"
-                    android:layout_height="32dp"
+                    android:layout_width="88dp"
+                    android:layout_height="40dp"
                     android:background="@drawable/bg_outline_blue"
                     android:clickable="true"
                     android:focusable="true"
@@ -106,8 +110,8 @@
                     android:orientation="horizontal">
 
                     <ImageView
-                        android:layout_width="13dp"
-                        android:layout_height="13dp"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_camera"
                         app:tint="@color/primary_blue" />
@@ -118,15 +122,16 @@
                         android:layout_marginStart="4dp"
                         android:text="영상 보기"
                         android:textColor="@color/primary_blue"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
 
                 </LinearLayout>
 
                 <!-- 다운로드 버튼 -->
                 <ImageButton
                     android:id="@+id/btnDownload"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:padding="10dp"
                     android:layout_marginStart="8dp"
                     android:background="@drawable/bg_stroke_neutral"
                     android:contentDescription="@null"
@@ -136,8 +141,9 @@
                 <!-- 삭제 버튼 -->
                 <ImageButton
                     android:id="@+id/btnDelete"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:padding="10dp"
                     android:layout_marginStart="8dp"
                     android:background="@drawable/bg_stroke_danger_light"
                     android:contentDescription="@null"

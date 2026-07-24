@@ -96,7 +96,6 @@ class AccidentHistoryAdapter(
     }
 
     inner class ItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        private val tvStatusBadge: TextView    = view.findViewById(R.id.tvStatusBadge)
         private val tvTime:        TextView    = view.findViewById(R.id.tvTime)
         private val btnWatchVideo: LinearLayout = view.findViewById(R.id.btnWatchVideo)
         private val btnDownload:   ImageButton  = view.findViewById(R.id.btnDownload)
@@ -104,9 +103,7 @@ class AccidentHistoryAdapter(
 
         fun bind(entry: HistoryListItem.HistoryEntry) {
             tvTime.text = entry.time
-            // 위험 배지 (항상 FALL 타입만 표시되므로 고정)
-            tvStatusBadge.text = "위험"
-            tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_danger)
+            // 모든 항목이 낙상(FALL)이므로 카드 좌측 상단에 고정 표시 (배지 제거)
 
             btnWatchVideo.setOnClickListener { onWatchVideo(entry) }
             btnDownload.setOnClickListener   { onDownload(entry) }

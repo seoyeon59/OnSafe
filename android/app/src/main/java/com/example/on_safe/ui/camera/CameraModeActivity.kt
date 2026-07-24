@@ -463,10 +463,8 @@ class CameraModeActivity : AppCompatActivity() {
         dialog.setContentView(R.layout.dialog_permission_settings)
         dialog.window?.apply {
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            setLayout(
-                (resources.displayMetrics.widthPixels * 0.85).toInt(),
-                WindowManager.LayoutParams.WRAP_CONTENT
-            )
+            val maxWidth = resources.getDimensionPixelSize(R.dimen.logout_dialog_max_width)
+            setLayout(maxWidth, WindowManager.LayoutParams.WRAP_CONTENT)
         }
         dialog.setCanceledOnTouchOutside(false)
 
@@ -495,10 +493,8 @@ class CameraModeActivity : AppCompatActivity() {
         dialog.setContentView(R.layout.dialog_permission_settings)
         dialog.window?.apply {
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            setLayout(
-                (resources.displayMetrics.widthPixels * 0.85).toInt(),
-                WindowManager.LayoutParams.WRAP_CONTENT
-            )
+            val maxWidth = resources.getDimensionPixelSize(R.dimen.logout_dialog_max_width)
+            setLayout(maxWidth, WindowManager.LayoutParams.WRAP_CONTENT)
         }
         dialog.setCanceledOnTouchOutside(false)
 

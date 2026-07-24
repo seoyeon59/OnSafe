@@ -76,7 +76,7 @@
             <!-- 카메라 권한 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="72dp"
                 android:background="@drawable/bg_perm_row"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
@@ -108,7 +108,7 @@
                         android:layout_height="wrap_content"
                         android:text="카메라 권한"
                         android:textColor="@color/ink_900"
-                        android:textSize="13sp"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -116,7 +116,7 @@
                         android:layout_height="wrap_content"
                         android:text="실시간 영상 분석 및 낙상 감지에 사용됩니다."
                         android:textColor="@color/ink_500"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
 
                 </LinearLayout>
 
@@ -125,7 +125,7 @@
             <!-- 사진/영상 접근 권한 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="72dp"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/bg_perm_row"
                 android:gravity="center_vertical"
@@ -158,7 +158,7 @@
                         android:layout_height="wrap_content"
                         android:text="사진/영상 접근 권한"
                         android:textColor="@color/ink_900"
-                        android:textSize="13sp"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -166,7 +166,7 @@
                         android:layout_height="wrap_content"
                         android:text="사고 영상을 갤러리에 저장하기 위해 사용됩니다."
                         android:textColor="@color/ink_500"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
 
                 </LinearLayout>
 
@@ -175,7 +175,7 @@
             <!-- 마이크 권한 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="72dp"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/bg_perm_row"
                 android:gravity="center_vertical"
@@ -208,7 +208,7 @@
                         android:layout_height="wrap_content"
                         android:text="마이크 권한"
                         android:textColor="@color/ink_900"
-                        android:textSize="13sp"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -216,7 +216,7 @@
                         android:layout_height="wrap_content"
                         android:text="사고 상황 음성 저장 및 영상 기록에 사용됩니다."
                         android:textColor="@color/ink_500"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
 
                 </LinearLayout>
 
@@ -225,7 +225,7 @@
             <!-- 알림 권한 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="72dp"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/bg_perm_row"
                 android:gravity="center_vertical"
@@ -258,7 +258,7 @@
                         android:layout_height="wrap_content"
                         android:text="알림 권한"
                         android:textColor="@color/ink_900"
-                        android:textSize="13sp"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -266,7 +266,7 @@
                         android:layout_height="wrap_content"
                         android:text="위험 감지 시 즉시 알림을 보내기 위해 사용됩니다."
                         android:textColor="@color/ink_500"
-                        android:textSize="11sp" />
+                        android:textSize="13sp" />
 
                 </LinearLayout>
 

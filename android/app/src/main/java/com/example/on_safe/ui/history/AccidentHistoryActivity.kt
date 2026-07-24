@@ -99,7 +99,8 @@ class AccidentHistoryActivity : AppCompatActivity() {
         chipNewest     = findViewById(R.id.chipNewest)
         chipOldest     = findViewById(R.id.chipOldest)
 
-        findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
+        // btnBack은 레이아웃에서 제거됨 (바텀탭으로 이동하는 구조이므로 불필요)
+        // findViewById<ImageButton>(R.id.btnBack)?.setOnClickListener { finish() }
     }
 
     private fun initRecyclerView() {

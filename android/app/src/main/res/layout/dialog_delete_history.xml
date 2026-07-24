@@ -39,7 +39,7 @@
             android:layout_marginTop="12dp"
             android:text="이력을 삭제하시겠습니까?"
             android:textColor="@color/ink_900"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
@@ -48,7 +48,7 @@
             android:layout_marginTop="4dp"
             android:text="삭제된 이력은 복구할 수 없습니다."
             android:textColor="@color/ink_500"
-            android:textSize="10sp" />
+            android:textSize="13sp" />
 
     </LinearLayout>
 
@@ -61,7 +61,7 @@
     <!-- 버튼 행 -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="44dp"
+        android:layout_height="52dp"
         android:orientation="horizontal">
 
         <TextView
@@ -75,7 +75,7 @@
             android:gravity="center"
             android:text="취소"
             android:textColor="#6B7280"
-            android:textSize="13sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <View
@@ -94,7 +94,7 @@
             android:gravity="center"
             android:text="삭제"
             android:textColor="@color/status_danger"
-            android:textSize="13sp"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
     </LinearLayout>

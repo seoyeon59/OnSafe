@@ -31,7 +31,8 @@ android {
         release {
             // TODO: 출시 전 백엔드 팀에서 제공한 실제 운영 서버 URL로 변경 필요
             buildConfigField("String", "BASE_URL", "\"https://api.neulbom.com/\"")
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

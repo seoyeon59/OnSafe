@@ -142,7 +142,7 @@ class LoginActivity : AppCompatActivity() {
             if (id.isEmpty() || pw.isEmpty()) {
                 if (id.isEmpty()) setContainerBorderError(etId)
                 if (pw.isEmpty()) setContainerBorderError(etPw)
-                showLoginError("아이디와 비밀번호를 입력해주세요.")
+                showLoginError("아이디 또는 비밀번호를 확인해주세요.")
                 return@setOnClickListener
             }
 
@@ -171,7 +171,7 @@ class LoginActivity : AppCompatActivity() {
                         })
                     } else {
                         val message = response.body()?.message
-                            ?: ApiClient.parseErrorMessage(response.errorBody(), "로그인에 실패했습니다.")
+                            ?: ApiClient.parseErrorMessage(response.errorBody(), "아이디 또는 비밀번호가 올바르지 않습니다.")
                         Log.w("Login", "실패 — HTTP ${response.code()}: $message")
                         showLoginError(message)
                     }

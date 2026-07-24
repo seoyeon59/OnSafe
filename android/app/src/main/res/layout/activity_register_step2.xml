@@ -9,19 +9,20 @@
     <!-- 상단 네비게이션 바 -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="64dp"
         android:orientation="horizontal"
         android:background="#FEFEFE"
+        android:elevation="3dp"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:gravity="center_vertical">
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@drawable/ic_arrow_back"
-            android:background="@null"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="뒤로가기"
             app:tint="@color/primary_blue" />
 
@@ -30,14 +31,14 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="회원가입"
-            android:textSize="18sp"
+            android:textSize="20sp"
             android:textColor="#1A1C1E"
             android:textStyle="bold"
             android:gravity="center" />
 
         <View
-            android:layout_width="32dp"
-            android:layout_height="32dp" />
+            android:layout_width="40dp"
+            android:layout_height="40dp" />
 
     </LinearLayout>
 
@@ -89,15 +90,15 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="개인정보 입력"
-                android:textSize="17sp"
+                android:textSize="18sp"
                 android:textColor="#1A1C1E"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="정확한 정보를 입력해주세요."
-                android:textSize="12sp"
+                android:text="안전하고 원활한 서비스 제공을 위해 아래 정보를 입력해 주세요."
+                android:textSize="13sp"
                 android:textColor="#6B7280"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="12dp" />
@@ -119,7 +120,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="아이디"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textColor="#6B7280"
                     android:textStyle="bold"
                     android:layout_marginBottom="6dp" />
@@ -162,7 +163,7 @@
                     android:id="@+id/tvIdMessage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="11sp"
+                    android:textSize="13sp"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="8dp"
                     android:visibility="gone" />
@@ -172,7 +173,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="비밀번호"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textColor="#6B7280"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
@@ -211,7 +212,7 @@
                     android:id="@+id/tvPwMessage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="11sp"
+                    android:textSize="13sp"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="8dp"
                     android:visibility="gone" />
@@ -221,7 +222,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="비밀번호 확인"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textColor="#6B7280"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
@@ -260,7 +261,7 @@
                     android:id="@+id/tvPwConfirmMessage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="11sp"
+                    android:textSize="13sp"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="8dp"
                     android:visibility="gone" />
@@ -270,7 +271,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="보호자 이름"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textColor="#6B7280"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
@@ -294,7 +295,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="전화번호"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textColor="#6B7280"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
@@ -317,7 +318,7 @@
                     android:id="@+id/tvPhoneMessage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="11sp"
+                    android:textSize="13sp"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="8dp"
                     android:visibility="gone" />
@@ -327,7 +328,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="이메일"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textColor="#6B7280"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
@@ -371,7 +372,7 @@
                     android:id="@+id/tvEmailMessage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="11sp"
+                    android:textSize="13sp"
                     android:layout_marginTop="4dp"
                     android:visibility="gone" />
 
@@ -440,7 +441,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="인증코드를 다시 받기"
-                        android:textSize="12sp"
+                        android:textSize="13sp"
                         android:textColor="#4D80FF"
                         android:layout_marginTop="6dp"
                         android:layout_marginStart="8dp"
@@ -453,7 +454,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="✓ 이메일 인증이 완료되었습니다."
-                    android:textSize="11sp"
+                    android:textSize="13sp"
                     android:textColor="#22C55E"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="8dp"
@@ -464,7 +465,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="주소"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textColor="#6B7280"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
@@ -506,28 +507,27 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:background="@drawable/bg_container_blue"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp"
-                android:gravity="top"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="12dp"
+                android:gravity="center_vertical"
                 android:layout_marginBottom="24dp">
 
                 <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:layout_marginTop="2dp"
-                    android:layout_marginRight="8dp"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
                     android:src="@drawable/ic_info"
-                    android:contentDescription="안내" />
+                    android:contentDescription="안내"
+                    app:tint="@color/primary_blue" />
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
                     android:text="입력하신 정보는 긴급 상황 시 연락처로 사용됩니다.\n정확한 정보를 입력해주세요."
-                    android:textSize="11sp"
-                    android:textColor="#4D80FF"
-                    android:lineSpacingExtra="4dp" />
+                    android:textSize="13sp"
+                    android:textColor="@color/primary_blue"
+                    android:lineSpacingMultiplier="1.4" />
 
             </LinearLayout>
 

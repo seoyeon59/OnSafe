@@ -186,6 +186,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialog.setContentView(view)
+        dialog.setOnShowListener {
+            // Material BottomSheetDialog 기본 둥근 배경 제거 → XML drawable 곡률만 표시
+            (view.parent as? android.view.View)?.background = null
+        }
         dialog.show()
         alertDialog = dialog
     }

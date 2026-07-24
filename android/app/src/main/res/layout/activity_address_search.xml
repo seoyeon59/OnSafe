@@ -10,7 +10,7 @@
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="0dp"
-        android:layout_height="52dp"
+        android:layout_height="64dp"
         android:background="@color/surface_white"
         android:elevation="3dp"
         android:gravity="center_vertical"
@@ -23,8 +23,8 @@
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="뒤로가기"
             android:src="@drawable/ic_arrow_back"
@@ -37,7 +37,7 @@
             android:gravity="center"
             android:text="주소 검색"
             android:textColor="@color/ink_900"
-            android:textSize="18sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <!-- 우측 자리맞춤 플레이스홀더 -->
@@ -105,7 +105,7 @@
             android:stateListAnimator="@null"
             android:text="검색"
             android:textColor="@color/surface_white"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
     </LinearLayout>
@@ -143,7 +143,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="10dp"
                 android:text="이렇게 검색하면 더 정확해요"
                 android:textColor="@color/primary_blue"
                 android:textSize="12sp"
@@ -162,7 +162,7 @@
                 android:layout_height="wrap_content"
                 android:text="도로명 + 건물번호"
                 android:textColor="@color/ink_500"
-                android:textSize="11sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -172,14 +172,14 @@
                 android:layout_marginBottom="8dp"
                 android:text="예) 판교역로 235,  제주 청단로 242"
                 android:textColor="@color/primary_blue"
-                android:textSize="11sp" />
+                android:textSize="13sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="지역명(동/리) + 번지"
                 android:textColor="@color/ink_500"
-                android:textSize="11sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -189,14 +189,14 @@
                 android:layout_marginBottom="8dp"
                 android:text="예) 삼평동 681,  영평동 2181"
                 android:textColor="@color/primary_blue"
-                android:textSize="11sp" />
+                android:textSize="13sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="건물명 (아파트, 학교, 회사)"
                 android:textColor="@color/ink_500"
-                android:textSize="11sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -205,7 +205,7 @@
                 android:layout_marginTop="2dp"
                 android:text="예) 늘봄아파트,  서울시청"
                 android:textColor="@color/primary_blue"
-                android:textSize="11sp" />
+                android:textSize="13sp" />
 
         </LinearLayout>
 
