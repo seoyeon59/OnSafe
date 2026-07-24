@@ -26,6 +26,9 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
 import com.example.on_safe.R
 import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.util.TokenManager
@@ -65,6 +68,8 @@ class CameraModeActivity : AppCompatActivity() {
     // 어두운 상태에서 첫 터치로 밝기가 복원된 직후 플래그 (btnWakeUp 즉시 해제 방지)
     private var justRestoredFromDim = false
     private val clearJustRestored = Runnable { justRestoredFromDim = false }
+    // 카메라 provider 보관용 (화면 종료 시 해제하려고 들고 있음)
+    private var cameraProvider: ProcessCameraProvider? = null
 
     companion object {
         private const val INACTIVITY_TIMEOUT_MS  = 10 * 60 * 1000L
@@ -95,7 +100,13 @@ class CameraModeActivity : AppCompatActivity() {
                     .filter { !it.value }
                     .any { !shouldShowRequestPermissionRationale(it.key) }
                 if (permanentlyDenied) showPermissionSettingsDialog()
-                else showPermissionRationaleDialog()
+                else {
+                    Toast.makeText(this, "카메라·마이크 권한이 필요합니다.", Toast.LENGTH_LONG).show()
+                    finish()
+                }
+            } else {
+                // 전부 허용됨 -> 카메라 시작
+                startCamera()
             }
         }
 
@@ -111,7 +122,10 @@ class CameraModeActivity : AppCompatActivity() {
         bindViews()
         setState(CameraState.STANDBY)
 
-        if (!areCameraPermissionsGranted()) {
+        // 권한이 있으면 바로 카메라 켜고, 없으면 권한 요청
+        if (areCameraPermissionsGranted()) {
+            startCamera()
+        } else {
             requestCameraPermissions.launch(cameraPermissions)
         }
 
@@ -145,6 +159,7 @@ class CameraModeActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        cameraProvider?.unbindAll()     //화면 종료 시 카메라 해제
         screenHandler.removeCallbacksAndMessages(null)
         justRestoredFromDim = false
     }
@@ -244,6 +259,33 @@ class CameraModeActivity : AppCompatActivity() {
         setState(CameraState.CONNECTING)
         // TODO: CameraX 카메라 시작 + 서버 스트리밍 연결 로직으로 교체
         Handler(Looper.getMainLooper()).postDelayed({ setState(CameraState.STREAMING) }, 2000)
+    }
+
+    private fun startCamera() {
+        // 카메라 provider 비동기로 가져오기
+        val providerFuture = ProcessCameraProvider.getInstance(this)
+        providerFuture.addListener({
+            val provider = providerFuture.get()
+            cameraProvider = provider
+
+            // 프리뷰를 만들어서 화면(previewView)에 연결
+            val preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(previewView.surfaceProvider)
+            }
+
+            try {
+                provider.unbindAll()  // 기존 연결 정리
+                // 후면 카메라 + 프리뷰를 이 화면 생명주기에 바인딩
+                provider.bindToLifecycle(
+                    this,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    preview
+                )
+            } catch (e: Exception) {
+                // 바인딩 실패 시 사용자에게 알림
+                Toast.makeText(this, "카메라를 시작할 수 없습니다.", Toast.LENGTH_SHORT).show()
+            }
+        }, ContextCompat.getMainExecutor(this))  // 메인 스레드에서 실행
     }
 
     private fun showStopRecordingDialog() {
