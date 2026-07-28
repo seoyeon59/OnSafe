@@ -155,7 +155,7 @@
                         android:id="@+id/tvRiskRange"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="위험 지수 76~100"
+                        android:text="위험 구간 76~100"
                         android:textColor="@color/ink_500"
                         android:textSize="13sp" />
                 </LinearLayout>

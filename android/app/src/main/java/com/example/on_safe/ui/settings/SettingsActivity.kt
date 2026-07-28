@@ -309,6 +309,7 @@ class SettingsActivity : AppCompatActivity() {
         // 개인정보 수정
         rowEditProfile.setOnClickListener {
             startActivity(Intent(this, EditProfileActivity::class.java))
+            overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
 
         // 비밀번호 변경
@@ -319,6 +320,7 @@ class SettingsActivity : AppCompatActivity() {
                 putExtra("userId", userId)
             }
             startActivity(intent)
+            overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
 
         // TODO: 개인정보 처리방침 웹뷰 또는 브라우저 연동
@@ -352,10 +354,12 @@ class SettingsActivity : AppCompatActivity() {
             finish()
         }
 
-        // 바텀 네비: 사고 이력 (왼쪽 탭 → 왼쪽에서 슬라이드 인)
+        // 바텀 네비: 사고 이력 — 홈을 건너뛰고 이동하므로 더 빠른 전환으로 "스쳐 지나가는" 느낌을 줌
+        // 탭 화면끼리는 항상 finish()로 이전 탭을 정리 → 뒤로가기 눌러도 다른 탭이 쌓여있지 않음
         tabHistory.setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.history.AccidentHistoryActivity::class.java))
-            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+            overridePendingTransition(R.anim.slide_in_left_fast, R.anim.slide_out_right_fast)
+            finish()
         }
 
         // 헤더 튜토리얼 버튼 (온보딩 완료 후에도 상시 진입)

@@ -27,15 +27,15 @@
             android:paddingTop="32dp"
             android:paddingBottom="24dp">
 
-            <!-- 로고 아이콘 (파란 원형 배경) -->
+            <!-- 로고 아이콘 (다른 화면과 동일한 라운드 사각 배경으로 통일) -->
             <FrameLayout
                 android:layout_width="64dp"
                 android:layout_height="64dp"
-                android:background="@drawable/bg_circle_primary">
+                android:background="@drawable/bg_logo">
 
                 <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_shield"
                     android:contentDescription="늘봄 로고"
@@ -47,6 +47,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="늘봄"
+                android:includeFontPadding="false"
                 android:textSize="28sp"
                 android:textColor="#4D80FF"
                 android:fontFamily="@font/gmarket_sans_bold"

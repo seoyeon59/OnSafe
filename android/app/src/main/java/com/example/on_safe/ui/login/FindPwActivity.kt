@@ -36,6 +36,10 @@ class FindPwActivity : AppCompatActivity() {
 
     private var countDownTimer: CountDownTimer? = null
 
+    // navigateToResetPassword()에서 전환(다음 화면)과 finish()(스택 정리)를 함께 호출할 때,
+    // finish()의 기본 "뒤로 나가는" 전환이 방금 지정한 "다음으로 넘어가는" 전환을 덮어쓰지 않도록 함
+    private var suppressFinishTransition = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_find_pw)
@@ -130,10 +134,23 @@ class FindPwActivity : AppCompatActivity() {
             tvResend.visibility = View.GONE
             lifecycleScope.launch {
                 try {
-                    ApiClient.api.sendResetCode(SendResetCodeRequest(userId = etUserId.text.toString().trim(), mail = etEmail.text.toString().trim()))
-                    startVerification()
-                    Toast.makeText(this@FindPwActivity, "재설정 코드를 재발송했습니다.", Toast.LENGTH_SHORT).show()
+                    val response = ApiClient.api.sendResetCode(
+                        SendResetCodeRequest(userId = etUserId.text.toString().trim(), mail = etEmail.text.toString().trim())
+                    )
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        startVerification()
+                        Toast.makeText(this@FindPwActivity, "재설정 코드를 재발송했습니다.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        // 재발송 실패 — 다시 시도할 수 있도록 재전송 버튼 복구
+                        tvResend.visibility = View.VISIBLE
+                        Toast.makeText(
+                            this@FindPwActivity,
+                            response.body()?.message ?: "재설정 코드 재발송에 실패했습니다.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 } catch (e: Exception) {
+                    tvResend.visibility = View.VISIBLE
                     Toast.makeText(this@FindPwActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -177,11 +194,22 @@ class FindPwActivity : AppCompatActivity() {
         intent.putExtra("userId", etUserId.text.toString().trim())
         intent.putExtra("mode", ResetPasswordActivity.MODE_FIND_PW)
         startActivity(intent)
+        overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
+        suppressFinishTransition = true
         finish()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         countDownTimer?.cancel()
+    }
+
+    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    // (다음 화면으로 넘어가며 스택 정리 차원에서 finish()를 호출하는 경우는 예외)
+    override fun finish() {
+        super.finish()
+        if (!suppressFinishTransition) {
+            overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
+        }
     }
 }

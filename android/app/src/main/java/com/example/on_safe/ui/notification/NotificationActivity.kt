@@ -58,6 +58,9 @@ class NotificationActivity : AppCompatActivity() {
         val hasUnread = adapter.hasUnreadItems()
         setResult(Activity.RESULT_OK, Intent().putExtra(EXTRA_HAS_UNREAD, hasUnread))
         super.finish()
+        // 뒤로가기·닫기 모두 이 finish()를 거치므로 여기 한 곳에서만 처리하면
+        // 진입할 때(detail_enter/exit)와 대칭되는 복귀 전환이 항상 적용됨
+        overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
     }
 
     companion object {

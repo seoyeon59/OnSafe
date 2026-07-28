@@ -235,4 +235,10 @@ class ResetPasswordActivity : AppCompatActivity() {
     private fun setInputBorderNormal(et: EditText) {
         et.setBackgroundResource(R.drawable.bg_input_rounded)
     }
+
+    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
+    }
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- detail_exit의 반대 — 알림 화면을 닫을 때(뒤로가기 포함) 다시 선명해지며 돌아오는 홈 화면 -->
+<alpha xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="180"
+    android:fromAlpha="0.85"
+    android:toAlpha="1.0"
+    android:interpolator="@android:interpolator/fast_out_slow_in" />
