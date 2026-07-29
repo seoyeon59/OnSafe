@@ -26,6 +26,10 @@ sealed class HistoryListItem {
         val hasVideo: Boolean = false,
         val videoUri: String? = null
     ) : HistoryListItem()
+
+    // 보관 기간 안내 — 리스트의 "가장 오래된 데이터" 쪽 끝에 붙는 카드형 안내 문구.
+    // 최신순: 리스트 맨 아래(가장 오래된 항목 다음) / 오래된순: 리스트 맨 위(가장 오래된 항목 앞)
+    object RetentionNotice : HistoryListItem()
 }
 
 // 정렬 순서 (최신순 기본)

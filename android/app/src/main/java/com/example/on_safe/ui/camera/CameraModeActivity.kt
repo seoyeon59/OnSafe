@@ -35,6 +35,7 @@ import androidx.camera.video.Recorder
 import androidx.camera.video.VideoCapture
 import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
+import kotlin.random.Random
 import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.util.TokenManager
 import com.example.on_safe.network.dto.LandmarkPoint
@@ -77,7 +78,9 @@ class CameraModeActivity : AppCompatActivity() {
     // 화면 보호기 타이머
     private val screenHandler = Handler(Looper.getMainLooper())
     private val inactivityRunnable = Runnable { triggerScreenSaver() }
-    private val dimRestorationRunnable = Runnable { dimScreen() }
+    private val dimRestorationRunnable = Runnable { dimScreen() }   
+    // 번인 방지: 화면 보호기 표시 중 주기적으로 콘텐츠 위치를 살짝 이동
+    private val pixelShiftRunnable = Runnable { applyPixelShift() }
 
     // 화면이 어두운 상태인지 추적
     private var isScreenDimmed = false
@@ -96,6 +99,8 @@ class CameraModeActivity : AppCompatActivity() {
         private const val BRIGHTNESS_RESTORE_MS  = 10_000L  // 터치 후 밝기 유지 시간
         private const val BRIGHTNESS_DIM         = 0.01f
         private const val BRIGHTNESS_SYSTEM      = -1f
+        private const val PIXEL_SHIFT_INTERVAL_MS = 60_000L  // 번인 방지: 60초마다 위치 이동
+        private const val PIXEL_SHIFT_RANGE_PX    = 5        // ±5px 범위에서 랜덤 이동
     }
 
     enum class CameraState { STANDBY, CONNECTING, STREAMING, FAILED }
@@ -121,8 +126,8 @@ class CameraModeActivity : AppCompatActivity() {
                     .any { !shouldShowRequestPermissionRationale(it.key) }
                 if (permanentlyDenied) showPermissionSettingsDialog()
                 else {
-                    Toast.makeText(this, "카메라·마이크 권한이 필요합니다.", Toast.LENGTH_LONG).show()
-                    finish()
+                    // 일시 거부 → 안내 다이얼로그로 재요청 기회 제공 (즉시 종료 대신 자연스러운 흐름으로 연결)
+                    showPermissionRationaleDialog()
                 }
             } else {
                 // 전부 허용됨 -> 카메라 시작
@@ -550,11 +555,20 @@ class CameraModeActivity : AppCompatActivity() {
 
     fun showScreenSaver() {
         if (screenSaverView != null) return
-        // TODO: 번인 방지 — 픽셀 시프트 구현 (Handler + postDelayed로 60초마다 콘텐츠 위치를 ±5px 범위에서 랜덤 이동)
         val overlay = LayoutInflater.from(this).inflate(R.layout.activity_screen_saver, rootLayout, false)
         overlay.findViewById<View>(R.id.btnWakeUp).setOnClickListener { hideScreenSaver() }
         rootLayout.addView(overlay)
         screenSaverView = overlay
+        // 번인 방지: 60초마다 콘텐츠 위치를 ±5px 범위에서 랜덤 이동
+        screenHandler.postDelayed(pixelShiftRunnable, PIXEL_SHIFT_INTERVAL_MS)
+    }
+
+    // 번인 방지 — 화면 보호기 뷰를 살짝 랜덤 이동시키고 다음 이동을 다시 예약
+    private fun applyPixelShift() {
+        val view = screenSaverView ?: return
+        view.translationX = Random.nextInt(-PIXEL_SHIFT_RANGE_PX, PIXEL_SHIFT_RANGE_PX + 1).toFloat()
+        view.translationY = Random.nextInt(-PIXEL_SHIFT_RANGE_PX, PIXEL_SHIFT_RANGE_PX + 1).toFloat()
+        screenHandler.postDelayed(pixelShiftRunnable, PIXEL_SHIFT_INTERVAL_MS)
     }
 
     fun hideScreenSaver() {
@@ -566,6 +580,7 @@ class CameraModeActivity : AppCompatActivity() {
         }
         screenHandler.removeCallbacks(dimRestorationRunnable)
         screenHandler.removeCallbacks(clearJustRestored)
+        screenHandler.removeCallbacks(pixelShiftRunnable)
         restoreBrightness()
         resetInactivityTimer()
     }

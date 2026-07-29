@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- fullscreen_enter와 짝 — 전체화면이 열릴 때 뒤로 살짝 물러나는 원래 화면 (은은하게만) -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shareInterpolator="false"
+    android:fillAfter="true">
+    <scale
+        android:duration="320"
+        android:fromXScale="1.0"
+        android:toXScale="0.95"
+        android:fromYScale="1.0"
+        android:toYScale="0.95"
+        android:pivotX="50%"
+        android:pivotY="50%"
+        android:interpolator="@android:interpolator/fast_out_slow_in" />
+    <alpha
+        android:duration="320"
+        android:fromAlpha="1.0"
+        android:toAlpha="0.85"
+        android:interpolator="@android:interpolator/fast_out_slow_in" />
+</set>

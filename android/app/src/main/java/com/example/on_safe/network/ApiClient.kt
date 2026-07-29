@@ -26,9 +26,27 @@ object ApiClient {
         .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
         .create()
 
-    // 인증이 필요한 요청에 자동으로 Bearer 토큰 첨부
+    // 인증 불필요 엔드포인트 — 저장된 토큰이 만료됐거나 잘못된 상태에서
+    // 로그인/회원가입 등 공개 API에도 헤더가 붙으면 서버가 401을 던져 로그인 자체가 막힘
+    private val publicEndpoints = setOf(
+        "api/auth/login",
+        "api/auth/register",
+        "api/auth/check-id",
+        "api/auth/send-email-code",
+        "api/auth/verify-email-code",
+        "api/auth/find-id",
+        "api/auth/send-reset-code",
+        "api/auth/verify-reset-code",
+        "api/auth/reset-password"
+    )
+
+    // 인증이 필요한 요청에만 자동으로 Bearer 토큰 첨부
     private val authInterceptor = Interceptor { chain ->
         val original = chain.request()
+        val path = original.url.encodedPath.trimStart('/')
+        if (path in publicEndpoints) {
+            return@Interceptor chain.proceed(original)
+        }
         val token = if (::appContext.isInitialized) TokenManager.getAccessToken(appContext) else null
         val request = if (!token.isNullOrBlank()) {
             original.newBuilder()

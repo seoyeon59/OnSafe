@@ -9,11 +9,17 @@
     android:paddingTop="52dp"
     android:paddingBottom="20dp">
 
-    <!-- ============ 본문 영역 ============ -->
-    <LinearLayout
+    <!-- ============ 본문 영역 (짧은 화면에서 권한 카드가 잘리지 않도록 스크롤 가능) ============ -->
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:orientation="vertical"
         android:paddingTop="16dp"
@@ -275,6 +281,8 @@
         </LinearLayout>
 
     </LinearLayout>
+
+    </ScrollView>
 
     <!-- ============ 하단 버튼 영역 ============ -->
     <LinearLayout

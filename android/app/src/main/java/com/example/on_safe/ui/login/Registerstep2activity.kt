@@ -350,24 +350,28 @@ class RegisterStep2Activity : AppCompatActivity() {
             etEmailCode.text.clear()
             lifecycleScope.launch {
                 try {
-                    ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
-                    startEmailVerification()
-                    Toast.makeText(this@RegisterStep2Activity, "인증 메일을 재발송했습니다.", Toast.LENGTH_SHORT).show()
+                    val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        startEmailVerification()
+                        Toast.makeText(this@RegisterStep2Activity, "인증 메일을 재발송했습니다.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(
+                            this@RegisterStep2Activity,
+                            response.body()?.message ?: "인증 메일 재발송에 실패했습니다.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 } catch (e: Exception) {
                     Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
                 }
             }
         }
 
-//        etAddress.setOnClickListener {
-//            // TODO: 도로명 주소 API 연결
-//            Toast.makeText(this, "주소 검색 준비 중", Toast.LENGTH_SHORT).show()
-//        }
-
-          // 도로명 주소 API 연결
-          etAddress.setOnClickListener {
-              addressLauncher.launch(Intent(this, AddressSearchActivity::class.java))
-          }
+        // 도로명 주소 API 연결
+        etAddress.setOnClickListener {
+            addressLauncher.launch(Intent(this, AddressSearchActivity::class.java))
+            overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
+        }
 
         btnComplete.setOnClickListener {
             btnComplete.isEnabled = false
@@ -500,5 +504,11 @@ class RegisterStep2Activity : AppCompatActivity() {
 
         btnComplete.isEnabled = allValid
         btnComplete.alpha = if (allValid) 1.0f else 0.4f
+    }
+
+    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
     }
 }

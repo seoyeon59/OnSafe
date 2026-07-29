@@ -142,17 +142,20 @@ class AccidentHistoryActivity : AppCompatActivity() {
 
     private fun setupNavListeners() {
         // 홈: 사고이력은 왼쪽 탭 → 홈으로 돌아갈 때 오른쪽으로 슬라이드 아웃
+        // 탭 화면끼리는 항상 finish()로 이전 탭을 정리 → 뒤로가기 눌러도 다른 탭이 쌓여있지 않음
         findViewById<View>(R.id.tabHome).setOnClickListener {
             val intent = Intent(this, com.example.on_safe.MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
             startActivity(intent)
             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+            finish()
         }
-        // 설정: 오른쪽 탭 → 오른쪽에서 슬라이드 인
+        // 설정: 홈을 건너뛰고 이동하므로 더 빠른 전환으로 "스쳐 지나가는" 느낌을 줌
         findViewById<View>(R.id.tabSettings).setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.settings.SettingsActivity::class.java))
-            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+            overridePendingTransition(R.anim.slide_in_right_fast, R.anim.slide_out_left_fast)
+            finish()
         }
     }
 
@@ -163,6 +166,9 @@ class AccidentHistoryActivity : AppCompatActivity() {
         updateCountDisplay()
         tvEmpty.visibility    = if (adapter.isEmpty()) View.VISIBLE else View.GONE
         rvHistory.visibility  = if (adapter.isEmpty()) View.GONE  else View.VISIBLE
+        // 정렬 변경 시 DiffUtil이 이전 스크롤 위치를 그대로 두는 경우가 있어 항상 맨 위로 리셋
+        // 순간이동 대신 부드럽게 스크롤해서 "위로 올라갔다"는 게 눈에 보이도록 함
+        rvHistory.smoothScrollToPosition(0)
     }
 
     // active 칩: 파란 pill + 흰 텍스트 / inactive: 회색 pill + ink_500 텍스트
@@ -204,6 +210,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
             startActivity(Intent(this, VideoPlayerActivity::class.java).apply {
                 putExtra(VideoPlayerActivity.EXTRA_VIDEO_URL, signedUrl)
             })
+            overridePendingTransition(R.anim.fullscreen_enter, R.anim.fullscreen_exit)
         }
     }
 
