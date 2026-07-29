@@ -1,3 +1,7 @@
 # 디폴트 무시된 파일
 /shelf/
 /workspace.xml
+
+# 기기별 로컬 캐시 — adb 연결 시 Android Studio가 자동 생성·자동 staging함, 커밋 대상 아님
+/caches/
+/deviceManager.xml

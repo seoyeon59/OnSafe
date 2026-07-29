@@ -110,6 +110,10 @@
             android:name="com.example.on_safe.ui.history.AccidentHistoryActivity"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name="com.example.on_safe.ui.history.VideoPlayerActivity"
+            android:screenOrientation="landscape" />
+
         <!-- 튜토리얼 -->
         <activity
             android:name="com.example.on_safe.ui.tutorial.TutorialActivity"
