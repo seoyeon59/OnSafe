@@ -23,6 +23,7 @@ sealed class HistoryListItem {
         val type: HistoryType,
         val time: String,
         val date: String,
+        val hasVideo: Boolean = false,
         val videoUri: String? = null
     ) : HistoryListItem()
 }

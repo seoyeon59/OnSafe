@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.Window
@@ -27,11 +28,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.Recorder
+import androidx.camera.video.VideoCapture
+import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
 import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.network.dto.LandmarkPoint
+import kotlinx.coroutines.launch
 
 class CameraModeActivity : AppCompatActivity() {
 
@@ -58,6 +65,15 @@ class CameraModeActivity : AppCompatActivity() {
     private var isPanelVisible = true
     private var screenSaverView: View? = null
 
+    private var landmarkStreamClient: LandmarkStreamClient? = null
+    private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
+    private var rollingVideoBufferManager: RollingVideoBufferManager? = null
+    private val fallVideoUploader = FallVideoUploader()
+    // 최신 추론 결과 캐시 — 로깅 + 위험 이벤트 중복 트리거 방지용
+    private var latestFallScore: Float = 0f
+    private var latestFallLevel: String = "정상"
+    private var lastHandledDangerLogId: String? = null
+
     // 화면 보호기 타이머
     private val screenHandler = Handler(Looper.getMainLooper())
     private val inactivityRunnable = Runnable { triggerScreenSaver() }
@@ -70,6 +86,10 @@ class CameraModeActivity : AppCompatActivity() {
     private val clearJustRestored = Runnable { justRestoredFromDim = false }
     // 카메라 provider 보관용 (화면 종료 시 해제하려고 들고 있음)
     private var cameraProvider: ProcessCameraProvider? = null
+    // startCamera()에서 바인딩한 프리뷰 — 촬영 시작/종료 시 ImageAnalysis를 붙였다 뗐다 하며 재바인딩할 때 재사용
+    private var preview: Preview? = null
+    private var imageAnalysis: ImageAnalysis? = null
+    private var videoCapture: VideoCapture<Recorder>? = null
 
     companion object {
         private const val INACTIVITY_TIMEOUT_MS  = 10 * 60 * 1000L
@@ -162,6 +182,11 @@ class CameraModeActivity : AppCompatActivity() {
         cameraProvider?.unbindAll()     //화면 종료 시 카메라 해제
         screenHandler.removeCallbacksAndMessages(null)
         justRestoredFromDim = false
+        if (currentState == CameraState.STREAMING || currentState == CameraState.CONNECTING) {
+            poseLandmarkerHelper?.stop()
+            landmarkStreamClient?.close()
+            rollingVideoBufferManager?.stop()
+        }
     }
 
     override fun onUserInteraction() {
@@ -257,8 +282,79 @@ class CameraModeActivity : AppCompatActivity() {
 
     private fun startRecording() {
         setState(CameraState.CONNECTING)
-        // TODO: CameraX 카메라 시작 + 서버 스트리밍 연결 로직으로 교체
-        Handler(Looper.getMainLooper()).postDelayed({ setState(CameraState.STREAMING) }, 2000)
+
+        val userId = TokenManager.getUserId(this)
+        val accessToken = TokenManager.getAccessToken(this)
+        val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+
+        if (accessToken.isNullOrBlank() || userId.isBlank()) {
+            Toast.makeText(this, "로그인 정보가 없습니다.", Toast.LENGTH_SHORT).show()
+            setState(CameraState.FAILED)
+            return
+        }
+
+        landmarkStreamClient = LandmarkStreamClient(object : LandmarkStreamClient.Listener {
+            override fun onInitOk() {
+                runOnUiThread {
+                    poseLandmarkerHelper = PoseLandmarkerHelper(
+                        this@CameraModeActivity,
+                        object : PoseLandmarkerHelper.Listener {
+                            override fun onLandmarks(
+                                frameIndex: Int,
+                                timestampSec: Float,
+                                landmarks: List<LandmarkPoint>
+                            ) {
+                                landmarkStreamClient?.sendFrame(frameIndex, timestampSec, landmarks)
+                            }
+
+                            override fun onError(message: String) {
+                                Log.w("CameraModeActivity", "PoseLandmarkerHelper 오류: $message")
+                            }
+                        }
+                    )
+                    val helper = poseLandmarkerHelper ?: return@runOnUiThread
+                    helper.start()
+                    val bufferManager = RollingVideoBufferManager(this@CameraModeActivity)
+                    rollingVideoBufferManager = bufferManager
+                    bindStreamingUseCases(helper, bufferManager)
+                    bufferManager.start()
+                    setState(CameraState.STREAMING)
+                }
+            }
+
+            override fun onResult(fallScore: Float, fall: Boolean, level: String, logId: String?) {
+                latestFallScore = fallScore
+                latestFallLevel = level
+                Log.d("CameraModeActivity", "낙상 추론 결과: score=$fallScore fall=$fall level=$level logId=$logId")
+
+                if (level == "위험" && logId != null && logId != lastHandledDangerLogId) {
+                    lastHandledDangerLogId = logId
+                    val ownerUserId = TokenManager.getUserId(this@CameraModeActivity)
+                    rollingVideoBufferManager?.captureDangerClip(
+                        logId = logId,
+                        onReady = { clipFile ->
+                            lifecycleScope.launch { fallVideoUploader.upload(ownerUserId, logId, clipFile) }
+                        },
+                        onError = { e ->
+                            Log.w("CameraModeActivity", "위험 이벤트 클립 합성 실패 (logId=$logId)", e)
+                        }
+                    )
+                }
+            }
+
+            override fun onFailure(t: Throwable) {
+                runOnUiThread {
+                    Log.w("CameraModeActivity", "WS 연결 실패", t)
+                    Toast.makeText(this@CameraModeActivity, "서버 연결에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                    setState(CameraState.FAILED)
+                }
+            }
+
+            override fun onClosed() {
+                Log.d("CameraModeActivity", "WS 연결 종료")
+            }
+        })
+        landmarkStreamClient?.connect(userId, deviceId, accessToken)
     }
 
     private fun startCamera() {
@@ -269,9 +365,10 @@ class CameraModeActivity : AppCompatActivity() {
             cameraProvider = provider
 
             // 프리뷰를 만들어서 화면(previewView)에 연결
-            val preview = Preview.Builder().build().also {
+            val previewUseCase = Preview.Builder().build().also {
                 it.setSurfaceProvider(previewView.surfaceProvider)
             }
+            preview = previewUseCase
 
             try {
                 provider.unbindAll()  // 기존 연결 정리
@@ -279,13 +376,57 @@ class CameraModeActivity : AppCompatActivity() {
                 provider.bindToLifecycle(
                     this,
                     CameraSelector.DEFAULT_BACK_CAMERA,
-                    preview
+                    previewUseCase
                 )
             } catch (e: Exception) {
                 // 바인딩 실패 시 사용자에게 알림
                 Toast.makeText(this, "카메라를 시작할 수 없습니다.", Toast.LENGTH_SHORT).show()
             }
         }, ContextCompat.getMainExecutor(this))  // 메인 스레드에서 실행
+    }
+
+    // 촬영 시작: 이미 켜져 있는 previewUseCase 위에 ImageAnalysis + VideoCapture 추가 바인딩 (프리뷰 재생성 없음)
+    private fun bindStreamingUseCases(helper: PoseLandmarkerHelper, bufferManager: RollingVideoBufferManager) {
+        val provider = cameraProvider ?: return
+        val previewUseCase = preview ?: return
+
+        val analysisUseCase = ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+            .build()
+            .also { it.setAnalyzer(helper.executor, helper::analyze) }
+        imageAnalysis = analysisUseCase
+
+        val videoCaptureUseCase = bufferManager.videoCapture
+        videoCapture = videoCaptureUseCase
+
+        try {
+            provider.unbindAll()
+            provider.bindToLifecycle(
+                this,
+                CameraSelector.DEFAULT_BACK_CAMERA,
+                previewUseCase,
+                analysisUseCase,
+                videoCaptureUseCase
+            )
+        } catch (e: Exception) {
+            Log.w("CameraModeActivity", "ImageAnalysis/VideoCapture 바인딩 실패", e)
+        }
+    }
+
+    // 촬영 종료: ImageAnalysis/VideoCapture만 떼고 previewUseCase만 다시 바인딩 (프리뷰는 계속 유지)
+    private fun unbindStreamingUseCases() {
+        val provider = cameraProvider ?: return
+        val previewUseCase = preview ?: return
+        imageAnalysis = null
+        videoCapture = null
+
+        try {
+            provider.unbindAll()
+            provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, previewUseCase)
+        } catch (e: Exception) {
+            Log.w("CameraModeActivity", "프리뷰 재바인딩 실패", e)
+        }
     }
 
     private fun showStopRecordingDialog() {
@@ -307,7 +448,14 @@ class CameraModeActivity : AppCompatActivity() {
     }
 
     private fun stopRecording() {
-        // TODO: CameraX 중단 + 서버 전송 종료
+        poseLandmarkerHelper?.stop()
+        poseLandmarkerHelper = null
+        landmarkStreamClient?.close()
+        landmarkStreamClient = null
+        rollingVideoBufferManager?.stop()
+        rollingVideoBufferManager = null
+        lastHandledDangerLogId = null
+        unbindStreamingUseCases()
         setState(CameraState.STANDBY)
     }
 
