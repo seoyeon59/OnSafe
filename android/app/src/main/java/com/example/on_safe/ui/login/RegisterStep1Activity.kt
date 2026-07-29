@@ -103,6 +103,7 @@ class RegisterStep1Activity : AppCompatActivity() {
 
         btnNext.setOnClickListener {
             startActivity(Intent(this, RegisterStep2Activity::class.java))
+            overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
     }
 
@@ -144,5 +145,11 @@ class RegisterStep1Activity : AppCompatActivity() {
         val requiredChecked = isCheck1 && isCheck2 && isCheck3
         btnNext.isEnabled = requiredChecked
         btnNext.alpha = if (requiredChecked) 1.0f else 0.4f
+    }
+
+    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
     }
 }

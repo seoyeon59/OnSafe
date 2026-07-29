@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 왼쪽으로 퇴장 (홈 → 설정 이동 시 현재 화면) -->
-<!-- 탭 전환용: slide_in_right와 지속시간·커브가 동일 — 같은 종이의 반대쪽이 밀려나가는 느낌 -->
+<!-- slide_in_right_fast와 짝 — 사고이력 ↔ 설정 이동 시 나가는 화면 -->
 <translate xmlns:android="http://schemas.android.com/apk/res/android"
-    android:duration="180"
+    android:duration="130"
     android:fromXDelta="0"
     android:toXDelta="-100%p"
     android:interpolator="@android:interpolator/fast_out_slow_in" />
