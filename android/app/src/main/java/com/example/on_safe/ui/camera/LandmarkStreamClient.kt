@@ -1,6 +1,7 @@
 package com.example.on_safe.ui.camera
 
 import android.util.Log
+import com.example.on_safe.BuildConfig
 import com.example.on_safe.network.dto.FrameMessage
 import com.example.on_safe.network.dto.InitMessage
 import com.example.on_safe.network.dto.LandmarkPoint
@@ -15,7 +16,7 @@ import okhttp3.WebSocketListener
 
 /**
  * Python AI 서버 WS /ws/stream 연결 — landmark 전송 + 추론 결과 수신.
- * 에뮬레이터: 10.0.2.2 | 실기기: 실제 서버 IP로 변경 (ApiClient.BASE_URL과 동일 컨벤션)
+ * 엔드포인트는 BuildConfig.AI_WS_URL (build.gradle.kts, ApiClient.BASE_URL과 동일 컨벤션)에서 가져온다.
  */
 class LandmarkStreamClient(private val listener: Listener) {
 
@@ -27,7 +28,7 @@ class LandmarkStreamClient(private val listener: Listener) {
     }
 
     companion object {
-        private const val BASE_WS_URL = "ws://192.168.123.101:8000/ws/stream"
+        private val BASE_WS_URL = BuildConfig.AI_WS_URL
         private const val TAG = "LandmarkStreamClient"
     }
 
