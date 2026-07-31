@@ -75,6 +75,7 @@ class RegisterStep2Activity : AppCompatActivity() {
 
     private var dpScale = 0f
     private var cornerPx = 0f
+    private var isFormattingPhone = false
 
     private val COLOR_RED = 0xFFEF4444.toInt()
     private val COLOR_GREEN = 0xFF22C55E.toInt()
@@ -199,6 +200,19 @@ class RegisterStep2Activity : AppCompatActivity() {
         // 전화번호 유효성
         etPhone.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
+                // 자동 하이픈 포헵 (재귀 방지 가드)
+                if (!isFormattingPhone){
+                    isFormattingPhone = true
+                    val digits = s.toString().filter { it.isDigit() }.take(11)
+                    val formatted = formatPhone(digits)   // 아래 헬퍼
+                    if (formatted != s.toString()) {
+                        etPhone.setText(formatted)
+                        etPhone.setSelection(formatted.length) // 커서 맨 뒤로
+                    }
+                    isFormattingPhone = false
+                }
+
+                // 기존 유효성 검사 로직
                 val phone = s.toString()
                 if (phone.isEmpty()) {
                     tvPhoneMessage.visibility = View.GONE
@@ -488,6 +502,12 @@ class RegisterStep2Activity : AppCompatActivity() {
         override fun afterTextChanged(s: Editable?) { updateCompleteButton() }
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+    }
+    // 010-1234-5678 형태로 하이픈 자동 삽입 (3-3(또는4)-4)
+    private fun formatPhone(digits: String): String = when {
+        digits.length <= 3  -> digits
+        digits.length <= 7  -> "${digits.substring(0,3)}-${digits.substring(3)}"
+        else                -> "${digits.substring(0,3)}-${digits.substring(3, digits.length-4)}-${digits.substring(digits.length-4)}"
     }
 
     private fun updateCompleteButton() {
