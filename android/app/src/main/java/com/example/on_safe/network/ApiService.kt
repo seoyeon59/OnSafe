@@ -5,6 +5,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -42,6 +43,9 @@ interface ApiService {
 
     @POST("api/auth/logout")
     suspend fun logout(): Response<ApiResponse<Unit>>
+
+    @POST("api/auth/refresh")
+    suspend fun refresh(@Header("Refresh-Token") refreshToken: String): Response<ApiResponse<TokenResponse>>
 
     // ===== User =====
 
