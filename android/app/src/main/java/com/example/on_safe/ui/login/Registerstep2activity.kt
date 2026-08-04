@@ -213,7 +213,8 @@ class RegisterStep2Activity : AppCompatActivity() {
                 }
 
                 // 기존 유효성 검사 로직
-                val phone = s.toString()
+//                val phone = s.toString()
+                val phone = etPhone.text.toString()
                 if (phone.isEmpty()) {
                     tvPhoneMessage.visibility = View.GONE
                     setInputBorderNormal(etPhone)
