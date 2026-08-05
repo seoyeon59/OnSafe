@@ -144,6 +144,9 @@ class CameraModeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera_mode)
 
+        // 휴대폰 시스템 화면 자동 꺼짐을 막고, 앱 자체 화면 보호기(dim + 오버레이)가 절전을 담당하게 함
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
         bindViews()
         setState(CameraState.STANDBY)
 
