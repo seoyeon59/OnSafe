@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- res/drawable/bg_check_square_checked.xml -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="#4D80FF" />
-    <corners android:radius="6dp" />
-</shape>
+<!-- 파란 배경 위에 흰색 체크 아이콘(ic_check)을 중앙에 겹쳐서 실제 체크 표시가 보이도록 함 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#4D80FF" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item
+        android:width="14dp"
+        android:height="14dp"
+        android:gravity="center"
+        android:drawable="@drawable/ic_check" />
+</layer-list>

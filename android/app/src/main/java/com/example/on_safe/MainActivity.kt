@@ -5,6 +5,7 @@ import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -45,13 +46,21 @@ class MainActivity : AppCompatActivity() {
     // 홈에서 뒤로가기 두 번 눌러야 종료 (실수로 바로 꺼지는 것 방지)
     private var backPressedTime = 0L
 
-    // 알림 화면에서 돌아올 때 미읽음 여부에 따라 빨간 점 갱신
+    // 알림 화면에서 돌아올 때 미읽음 여부에 따라 빨간 점 + 종 아이콘(울리는 모양) 갱신
     private val notificationLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         val hasUnread = result.data?.getBooleanExtra(NotificationActivity.EXTRA_HAS_UNREAD, true) ?: true
+        updateNotificationBell(hasUnread)
+    }
+
+    // 미읽음 알림 유무에 따라 종 아이콘과 빨간 점을 함께 갱신
+    private fun updateNotificationBell(hasUnread: Boolean) {
         findViewById<View>(R.id.dotUnreadNotification)?.visibility =
             if (hasUnread) View.VISIBLE else View.GONE
+        findViewById<ImageView>(R.id.ivNotificationBell)?.setImageResource(
+            if (hasUnread) R.drawable.ic_notification_ringing else R.drawable.ic_notification
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

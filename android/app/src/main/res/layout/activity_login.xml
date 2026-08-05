@@ -31,13 +31,13 @@
             <FrameLayout
                 android:layout_width="64dp"
                 android:layout_height="64dp"
-                android:background="@drawable/bg_logo">
+                android:background="@drawable/bg_logo_login">
 
                 <ImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
                     android:layout_gravity="center"
-                    android:src="@drawable/ic_shield"
+                    android:src="@drawable/ic_neulbom_logo"
                     android:contentDescription="늘봄 로고"
                     app:tint="@color/surface_white" />
             </FrameLayout>
@@ -106,7 +106,8 @@
                         android:layout_gravity="center_vertical"
                         android:layout_marginLeft="16dp"
                         android:src="@drawable/ic_person"
-                        android:contentDescription="아이디 아이콘" />
+                        android:contentDescription="아이디 아이콘"
+                        app:tint="#6B7280" />
 
                     <EditText
                         android:id="@+id/etId"
@@ -145,7 +146,8 @@
                         android:layout_gravity="center_vertical"
                         android:layout_marginLeft="16dp"
                         android:src="@drawable/ic_lock"
-                        android:contentDescription="비밀번호 아이콘" />
+                        android:contentDescription="비밀번호 아이콘"
+                        app:tint="#6B7280" />
 
                     <EditText
                         android:id="@+id/etPw"
@@ -169,7 +171,8 @@
                         android:layout_marginRight="12dp"
                         android:src="@drawable/ic_eye"
                         android:background="@null"
-                        android:contentDescription="비밀번호 보기" />
+                        android:contentDescription="비밀번호 보기"
+                        app:tint="#6B7280" />
                 </FrameLayout>
 
                 <!-- 로그인 오류 메시지 -->

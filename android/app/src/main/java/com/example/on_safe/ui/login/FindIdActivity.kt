@@ -167,6 +167,8 @@ class FindIdActivity : AppCompatActivity() {
         layoutCode.visibility = View.VISIBLE
         tvResend.visibility = View.VISIBLE
         tvTimer.visibility = View.VISIBLE
+        btnConfirm.isEnabled = true
+        btnConfirm.alpha = 1.0f
         Toast.makeText(this, "인증번호를 발송했습니다.", Toast.LENGTH_SHORT).show()
         startTimer()
     }

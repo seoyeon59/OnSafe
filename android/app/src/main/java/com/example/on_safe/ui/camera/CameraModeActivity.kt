@@ -187,11 +187,11 @@ class CameraModeActivity : AppCompatActivity() {
         cameraProvider?.unbindAll()     //화면 종료 시 카메라 해제
         screenHandler.removeCallbacksAndMessages(null)
         justRestoredFromDim = false
-        if (currentState == CameraState.STREAMING || currentState == CameraState.CONNECTING) {
-            poseLandmarkerHelper?.stop()
-            landmarkStreamClient?.close()
-            rollingVideoBufferManager?.stop()
-        }
+        // 상태와 무관하게 항상 정리 — FAILED 상태(WS 끊김 등)에서도 리소스가 살아있을 수 있어
+        // STREAMING/CONNECTING일 때만 정리하면 새는 경우가 있었음
+        poseLandmarkerHelper?.stop()
+        landmarkStreamClient?.close()
+        rollingVideoBufferManager?.stop()
     }
 
     override fun onUserInteraction() {

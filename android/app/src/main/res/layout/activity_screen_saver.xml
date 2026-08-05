@@ -27,8 +27,8 @@
             android:focusable="true">
 
             <ImageView
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_lock_open"
                 app:tint="@color/surface_white" />
@@ -79,11 +79,11 @@
                 android:background="@drawable/bg_logo" />
 
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
-                android:src="@drawable/ic_shield"
+                android:src="@drawable/ic_neulbom_logo"
                 app:tint="@color/surface_white" />
         </FrameLayout>
 
