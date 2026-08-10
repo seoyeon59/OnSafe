@@ -11,10 +11,10 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.view.View
 import android.view.Window
 import android.view.WindowManager
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -45,6 +45,9 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var switchNotification: SwitchCompat
     private lateinit var switchSound: SwitchCompat
     private lateinit var switchVibration: SwitchCompat
+    private lateinit var ivSoundIcon: ImageView
+    private lateinit var ivVibrationIcon: ImageView
+    private lateinit var ivNotificationIcon: ImageView
 
     private lateinit var rowEditProfile: LinearLayout
     private lateinit var rowChangePassword: LinearLayout
@@ -96,6 +99,9 @@ class SettingsActivity : AppCompatActivity() {
         switchNotification = findViewById(R.id.switchNotification)
         switchSound        = findViewById(R.id.switchSound)
         switchVibration    = findViewById(R.id.switchVibration)
+        ivSoundIcon        = findViewById(R.id.ivSoundIcon)
+        ivVibrationIcon    = findViewById(R.id.ivVibrationIcon)
+        ivNotificationIcon = findViewById(R.id.ivNotificationIcon)
         rowEditProfile     = findViewById(R.id.rowEditProfile)
         rowChangePassword  = findViewById(R.id.rowChangePassword)
         rowPrivacyPolicy   = findViewById(R.id.rowPrivacyPolicy)
@@ -123,7 +129,24 @@ class SettingsActivity : AppCompatActivity() {
         switchVibration.isChecked = vibration
         switchSound.isEnabled = notification
         switchVibration.isEnabled = notification
+        updateNotificationIcon(notification)
+        updateSoundIcon(sound)
+        updateVibrationIcon(vibration)
         suppressToggleListeners = false
+    }
+
+    // 알림 마스터 스위치 상태에 맞춰 벨 아이콘을 울리는 모양/기본 모양으로 교체
+    private fun updateNotificationIcon(on: Boolean) {
+        ivNotificationIcon.setImageResource(if (on) R.drawable.ic_notification_ringing else R.drawable.ic_notification)
+    }
+
+    // 소리/진동 스위치 상태에 맞춰 행 아이콘도 on/off 아이콘으로 교체
+    private fun updateSoundIcon(on: Boolean) {
+        ivSoundIcon.setImageResource(if (on) R.drawable.ic_volume else R.drawable.ic_volume_off)
+    }
+
+    private fun updateVibrationIcon(on: Boolean) {
+        ivVibrationIcon.setImageResource(if (on) R.drawable.ic_vibration else R.drawable.ic_vibration_off)
     }
 
     // 캐시 저장 (서버 저장과 별개의 단순 로컬 미러)
@@ -275,24 +298,35 @@ class SettingsActivity : AppCompatActivity() {
 
             switchSound.isEnabled = isChecked
             switchVibration.isEnabled = isChecked
+            updateNotificationIcon(isChecked)
 
             if (!isChecked) {
                 // 알림 OFF → 소리/진동도 함께 OFF. 리스너 억제하고 한 번의 PUT으로 처리
                 suppressToggleListeners = true
                 switchSound.isChecked = false
                 switchVibration.isChecked = false
+                updateSoundIcon(false)
+                updateVibrationIcon(false)
                 suppressToggleListeners = false
                 writeCache(notification = false, sound = false, vibration = false)
                 updateNotificationSetting(notification = false, sound = false, vibration = false)
             } else {
-                writeCache(notification = true, sound = null, vibration = null)
-                updateNotificationSetting(notification = true)
+                // 알림 ON → 소리/진동도 함께 ON (꺼져있던 상태에서 복귀 시 항상 켜진 상태로 시작)
+                suppressToggleListeners = true
+                switchSound.isChecked = true
+                switchVibration.isChecked = true
+                updateSoundIcon(true)
+                updateVibrationIcon(true)
+                suppressToggleListeners = false
+                writeCache(notification = true, sound = true, vibration = true)
+                updateNotificationSetting(notification = true, sound = true, vibration = true)
             }
         }
 
         // 소리 스위치: 알림 OFF 상태에서 토글 시도 → 상태 되돌리고 토스트 (isUpdatingToggles로 무한 루프 방지)
         switchSound.setOnCheckedChangeListener { _, isChecked ->
             if (suppressToggleListeners) return@setOnCheckedChangeListener
+            updateSoundIcon(isChecked)
             writeCache(notification = null, sound = isChecked, vibration = null)
             updateNotificationSetting(sound = isChecked)
         }
@@ -300,6 +334,7 @@ class SettingsActivity : AppCompatActivity() {
         // 진동 스위치: 동일 패턴
         switchVibration.setOnCheckedChangeListener { _, isChecked ->
             if (suppressToggleListeners) return@setOnCheckedChangeListener
+            updateVibrationIcon(isChecked)
             writeCache(notification = null, sound = null, vibration = isChecked)
             updateNotificationSetting(vibration = isChecked)
         }
@@ -309,6 +344,7 @@ class SettingsActivity : AppCompatActivity() {
         // 개인정보 수정
         rowEditProfile.setOnClickListener {
             startActivity(Intent(this, EditProfileActivity::class.java))
+            overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
 
         // 비밀번호 변경
@@ -319,6 +355,7 @@ class SettingsActivity : AppCompatActivity() {
                 putExtra("userId", userId)
             }
             startActivity(intent)
+            overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
 
         // TODO: 개인정보 처리방침 웹뷰 또는 브라우저 연동
@@ -352,10 +389,12 @@ class SettingsActivity : AppCompatActivity() {
             finish()
         }
 
-        // 바텀 네비: 사고 이력 (왼쪽 탭 → 왼쪽에서 슬라이드 인)
+        // 바텀 네비: 사고 이력 — 홈을 건너뛰고 이동하므로 더 빠른 전환으로 "스쳐 지나가는" 느낌을 줌
+        // 탭 화면끼리는 항상 finish()로 이전 탭을 정리 → 뒤로가기 눌러도 다른 탭이 쌓여있지 않음
         tabHistory.setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.history.AccidentHistoryActivity::class.java))
-            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+            overridePendingTransition(R.anim.slide_in_left_fast, R.anim.slide_out_right_fast)
+            finish()
         }
 
         // 헤더 튜토리얼 버튼 (온보딩 완료 후에도 상시 진입)

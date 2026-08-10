@@ -5,9 +5,12 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
 
@@ -42,6 +45,9 @@ interface ApiService {
 
     @POST("api/auth/logout")
     suspend fun logout(): Response<ApiResponse<Unit>>
+
+    @POST("api/auth/refresh")
+    suspend fun refresh(@Header("Refresh-Token") refreshToken: String): Response<ApiResponse<TokenResponse>>
 
     // ===== User =====
 
@@ -83,4 +89,39 @@ interface ApiService {
 
     @GET("api/camera/status/{userId}")
     suspend fun getRiskStatus(@Path("userId") userId: String): Response<ApiResponse<RiskStatusResponse>>
+
+    // ===== Fall Logs (사고 이력) =====
+
+    @GET("api/fall-logs/{userId}")
+    suspend fun getFallLogs(
+        @Path("userId") userId: String,
+        @Query("level") level: String? = null
+    ): Response<ApiResponse<Map<String, List<FallLogResponse>>>>
+
+    @DELETE("api/fall-logs/{userId}/{logId}")
+    suspend fun deleteFallLog(
+        @Path("userId") userId: String,
+        @Path("logId") logId: String
+    ): Response<ApiResponse<Unit>>
+
+    // 1시간 유효한 signed URL — 재생/다운로드 시점마다 새로 발급받아 사용
+    @GET("api/fall-logs/{userId}/{logId}/video")
+    suspend fun getFallLogVideo(
+        @Path("userId") userId: String,
+        @Path("logId") logId: String
+    ): Response<ApiResponse<Map<String, String>>>
+
+    // 10분 유효한 업로드용 signed PUT URL 발급 (upload_url, content_type 키)
+    @POST("api/fall-logs/{userId}/{logId}/upload-url")
+    suspend fun getUploadUrl(
+        @Path("userId") userId: String,
+        @Path("logId") logId: String
+    ): Response<ApiResponse<Map<String, String>>>
+
+    // signed URL로 GCS 업로드 완료 후 호출 — 서버가 GCS 객체 존재를 재확인한 뒤 video_url 반영
+    @PATCH("api/fall-logs/{userId}/{logId}/video-complete")
+    suspend fun completeVideoUpload(
+        @Path("userId") userId: String,
+        @Path("logId") logId: String
+    ): Response<ApiResponse<FallLogResponse>>
 }

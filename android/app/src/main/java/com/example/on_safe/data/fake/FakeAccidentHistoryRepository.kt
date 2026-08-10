@@ -4,12 +4,11 @@ import com.example.on_safe.data.repository.AccidentHistoryRepository
 import com.example.on_safe.ui.history.HistoryListItem
 import com.example.on_safe.ui.history.HistoryType
 
-// TODO: GET /accident/history API 연동 후 교체
 // 스크롤 및 '하루 여러 건' 케이스 테스트용 더미 데이터.
 // WARNING 타입은 어댑터에서 필터링되어 화면에 표시되지 않음(연동 검증용).
 class FakeAccidentHistoryRepository : AccidentHistoryRepository {
 
-    override fun getHistoryEntries(): MutableList<HistoryListItem.HistoryEntry> = mutableListOf(
+    override suspend fun getHistoryEntries(userId: String): List<HistoryListItem.HistoryEntry> = listOf(
         // 2026.07.21 — 하루 2건
         HistoryListItem.HistoryEntry("1",  HistoryType.FALL,    "23:12", "2026.07.21"),
         HistoryListItem.HistoryEntry("2",  HistoryType.FALL,    "18:47", "2026.07.21"),

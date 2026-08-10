@@ -85,8 +85,8 @@
                     android:background="@drawable/bg_container_gray">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:layout_gravity="center"
                         android:src="@drawable/ic_person"
                         android:contentDescription="보호자 아이콘" />
@@ -195,8 +195,8 @@
                     android:background="@drawable/bg_container_gray">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:layout_gravity="center"
                         android:src="@drawable/ic_camera"
                         android:contentDescription="카메라 아이콘" />

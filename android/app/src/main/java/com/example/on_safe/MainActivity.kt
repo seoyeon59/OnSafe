@@ -5,7 +5,10 @@ import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -40,13 +43,24 @@ class MainActivity : AppCompatActivity() {
     // DANGER 진입 시점에만 모달을 띄우기 위해 직전 위험 등급을 기억
     private var lastRiskLevel: RiskScoreCardBinder.RiskLevel? = null
 
-    // 알림 화면에서 돌아올 때 미읽음 여부에 따라 빨간 점 갱신
+    // 홈에서 뒤로가기 두 번 눌러야 종료 (실수로 바로 꺼지는 것 방지)
+    private var backPressedTime = 0L
+
+    // 알림 화면에서 돌아올 때 미읽음 여부에 따라 빨간 점 + 종 아이콘(울리는 모양) 갱신
     private val notificationLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         val hasUnread = result.data?.getBooleanExtra(NotificationActivity.EXTRA_HAS_UNREAD, true) ?: true
+        updateNotificationBell(hasUnread)
+    }
+
+    // 미읽음 알림 유무에 따라 종 아이콘과 빨간 점을 함께 갱신
+    private fun updateNotificationBell(hasUnread: Boolean) {
         findViewById<View>(R.id.dotUnreadNotification)?.visibility =
             if (hasUnread) View.VISIBLE else View.GONE
+        findViewById<ImageView>(R.id.ivNotificationBell)?.setImageResource(
+            if (hasUnread) R.drawable.ic_notification_ringing else R.drawable.ic_notification
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,6 +71,18 @@ class MainActivity : AppCompatActivity() {
 
         NotificationPermissionBanner.setup(this)
         setupClickListeners()
+
+        // 홈은 탭 이동의 종착점 — 뒤로가기를 두 번 눌러야 앱이 종료되도록 확인 단계를 둠
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (System.currentTimeMillis() - backPressedTime < 2000) {
+                    finish()
+                } else {
+                    backPressedTime = System.currentTimeMillis()
+                    Toast.makeText(this@MainActivity, "한 번 더 누르면 종료됩니다.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        })
     }
 
     override fun onResume() {
@@ -80,11 +106,14 @@ class MainActivity : AppCompatActivity() {
     private fun setupClickListeners() {
         findViewById<View>(R.id.btnNotification).setOnClickListener {
             notificationLauncher.launch(Intent(this, NotificationActivity::class.java))
+            overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
         findViewById<View>(R.id.btnFullscreen).setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.FullscreenActivity::class.java))
+            overridePendingTransition(R.anim.fullscreen_enter, R.anim.fullscreen_exit)
         }
         // 사고이력: 왼쪽 탭 → 왼쪽에서 슬라이드 인
+        // 홈은 finish()하지 않고 그대로 둠 → 뒤로가기를 누르면 사고이력/설정에서 홈으로 돌아옴
         findViewById<View>(R.id.tabHistory).setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.history.AccidentHistoryActivity::class.java))
             overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)

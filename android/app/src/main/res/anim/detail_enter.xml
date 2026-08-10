@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 알림 화면 진입 — 뒤로가기로 되돌아올 것을 고려한 "안으로 파고드는" 방향의 전환.
+     탭 전환과 구분되도록 오른쪽에서 살짝만 들어오며 페이드 인 -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shareInterpolator="false">
+    <translate
+        android:duration="200"
+        android:fromXDelta="30%p"
+        android:toXDelta="0"
+        android:interpolator="@android:interpolator/linear_out_slow_in" />
+    <alpha
+        android:duration="200"
+        android:fromAlpha="0.3"
+        android:toAlpha="1.0"
+        android:interpolator="@android:interpolator/linear_out_slow_in" />
+</set>

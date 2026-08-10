@@ -18,7 +18,6 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
 import com.example.on_safe.network.ApiClient
@@ -75,6 +74,7 @@ class RegisterStep2Activity : AppCompatActivity() {
 
     private var dpScale = 0f
     private var cornerPx = 0f
+    private var isFormattingPhone = false
 
     private val COLOR_RED = 0xFFEF4444.toInt()
     private val COLOR_GREEN = 0xFF22C55E.toInt()
@@ -199,7 +199,21 @@ class RegisterStep2Activity : AppCompatActivity() {
         // 전화번호 유효성
         etPhone.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                val phone = s.toString()
+                // 자동 하이픈 포헵 (재귀 방지 가드)
+                if (!isFormattingPhone){
+                    isFormattingPhone = true
+                    val digits = s.toString().filter { it.isDigit() }.take(11)
+                    val formatted = formatPhone(digits)   // 아래 헬퍼
+                    if (formatted != s.toString()) {
+                        etPhone.setText(formatted)
+                        etPhone.setSelection(formatted.length) // 커서 맨 뒤로
+                    }
+                    isFormattingPhone = false
+                }
+
+                // 기존 유효성 검사 로직
+//                val phone = s.toString()
+                val phone = etPhone.text.toString()
                 if (phone.isEmpty()) {
                     tvPhoneMessage.visibility = View.GONE
                     setInputBorderNormal(etPhone)
@@ -345,29 +359,36 @@ class RegisterStep2Activity : AppCompatActivity() {
             }
         }
 
-        // 재전송
+        // 재전송 — 응답 오기 전 중복 탭 방지를 위해 즉시 숨기고, 실패 시에만 다시 보이게 복구
         tvEmailResend.setOnClickListener {
             etEmailCode.text.clear()
+            tvEmailResend.visibility = View.GONE
             lifecycleScope.launch {
                 try {
-                    ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
-                    startEmailVerification()
-                    Toast.makeText(this@RegisterStep2Activity, "인증 메일을 재발송했습니다.", Toast.LENGTH_SHORT).show()
+                    val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        startEmailVerification()
+                        Toast.makeText(this@RegisterStep2Activity, "인증 메일을 재발송했습니다.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        tvEmailResend.visibility = View.VISIBLE
+                        Toast.makeText(
+                            this@RegisterStep2Activity,
+                            response.body()?.message ?: "인증 메일 재발송에 실패했습니다.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 } catch (e: Exception) {
+                    tvEmailResend.visibility = View.VISIBLE
                     Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
                 }
             }
         }
 
-//        etAddress.setOnClickListener {
-//            // TODO: 도로명 주소 API 연결
-//            Toast.makeText(this, "주소 검색 준비 중", Toast.LENGTH_SHORT).show()
-//        }
-
-          // 도로명 주소 API 연결
-          etAddress.setOnClickListener {
-              addressLauncher.launch(Intent(this, AddressSearchActivity::class.java))
-          }
+        // 도로명 주소 API 연결
+        etAddress.setOnClickListener {
+            addressLauncher.launch(Intent(this, AddressSearchActivity::class.java))
+            overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
+        }
 
         btnComplete.setOnClickListener {
             btnComplete.isEnabled = false
@@ -485,6 +506,12 @@ class RegisterStep2Activity : AppCompatActivity() {
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
     }
+    // 010-1234-5678 형태로 하이픈 자동 삽입 (3-3(또는4)-4)
+    private fun formatPhone(digits: String): String = when {
+        digits.length <= 3  -> digits
+        digits.length <= 7  -> "${digits.substring(0,3)}-${digits.substring(3)}"
+        else                -> "${digits.substring(0,3)}-${digits.substring(3, digits.length-4)}-${digits.substring(digits.length-4)}"
+    }
 
     private fun updateCompleteButton() {
         // etAddressDetail은 RegisterRequest에서 nullable 선택 항목 → 필수 조건 제외
@@ -500,5 +527,11 @@ class RegisterStep2Activity : AppCompatActivity() {
 
         btnComplete.isEnabled = allValid
         btnComplete.alpha = if (allValid) 1.0f else 0.4f
+    }
+
+    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
     }
 }

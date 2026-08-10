@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- slide_in_right_fast와 짝 — 사고이력 ↔ 설정 이동 시 나가는 화면 -->
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="130"
+    android:fromXDelta="0"
+    android:toXDelta="-100%p"
+    android:interpolator="@android:interpolator/fast_out_slow_in" />

@@ -21,8 +21,8 @@
         android:background="@drawable/bg_circle_primary_tint">
 
         <ImageView
-            android:layout_width="18dp"
-            android:layout_height="18dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:layout_gravity="center"
             android:contentDescription="@null"
             android:src="@drawable/ic_location"

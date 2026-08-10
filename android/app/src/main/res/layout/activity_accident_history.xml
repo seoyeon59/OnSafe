@@ -103,38 +103,8 @@
 
     </LinearLayout>
 
-    <!-- ============ 보관 기간 안내 배너 ============ -->
-    <LinearLayout
-        android:id="@+id/retentionBanner"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="4dp"
-        android:background="@drawable/bg_sub_section"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/filterRow">
-
-        <ImageView
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_info"
-            app:tint="@color/ink_500" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:text="사고 이력은 발생일로부터 최대 30일간 보관됩니다."
-            android:textColor="@color/ink_500"
-            android:textSize="13sp" />
-
-    </LinearLayout>
+    <!-- 보관 기간 안내는 리스트 안 카드(item_history_notice)로 이동 —
+         정렬 순서에 따라 가장 오래된 데이터 쪽 끝(최신순: 맨 아래 / 오래된순: 맨 위)에 표시 -->
 
     <!-- ============ 리스트 ============ -->
     <androidx.recyclerview.widget.RecyclerView
@@ -148,7 +118,7 @@
         app:layout_constraintBottom_toTopOf="@id/bottomNav"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/retentionBanner" />
+        app:layout_constraintTop_toBottomOf="@id/filterRow" />
 
     <!-- 빈 상태 뷰 -->
     <TextView
@@ -162,7 +132,7 @@
         app:layout_constraintBottom_toTopOf="@id/bottomNav"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/retentionBanner" />
+        app:layout_constraintTop_toBottomOf="@id/filterRow" />
 
     <!-- ============ 하단 네비게이션 ============ -->
     <LinearLayout
@@ -200,10 +170,10 @@
                 android:orientation="vertical">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:contentDescription="@null"
-                    android:src="@drawable/ic_history"
+                    android:src="@drawable/ic_history_filled"
                     app:tint="@color/primary_blue" />
 
                 <TextView
@@ -230,8 +200,8 @@
             android:orientation="vertical">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_home"
                 app:tint="@color/ink_500" />
@@ -259,8 +229,8 @@
             android:orientation="vertical">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_settings"
                 app:tint="@color/ink_500" />

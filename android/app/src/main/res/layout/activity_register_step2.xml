@@ -204,7 +204,8 @@
                         android:layout_marginRight="12dp"
                         android:src="@drawable/ic_eye"
                         android:background="@null"
-                        android:contentDescription="비밀번호 보기" />
+                        android:contentDescription="비밀번호 보기"
+                        app:tint="#6B7280" />
 
                 </FrameLayout>
 
@@ -253,7 +254,8 @@
                         android:layout_marginRight="12dp"
                         android:src="@drawable/ic_eye"
                         android:background="@null"
-                        android:contentDescription="비밀번호 확인 보기" />
+                        android:contentDescription="비밀번호 확인 보기"
+                        app:tint="#6B7280" />
 
                 </FrameLayout>
 

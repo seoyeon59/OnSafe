@@ -24,9 +24,9 @@ object RiskScoreCardBinder {
         val message: String,
         val colorRes: Int
     ) {
-        NORMAL ("정상", "위험 지수 0~50",   "안정적인 상태입니다.",             R.color.status_normal),
-        WARNING("주의", "위험 지수 51~75",  "움직임에 주의가 필요합니다.",        R.color.status_warning),
-        DANGER ("위험", "위험 지수 76~100", "낙상이 의심됩니다. 즉시 확인이 필요합니다.", R.color.status_danger);
+        NORMAL ("정상", "정상 구간 0~50",   "안정적인 상태입니다.",             R.color.status_normal),
+        WARNING("주의", "주의 구간 51~75",  "움직임에 주의가 필요합니다.",        R.color.status_warning),
+        DANGER ("위험", "위험 구간 76~100", "낙상이 의심됩니다. 즉시 확인이 필요합니다.", R.color.status_danger);
 
         companion object {
             fun fromScore(score: Int): RiskLevel = when {
@@ -55,7 +55,7 @@ object RiskScoreCardBinder {
         cardRoot.findViewById<TextView>(R.id.tvRiskMessage).text  = level.message
 
         val progressFill      = cardRoot.findViewById<View>(R.id.progressFill)
-        val progressContainer = progressFill.parent as FrameLayout
+        val progressContainer = progressFill.parent as? FrameLayout ?: return
         progressContainer.post {
             val ratio = score.coerceIn(0, 100) / 100f
             progressFill.layoutParams = progressFill.layoutParams.also {

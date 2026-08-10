@@ -97,15 +97,14 @@ class NotificationAdapter(
     }
 
     // 화면 진입 시 WARNING 전체 일괄 읽음 처리
+    // 바뀐 항목만 notifyItemChanged로 갱신 (전체 리스트를 다시 그리지 않아 깜빡임 없음)
     fun markAllWarningsAsRead() {
-        var changed = false
         items.forEachIndexed { index, item ->
             if (item.type == NotificationType.WARNING && item.isUnread) {
                 items[index] = item.copy(isUnread = false)
-                changed = true
+                notifyItemChanged(index)
             }
         }
-        if (changed) notifyDataSetChanged()
     }
 
     fun hasUnreadItems(): Boolean = items.any { it.isUnread }

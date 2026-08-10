@@ -18,3 +18,9 @@ data class LoginResponse(
 data class FindIdResponse(
     val userId: String
 )
+
+data class TokenResponse(
+    val accessToken: String,
+    val refreshToken: String,
+    val tokenType: String
+)

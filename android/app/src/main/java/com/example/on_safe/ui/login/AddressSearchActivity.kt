@@ -26,6 +26,9 @@ class AddressSearchActivity : AppCompatActivity() {
         const val EXTRA_ADDRESS = "address"
         const val EXTRA_ZIP     = "zipNo"
         // ⚠️ 검색 API 전용 승인키 (팝업 키 아님!)
+        // TODO: [보안] 이 키가 소스코드에 평문으로 들어있고 공개 저장소에 커밋된 상태입니다.
+        //       local.properties + BuildConfig로 옮겨서 저장소에는 값이 노출되지 않도록 해야 합니다.
+        //       이미 git 히스토리에 노출된 값이므로, 옮기는 것과 별개로 juso.go.kr에서 키 재발급도 검토해주세요.
         private const val CONFM_KEY = "devU01TX0FVVEgyMDI2MDYwMjAyMDEyODExODk3NTM="
     }
 
@@ -121,5 +124,11 @@ class AddressSearchActivity : AppCompatActivity() {
         tipCard.visibility   = View.VISIBLE
         rvAddress.visibility = View.GONE
         tvEmpty.visibility   = View.GONE
+    }
+
+    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
     }
 }

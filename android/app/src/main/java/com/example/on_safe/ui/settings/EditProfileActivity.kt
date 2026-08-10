@@ -101,6 +101,7 @@ class EditProfileActivity : AppCompatActivity() {
         etAddress1.setOnClickListener {
             addressLauncher.launch(Intent(this,
                 AddressSearchActivity::class.java))
+            overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
 
         btnSave.setOnClickListener {
@@ -131,5 +132,11 @@ class EditProfileActivity : AppCompatActivity() {
             Toast.makeText(this, "정보가 저장되었습니다.", Toast.LENGTH_SHORT).show()
             finish()
         }
+    }
+
+    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
     }
 }
