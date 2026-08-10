@@ -49,8 +49,8 @@
                     android:background="@drawable/bg_circle_primary_tint" />
 
                 <ImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_gravity="center"
                     android:alpha="0.4"
                     android:contentDescription="@null"
@@ -119,11 +119,11 @@
                 android:background="@drawable/bg_logo" />
 
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
-                android:src="@drawable/ic_shield"
+                android:src="@drawable/ic_neulbom_logo"
                 app:tint="@color/surface_white" />
         </FrameLayout>
 
@@ -229,8 +229,8 @@
                 android:layout_height="32dp">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="28dp"
+                    android:layout_height="24dp"
                     android:layout_gravity="center"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_camera"
@@ -350,8 +350,8 @@
                         android:orientation="horizontal">
 
                         <ImageView
-                            android:layout_width="12dp"
-                            android:layout_height="12dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
                             android:alpha="0.25"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_person"
@@ -393,8 +393,8 @@
                         android:orientation="horizontal">
 
                         <ImageView
-                            android:layout_width="12dp"
-                            android:layout_height="12dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
                             android:alpha="0.25"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_devices"
@@ -451,8 +451,8 @@
 
                     <ImageView
                         android:id="@+id/ivToggleIcon"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_camera"
                         app:tint="@color/surface_white" />
@@ -481,8 +481,8 @@
                     android:orientation="horizontal">
 
                     <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
                         android:alpha="0.35"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_logout"

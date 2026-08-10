@@ -31,11 +31,11 @@
                 android:background="@drawable/bg_logo" />
 
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
-                android:src="@drawable/ic_shield"
+                android:src="@drawable/ic_neulbom_logo"
                 app:tint="@color/surface_white" />
         </FrameLayout>
 
@@ -63,8 +63,9 @@
             android:focusable="true">
 
             <ImageView
-                android:layout_width="26dp"
-                android:layout_height="26dp"
+                android:id="@+id/ivNotificationBell"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:layout_gravity="center"
                 android:contentDescription="알림"
                 android:src="@drawable/ic_notification"
@@ -128,8 +129,8 @@
                     android:backgroundTint="@color/surface_icon_blue">
 
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:layout_gravity="center"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_person"
@@ -260,8 +261,8 @@
                 android:orientation="horizontal">
 
                 <ImageView
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_siren"
                     app:tint="@color/surface_white" />
@@ -288,8 +289,8 @@
                 android:paddingVertical="8dp">
 
                 <ImageView
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_info"
                     app:tint="@color/ink_500" />
@@ -334,8 +335,8 @@
             android:orientation="vertical">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_history"
                 app:tint="@color/ink_500" />
@@ -370,10 +371,10 @@
                 android:orientation="vertical">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:contentDescription="@null"
-                    android:src="@drawable/ic_home"
+                    android:src="@drawable/ic_home_filled"
                     app:tint="@color/primary_blue" />
 
                 <TextView
@@ -400,8 +401,8 @@
             android:orientation="vertical">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_settings"
                 app:tint="@color/ink_500" />

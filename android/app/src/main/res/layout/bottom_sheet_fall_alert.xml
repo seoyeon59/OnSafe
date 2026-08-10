@@ -24,8 +24,8 @@
             android:backgroundTint="#40FFFFFF">
 
             <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_siren"
@@ -72,8 +72,8 @@
                 android:backgroundTint="#FEF2F2">
 
                 <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
                     android:layout_gravity="center"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_siren"
@@ -200,8 +200,8 @@
             android:orientation="horizontal">
 
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_siren"
                 app:tint="@color/surface_white" />

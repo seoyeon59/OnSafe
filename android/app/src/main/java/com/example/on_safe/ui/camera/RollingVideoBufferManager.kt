@@ -79,6 +79,8 @@ class RollingVideoBufferManager(private val context: Context) {
             onClipReady = null
             onClipError = null
         }
+        // 촬영 시작/종료마다 새 인스턴스가 만들어지므로, 여기서 정리 안 하면 스레드가 계속 쌓임
+        executor.shutdown()
     }
 
     private fun rotateSegment() {

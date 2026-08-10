@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 로그인 화면 전용 로고 배경 — 다른 화면(bg_logo, 12dp)보다 곡률을 조금 더 줌 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/primary_blue" />
+    <corners android:radius="18dp" />
+</shape>

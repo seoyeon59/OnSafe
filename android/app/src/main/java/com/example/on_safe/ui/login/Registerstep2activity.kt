@@ -18,7 +18,6 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
 import com.example.on_safe.network.ApiClient
@@ -360,9 +359,10 @@ class RegisterStep2Activity : AppCompatActivity() {
             }
         }
 
-        // 재전송
+        // 재전송 — 응답 오기 전 중복 탭 방지를 위해 즉시 숨기고, 실패 시에만 다시 보이게 복구
         tvEmailResend.setOnClickListener {
             etEmailCode.text.clear()
+            tvEmailResend.visibility = View.GONE
             lifecycleScope.launch {
                 try {
                     val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
@@ -370,6 +370,7 @@ class RegisterStep2Activity : AppCompatActivity() {
                         startEmailVerification()
                         Toast.makeText(this@RegisterStep2Activity, "인증 메일을 재발송했습니다.", Toast.LENGTH_SHORT).show()
                     } else {
+                        tvEmailResend.visibility = View.VISIBLE
                         Toast.makeText(
                             this@RegisterStep2Activity,
                             response.body()?.message ?: "인증 메일 재발송에 실패했습니다.",
@@ -377,6 +378,7 @@ class RegisterStep2Activity : AppCompatActivity() {
                         ).show()
                     }
                 } catch (e: Exception) {
+                    tvEmailResend.visibility = View.VISIBLE
                     Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
                 }
             }
