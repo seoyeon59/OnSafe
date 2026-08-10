@@ -35,10 +35,11 @@ import androidx.camera.video.Recorder
 import androidx.camera.video.VideoCapture
 import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
-import kotlin.random.Random
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.LandmarkPoint
 import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.util.TokenManager
-import com.example.on_safe.network.dto.LandmarkPoint
+import kotlin.random.Random
 import kotlinx.coroutines.launch
 
 class CameraModeActivity : AppCompatActivity() {
@@ -548,12 +549,20 @@ class CameraModeActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    // 서버 로그아웃(리프레시 토큰 블랙리스트) → 로컬 토큰 정리 → 로그인 화면 이동.
+    // 서버 호출이 실패해도 로컬 로그아웃은 진행 — 사용자 관점에서 항상 성공해야 함.
     private fun handleLogout() {
-        // TODO: 서버 로그아웃 API 호출 (POST /auth/logout)
-        TokenManager.clear(this)
-        startActivity(Intent(this, LoginActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        })
+        lifecycleScope.launch {
+            try {
+                ApiClient.api.logout()
+            } catch (_: Exception) {
+                // 무시하고 로컬 정리로 진행
+            }
+            TokenManager.clear(this@CameraModeActivity)
+            startActivity(Intent(this@CameraModeActivity, LoginActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+        }
     }
 
     fun showScreenSaver() {
