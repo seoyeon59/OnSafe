@@ -4,7 +4,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
@@ -29,6 +28,7 @@ class AccidentHistoryAdapter(
     companion object {
         private const val VIEW_TYPE_HEADER = 0
         private const val VIEW_TYPE_ITEM   = 1
+        private const val VIEW_TYPE_NOTICE = 2
     }
 
     // ──────────────────────────────────────────────
@@ -43,7 +43,11 @@ class AccidentHistoryAdapter(
         // 위험(FALL) 항목만 표시
         val filtered = rawEntries.filter { it.type == HistoryType.FALL }
         val newItems = buildSectionedList(filtered, sortOrder)
-        applyDiff(newItems)
+        // 정렬 순서가 바뀌면 사실상 리스트 전체가 뒤집히는 수준이라, DiffUtil로 항목별
+        // 이동 애니메이션을 개별 적용하면 카드들이 제각각 움직여 뒤섞인 것처럼 보인다.
+        // 그래서 여기서는 통째로 다시 그려서 위에서부터 순서대로 자리 잡게 하고,
+        // 스크롤 이동만으로 "정렬이 바뀌었다"는 걸 보여준다.
+        replaceAllInstant(newItems)
     }
 
     fun removeItem(id: String) {
@@ -60,8 +64,11 @@ class AccidentHistoryAdapter(
     // RecyclerView.Adapter overrides
     // ──────────────────────────────────────────────
 
-    override fun getItemViewType(position: Int) =
-        if (items[position] is HistoryListItem.DateHeader) VIEW_TYPE_HEADER else VIEW_TYPE_ITEM
+    override fun getItemViewType(position: Int) = when (items[position]) {
+        is HistoryListItem.DateHeader      -> VIEW_TYPE_HEADER
+        is HistoryListItem.RetentionNotice -> VIEW_TYPE_NOTICE
+        is HistoryListItem.HistoryEntry    -> VIEW_TYPE_ITEM
+    }
 
     override fun getItemCount() = items.size
 
@@ -71,6 +78,9 @@ class AccidentHistoryAdapter(
             VIEW_TYPE_HEADER -> HeaderViewHolder(
                 inflater.inflate(R.layout.item_date_header, parent, false)
             )
+            VIEW_TYPE_NOTICE -> NoticeViewHolder(
+                inflater.inflate(R.layout.item_history_notice, parent, false)
+            )
             else -> ItemViewHolder(
                 inflater.inflate(R.layout.item_accident_history, parent, false)
             )
@@ -79,8 +89,9 @@ class AccidentHistoryAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val item = items[position]) {
-            is HistoryListItem.DateHeader   -> (holder as HeaderViewHolder).bind(item)
-            is HistoryListItem.HistoryEntry -> (holder as ItemViewHolder).bind(item)
+            is HistoryListItem.DateHeader      -> (holder as HeaderViewHolder).bind(item)
+            is HistoryListItem.HistoryEntry    -> (holder as ItemViewHolder).bind(item)
+            is HistoryListItem.RetentionNotice -> Unit // 고정 문구 — 바인딩할 내용 없음
         }
     }
 
@@ -95,6 +106,9 @@ class AccidentHistoryAdapter(
         }
     }
 
+    // 보관 기간 안내 카드 — 고정 문구만 표시, 바인딩할 동적 데이터 없음
+    inner class NoticeViewHolder(view: View) : RecyclerView.ViewHolder(view)
+
     inner class ItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val tvTime:        TextView    = view.findViewById(R.id.tvTime)
         private val btnWatchVideo: LinearLayout = view.findViewById(R.id.btnWatchVideo)
@@ -102,7 +116,8 @@ class AccidentHistoryAdapter(
         private val btnDelete:     ImageButton  = view.findViewById(R.id.btnDelete)
 
         fun bind(entry: HistoryListItem.HistoryEntry) {
-            tvTime.text = entry.time
+            // 영상 길이로 오해되지 않도록 "감지 시각" 접두어 부여 (알림 상세 모달과 동일한 표현으로 통일)
+            tvTime.text = "감지 시각 · ${entry.time}"
             // 모든 항목이 낙상(FALL)이므로 카드 좌측 상단에 고정 표시 (배지 제거)
 
             btnWatchVideo.setOnClickListener { onWatchVideo(entry) }
@@ -139,11 +154,17 @@ class AccidentHistoryAdapter(
         }
 
         return buildList {
+            // 오래된순: 가장 오래된 항목이 리스트 맨 위에 오므로, 안내 문구도 맨 위에 먼저 배치
+            if (sortOrder == SortOrder.OLDEST_FIRST) add(HistoryListItem.RetentionNotice)
+
             sorted.groupBy { it.date }
                 .forEach { (date, group) ->
                     add(HistoryListItem.DateHeader(date))
                     addAll(group)
                 }
+
+            // 최신순: 가장 오래된 항목이 리스트 맨 아래에 오므로, 안내 문구도 맨 아래에 배치
+            if (sortOrder == SortOrder.NEWEST_FIRST) add(HistoryListItem.RetentionNotice)
         }
     }
 
@@ -152,6 +173,14 @@ class AccidentHistoryAdapter(
         items.clear()
         items.addAll(newItems)
         diffResult.dispatchUpdatesTo(this)
+    }
+
+    // 삭제(removeItem)처럼 항목 한두 개만 바뀌는 경우가 아니라 정렬 전체가 뒤바뀌는 경우 전용 —
+    // 개별 이동 애니메이션 없이 한 번에 새로 그린다
+    private fun replaceAllInstant(newItems: List<HistoryListItem>) {
+        items.clear()
+        items.addAll(newItems)
+        notifyDataSetChanged()
     }
 
     // ──────────────────────────────────────────────
@@ -170,8 +199,9 @@ class AccidentHistoryAdapter(
             val old = oldList[oldPos]
             val new = newList[newPos]
             return when {
-                old is HistoryListItem.DateHeader   && new is HistoryListItem.DateHeader   -> old.date == new.date
-                old is HistoryListItem.HistoryEntry && new is HistoryListItem.HistoryEntry -> old.id == new.id
+                old is HistoryListItem.DateHeader      && new is HistoryListItem.DateHeader      -> old.date == new.date
+                old is HistoryListItem.HistoryEntry    && new is HistoryListItem.HistoryEntry    -> old.id == new.id
+                old is HistoryListItem.RetentionNotice && new is HistoryListItem.RetentionNotice  -> true
                 else -> false
             }
         }

@@ -16,8 +16,6 @@ import android.provider.Settings
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
-import android.widget.ImageButton
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,13 +24,14 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.on_safe.R
+import com.example.on_safe.data.repository.AccidentHistoryRepository
+import com.example.on_safe.data.repository.RealAccidentHistoryRepository
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.util.TokenManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.example.on_safe.R
-import com.example.on_safe.ui.FullscreenActivity
-import com.example.on_safe.data.fake.FakeAccidentHistoryRepository
-import com.example.on_safe.data.repository.AccidentHistoryRepository
 
 // 사고 이력 화면 (위험 이력만 표시 / 최신순·오래된순 정렬 / 영상 보기·다운로드·삭제)
 class AccidentHistoryActivity : AppCompatActivity() {
@@ -50,12 +49,13 @@ class AccidentHistoryActivity : AppCompatActivity() {
     // 권한 승인 후 재시도할 다운로드 항목
     private var pendingDownloadEntry: HistoryListItem.HistoryEntry? = null
 
+    // 미디어 권한 요청 → 승인 시 handleDownload 재시도(signed URL 새로 발급), 거부 시 안내
     private val requestMediaPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             val entry = pendingDownloadEntry ?: return@registerForActivityResult
             pendingDownloadEntry = null
             if (granted) {
-                performDownload(entry)
+                handleDownload(entry)
             } else {
                 val permanentlyDenied = !shouldShowRequestPermissionRationale(mediaPermission)
                 if (permanentlyDenied) {
@@ -75,11 +75,9 @@ class AccidentHistoryActivity : AppCompatActivity() {
         else
             Manifest.permission.READ_EXTERNAL_STORAGE
 
-    // TODO: API 연동 시 Real 구현체로 교체
-    private val historyRepository: AccidentHistoryRepository = FakeAccidentHistoryRepository()
-    private val rawEntries: MutableList<HistoryListItem.HistoryEntry> by lazy {
-        historyRepository.getHistoryEntries()
-    }
+    private val rawEntries: MutableList<HistoryListItem.HistoryEntry> = mutableListOf()
+
+    private val accidentHistoryRepository: AccidentHistoryRepository = RealAccidentHistoryRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,7 +87,28 @@ class AccidentHistoryActivity : AppCompatActivity() {
         initRecyclerView()
         setupSortChips()
         setupNavListeners()
-        applySort(SortOrder.NEWEST_FIRST)
+        loadHistory()
+    }
+
+    // AccidentHistoryRepository 경유로 사고 이력 조회 후 현재 정렬 순서로 표시
+    private fun loadHistory() {
+        val userId = TokenManager.getUserId(this)
+        if (userId.isBlank()) {
+            applySort(currentSort)
+            return
+        }
+        lifecycleScope.launch {
+            try {
+                val entries = accidentHistoryRepository.getHistoryEntries(userId)
+                rawEntries.clear()
+                rawEntries.addAll(entries)
+            } catch (e: IllegalStateException) {
+                Toast.makeText(this@AccidentHistoryActivity, e.message ?: "사고 이력을 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@AccidentHistoryActivity, "네트워크 오류로 사고 이력을 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
+            }
+            applySort(currentSort)
+        }
     }
 
     private fun initViews() {
@@ -123,17 +142,20 @@ class AccidentHistoryActivity : AppCompatActivity() {
 
     private fun setupNavListeners() {
         // 홈: 사고이력은 왼쪽 탭 → 홈으로 돌아갈 때 오른쪽으로 슬라이드 아웃
+        // 탭 화면끼리는 항상 finish()로 이전 탭을 정리 → 뒤로가기 눌러도 다른 탭이 쌓여있지 않음
         findViewById<View>(R.id.tabHome).setOnClickListener {
             val intent = Intent(this, com.example.on_safe.MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
             startActivity(intent)
             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+            finish()
         }
-        // 설정: 오른쪽 탭 → 오른쪽에서 슬라이드 인
+        // 설정: 홈을 건너뛰고 이동하므로 더 빠른 전환으로 "스쳐 지나가는" 느낌을 줌
         findViewById<View>(R.id.tabSettings).setOnClickListener {
             startActivity(Intent(this, com.example.on_safe.ui.settings.SettingsActivity::class.java))
-            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+            overridePendingTransition(R.anim.slide_in_right_fast, R.anim.slide_out_left_fast)
+            finish()
         }
     }
 
@@ -144,6 +166,9 @@ class AccidentHistoryActivity : AppCompatActivity() {
         updateCountDisplay()
         tvEmpty.visibility    = if (adapter.isEmpty()) View.VISIBLE else View.GONE
         rvHistory.visibility  = if (adapter.isEmpty()) View.GONE  else View.VISIBLE
+        // 정렬 변경 시 DiffUtil이 이전 스크롤 위치를 그대로 두는 경우가 있어 항상 맨 위로 리셋
+        // 순간이동 대신 부드럽게 스크롤해서 "위로 올라갔다"는 게 눈에 보이도록 함
+        rvHistory.smoothScrollToPosition(0)
     }
 
     // active 칩: 파란 pill + 흰 텍스트 / inactive: 회색 pill + ink_500 텍스트
@@ -177,17 +202,20 @@ class AccidentHistoryActivity : AppCompatActivity() {
     // ──────────────────────────────────────────────
 
     private fun handleWatchVideo(entry: HistoryListItem.HistoryEntry) {
-        if (entry.videoUri.isNullOrEmpty()) {
+        if (!entry.hasVideo) {
             Toast.makeText(this, "재생할 영상이 없습니다.", Toast.LENGTH_SHORT).show()
             return
         }
-        startActivity(Intent(this, FullscreenActivity::class.java).apply {
-            putExtra(EXTRA_VIDEO_URI, entry.videoUri)
-        })
+        fetchVideoUrl(entry) { signedUrl ->
+            startActivity(Intent(this, VideoPlayerActivity::class.java).apply {
+                putExtra(VideoPlayerActivity.EXTRA_VIDEO_URL, signedUrl)
+            })
+            overridePendingTransition(R.anim.fullscreen_enter, R.anim.fullscreen_exit)
+        }
     }
 
     private fun handleDownload(entry: HistoryListItem.HistoryEntry) {
-        if (entry.videoUri.isNullOrEmpty()) {
+        if (!entry.hasVideo) {
             Toast.makeText(this, "저장 가능한 영상이 없습니다.", Toast.LENGTH_SHORT).show()
             return
         }
@@ -198,24 +226,35 @@ class AccidentHistoryActivity : AppCompatActivity() {
             requestMediaPermission.launch(mediaPermission)
             return
         }
-        performDownload(entry)
+        fetchVideoUrl(entry) { signedUrl -> performDownload(signedUrl, entry.id) }
     }
 
-    private fun performDownload(entry: HistoryListItem.HistoryEntry) {
-        val uri = entry.videoUri ?: return
-        // 파일 복사는 IO 스레드에서, 완료 후 토스트는 Main 스레드에서 표시
+    // GET .../video 로 signed URL 발급 (1시간 TTL — 재생/다운로드 시점마다 새로 요청)
+    private fun fetchVideoUrl(entry: HistoryListItem.HistoryEntry, onSuccess: (String) -> Unit) {
+        val userId = TokenManager.getUserId(this)
         lifecycleScope.launch {
-            val success = withContext(Dispatchers.IO) {
-                try {
-                    saveVideoToGallery(uri, entry.id)
-                    true
-                } catch (e: Exception) {
-                    false
+            try {
+                val response = ApiClient.api.getFallLogVideo(userId, entry.id)
+                val body = response.body()
+                val signedUrl = body?.data?.get("signed_url")
+                if (response.isSuccessful && body?.success == true && signedUrl != null) {
+                    onSuccess(signedUrl)
+                } else {
+                    val message = ApiClient.parseErrorMessage(response.errorBody(), "영상을 불러올 수 없습니다.")
+                    Toast.makeText(this@AccidentHistoryActivity, message, Toast.LENGTH_SHORT).show()
                 }
+            } catch (e: Exception) {
+                Toast.makeText(this@AccidentHistoryActivity, "네트워크 오류로 영상을 불러올 수 없습니다.", Toast.LENGTH_SHORT).show()
             }
-            if (success) {
+        }
+    }
+
+    private fun performDownload(videoUrl: String, entryId: String) {
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) { saveVideoToGallery(videoUrl, entryId) }
                 Toast.makeText(this@AccidentHistoryActivity, "갤러리에 저장되었습니다.", Toast.LENGTH_SHORT).show()
-            } else {
+            } catch (e: Exception) {
                 Toast.makeText(this@AccidentHistoryActivity, "저장에 실패했습니다.", Toast.LENGTH_SHORT).show()
             }
         }
@@ -249,12 +288,26 @@ class AccidentHistoryActivity : AppCompatActivity() {
     }
 
     private fun deleteEntry(entry: HistoryListItem.HistoryEntry) {
-        rawEntries.removeAll { it.id == entry.id }
-        adapter.removeItem(entry.id)
-        updateCountDisplay()
-        tvEmpty.visibility   = if (adapter.isEmpty()) View.VISIBLE else View.GONE
-        rvHistory.visibility = if (adapter.isEmpty()) View.GONE  else View.VISIBLE
-        Toast.makeText(this, "이력이 삭제되었습니다.", Toast.LENGTH_SHORT).show()
+        val userId = TokenManager.getUserId(this)
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.api.deleteFallLog(userId, entry.id)
+                val body = response.body()
+                if (response.isSuccessful && body?.success == true) {
+                    rawEntries.removeAll { it.id == entry.id }
+                    adapter.removeItem(entry.id)
+                    updateCountDisplay()
+                    tvEmpty.visibility = if (adapter.isEmpty()) View.VISIBLE else View.GONE
+                    rvHistory.visibility = if (adapter.isEmpty()) View.GONE else View.VISIBLE
+                    Toast.makeText(this@AccidentHistoryActivity, "이력이 삭제되었습니다.", Toast.LENGTH_SHORT).show()
+                } else {
+                    val message = ApiClient.parseErrorMessage(response.errorBody(), "삭제에 실패했습니다.")
+                    Toast.makeText(this@AccidentHistoryActivity, message, Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@AccidentHistoryActivity, "네트워크 오류로 삭제에 실패했습니다.", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     // 미디어 권한 팝업도 앱 내 공통 다이얼로그 스타일로 통일
@@ -288,7 +341,9 @@ class AccidentHistoryActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun saveVideoToGallery(sourceUri: String, entryId: String) {
+    // sourceUrl은 GCS signed URL(https)이므로 ContentResolver가 아닌 직접 네트워크 스트림으로 복사한다.
+    // 호출부(performDownload)에서 Dispatchers.IO 위에서 실행됨.
+    private fun saveVideoToGallery(sourceUrl: String, entryId: String) {
         val fileName = "neulbom_${entryId}_${System.currentTimeMillis()}.mp4"
         val values = ContentValues().apply {
             put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
@@ -303,8 +358,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
             ?: throw IllegalStateException("MediaStore URI 생성 실패")
 
         resolver.openOutputStream(destUri)?.use { out ->
-            val src = android.net.Uri.parse(sourceUri)
-            resolver.openInputStream(src)?.use { it.copyTo(out) }
+            java.net.URL(sourceUrl).openStream().use { it.copyTo(out) }
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -312,9 +366,5 @@ class AccidentHistoryActivity : AppCompatActivity() {
             values.put(MediaStore.Video.Media.IS_PENDING, 0)
             resolver.update(destUri, values, null, null)
         }
-    }
-
-    companion object {
-        const val EXTRA_VIDEO_URI = "extra_video_uri"
     }
 }

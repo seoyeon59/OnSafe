@@ -27,10 +27,14 @@ android {
             // 에뮬레이터: 10.0.2.2 = 개발 PC의 localhost
             // 실기기 테스트 시 개발 PC의 실제 IP 주소로 변경 필요 (예: "http://192.168.x.x:8080/")
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
+            // Python AI 서버(docker-compose 기준 8000 포트) WS 스트림 엔드포인트. BASE_URL과 동일한 컨벤션.
+            buildConfigField("String", "AI_WS_URL", "\"ws://10.0.2.2:8000/ws/stream\"")
         }
         release {
             // TODO: 출시 전 백엔드 팀에서 제공한 실제 운영 서버 URL로 변경 필요
             buildConfigField("String", "BASE_URL", "\"https://api.neulbom.com/\"")
+            // TODO: 출시 전 백엔드 팀에서 제공한 실제 운영 AI 서버 WS URL로 변경 필요
+            buildConfigField("String", "AI_WS_URL", "\"wss://api.neulbom.com/ws/stream\"")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -54,6 +58,8 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.camera.video)
+    implementation(libs.mediapipe.tasks.vision)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

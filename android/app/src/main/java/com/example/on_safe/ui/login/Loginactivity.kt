@@ -153,8 +153,9 @@ class LoginActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 try {
                     val response = ApiClient.api.login(LoginRequest(userId = id, password = pw, deviceId = deviceId))
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        val data = response.body()!!.data!!
+                    val body = response.body()
+                    if (response.isSuccessful && body?.success == true && body.data != null) {
+                        val data = body.data
                         TokenManager.saveTokens(
                             this@LoginActivity,
                             data.accessToken, data.refreshToken, data.userId
@@ -170,7 +171,7 @@ class LoginActivity : AppCompatActivity() {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         })
                     } else {
-                        val message = response.body()?.message
+                        val message = body?.message
                             ?: ApiClient.parseErrorMessage(response.errorBody(), "아이디 또는 비밀번호가 올바르지 않습니다.")
                         Log.w("Login", "실패 — HTTP ${response.code()}: $message")
                         showLoginError(message)
@@ -187,12 +188,15 @@ class LoginActivity : AppCompatActivity() {
 
         tvFindId.setOnClickListener {
             startActivity(Intent(this, FindIdActivity::class.java))
+            overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
         tvFindPw.setOnClickListener {
             startActivity(Intent(this, FindPwActivity::class.java))
+            overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
         tvRegister.setOnClickListener {
             startActivity(Intent(this, RegisterStep1Activity::class.java))
+            overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
 
         setupTermsLinks()

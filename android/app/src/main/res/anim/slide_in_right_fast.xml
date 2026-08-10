@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 사고이력 ↔ 설정처럼 홈을 사이에 두고 건너뛰는 이동 전용.
+     기본 탭 전환(slide_in_right)보다 짧은 지속시간을 줘서 "가운데(홈)를 빠르게 스쳐 지나간다"는
+     인상을 준다. -->
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="130"
+    android:fromXDelta="100%p"
+    android:toXDelta="0"
+    android:interpolator="@android:interpolator/fast_out_slow_in" />

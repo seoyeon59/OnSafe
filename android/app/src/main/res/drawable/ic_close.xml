@@ -2,17 +2,15 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <!-- X 아이콘: 두 대각선 -->
-    <path
-        android:pathData="M18,6 L6,18"
-        android:strokeColor="#9FA6AC"
-        android:strokeWidth="2"
-        android:strokeLineCap="round" />
-    <path
-        android:pathData="M6,6 L18,18"
-        android:strokeColor="#9FA6AC"
-        android:strokeWidth="2"
-        android:strokeLineCap="round" />
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+    <group
+        android:pivotX="120"
+        android:pivotY="120"
+        android:scaleX="1.3000"
+        android:scaleY="1.3000">
+        <path
+            android:fillColor="@color/ink_900"
+            android:pathData="M134.14258,120l55.42871-55.42871c3.90527-3.90527,3.90527-10.2373,0-14.14258-3.90625-3.90527-10.23633-3.90527-14.14258,0l-55.42871,55.42871-55.42871-55.42871c-3.90625-3.90527-10.23633-3.90527-14.14258,0-3.90527,3.90527-3.90527,10.2373,0,14.14258l55.42871,55.42871-55.42871,55.42871c-3.90527,3.90527-3.90527,10.2373,0,14.14258,1.95312,1.95215,4.51172,2.92871,7.07129,2.92871s5.11816-.97656,7.07129-2.92871l55.42871-55.42871,55.42871,55.42871c1.95312,1.95215,4.51172,2.92871,7.07129,2.92871s5.11816-.97656,7.07129-2.92871c3.90527-3.90527,3.90527-10.2373,0-14.14258l-55.42871-55.42871Z" />
+    </group>
 </vector>

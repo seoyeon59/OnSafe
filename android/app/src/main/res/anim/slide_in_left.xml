@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 왼쪽에서 오른쪽으로 진입 (홈 → 사고이력 진입 시 새 화면) -->
+<!-- 탭 전환용: 페이드 없이 순수 이동만 사용 — 나가는 화면(slide_out_right)과 같은
+     지속시간·커브를 공유해서 마치 한 장의 종이가 좌우로 이어져 움직이는 것처럼 보이게 함 -->
 <translate xmlns:android="http://schemas.android.com/apk/res/android"
-    android:duration="220"
+    android:duration="180"
     android:fromXDelta="-100%p"
-    android:interpolator="@android:interpolator/decelerate_cubic"
-    android:toXDelta="0" />
+    android:toXDelta="0"
+    android:interpolator="@android:interpolator/fast_out_slow_in" />

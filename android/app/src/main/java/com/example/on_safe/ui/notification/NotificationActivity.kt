@@ -27,6 +27,8 @@ class NotificationActivity : AppCompatActivity() {
     // TODO: API 연동 시 Real 구현체로 교체
     private val notificationRepository: NotificationRepository = FakeNotificationRepository()
 
+    private var alertDialog: BottomSheetDialog? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_notification)
@@ -53,11 +55,21 @@ class NotificationActivity : AppCompatActivity() {
         NotificationPermissionBanner.refresh(this)
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        // 모달이 열린 채로 Activity가 소멸되면 WindowLeak 발생 → 명시적으로 dismiss
+        alertDialog?.dismiss()
+        alertDialog = null
+    }
+
     // 화면 종료 시 미읽음 여부를 MainActivity로 전달
     override fun finish() {
         val hasUnread = adapter.hasUnreadItems()
         setResult(Activity.RESULT_OK, Intent().putExtra(EXTRA_HAS_UNREAD, hasUnread))
         super.finish()
+        // 뒤로가기·닫기 모두 이 finish()를 거치므로 여기 한 곳에서만 처리하면
+        // 진입할 때(detail_enter/exit)와 대칭되는 복귀 전환이 항상 적용됨
+        overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
     }
 
     companion object {
@@ -68,6 +80,7 @@ class NotificationActivity : AppCompatActivity() {
     // 모달에서 119 또는 확인했습니다를 눌러야 읽음 처리
     private fun showFallAlertDialog(position: Int, item: NotificationItem) {
         val dialog = BottomSheetDialog(this)
+        alertDialog = dialog
         val view = layoutInflater.inflate(R.layout.bottom_sheet_fall_alert, null)
 
         val timeFormat = SimpleDateFormat("a hh:mm", Locale.KOREAN)

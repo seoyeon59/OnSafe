@@ -84,8 +84,8 @@
                     android:background="@drawable/bg_circle_primary_tint">
 
                     <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:layout_gravity="center"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_person"
@@ -99,7 +99,8 @@
                     android:layout_marginStart="8dp"
                     android:text="보호자님"
                     android:textColor="#6B7280"
-                    android:textSize="15sp" />
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <!-- ── 알림 설정 ── -->
@@ -135,8 +136,9 @@
                         android:background="@drawable/bg_icon_item">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:id="@+id/ivNotificationIcon"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_notification"
@@ -205,8 +207,9 @@
                             android:background="@drawable/bg_card">
 
                             <ImageView
-                                android:layout_width="16dp"
-                                android:layout_height="16dp"
+                                android:id="@+id/ivSoundIcon"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
                                 android:layout_gravity="center"
                                 android:contentDescription="@null"
                                 android:src="@drawable/ic_volume"
@@ -266,8 +269,9 @@
                             android:background="@drawable/bg_card">
 
                             <ImageView
-                                android:layout_width="16dp"
-                                android:layout_height="16dp"
+                                android:id="@+id/ivVibrationIcon"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
                                 android:layout_gravity="center"
                                 android:contentDescription="@null"
                                 android:src="@drawable/ic_vibration"
@@ -345,8 +349,8 @@
                         android:background="@drawable/bg_icon_item">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_person"
@@ -393,8 +397,8 @@
                         android:background="@drawable/bg_icon_item">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_lock"
@@ -441,11 +445,11 @@
                         android:background="@drawable/bg_icon_item">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
-                            android:src="@drawable/ic_shield"
+                            android:src="@drawable/ic_personal_inform"
                             app:tint="@color/ink_500" />
                     </FrameLayout>
 
@@ -505,8 +509,8 @@
                         android:background="@drawable/bg_icon_item">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_info"
@@ -568,8 +572,8 @@
                         android:background="@drawable/bg_icon_item">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_logout"
@@ -610,8 +614,8 @@
                         android:background="@drawable/bg_icon_danger">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_person_remove"
@@ -638,6 +642,7 @@
                 android:gravity="center"
                 android:paddingTop="12dp"
                 android:fontFamily="@font/gmarket_sans_bold"
+                android:includeFontPadding="false"
                 android:text="늘봄 v1.0.0"
                 android:textColor="@color/ink_500"
                 android:textSize="13sp" />
@@ -674,8 +679,8 @@
             android:orientation="vertical">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_history"
                 app:tint="@color/ink_500" />
@@ -703,8 +708,8 @@
             android:orientation="vertical">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_home"
                 app:tint="@color/ink_500" />
@@ -736,10 +741,10 @@
                 android:orientation="vertical">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:contentDescription="@null"
-                    android:src="@drawable/ic_settings"
+                    android:src="@drawable/ic_settings_filled"
                     app:tint="@color/primary_blue" />
 
                 <TextView

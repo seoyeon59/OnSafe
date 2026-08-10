@@ -113,11 +113,12 @@ class FindIdActivity : AppCompatActivity() {
                     val verifyResponse = ApiClient.api.verifyEmailCode(VerifyEmailCodeRequest(mail = email, code = code))
                     if (verifyResponse.isSuccessful && verifyResponse.body()?.success == true) {
                         val findResponse = ApiClient.api.findId(FindIdRequest(name = name, mail = email))
-                        if (findResponse.isSuccessful && findResponse.body()?.success == true) {
+                        val findBody = findResponse.body()
+                        if (findResponse.isSuccessful && findBody?.success == true && findBody.data != null) {
                             countDownTimer?.cancel()
-                            showResult(findResponse.body()!!.data!!.userId)
+                            showResult(findBody.data.userId)
                         } else {
-                            Toast.makeText(this@FindIdActivity, findResponse.body()?.message ?: "아이디를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@FindIdActivity, findBody?.message ?: "아이디를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
                             btnConfirm.isEnabled = true
                         }
                     } else {
@@ -139,10 +140,21 @@ class FindIdActivity : AppCompatActivity() {
             tvResend.visibility = View.GONE
             lifecycleScope.launch {
                 try {
-                    ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
-                    startVerification()
-                    Toast.makeText(this@FindIdActivity, "인증번호를 재발송했습니다.", Toast.LENGTH_SHORT).show()
+                    val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
+                    if (response.isSuccessful && response.body()?.success == true) {
+                        startVerification()
+                        Toast.makeText(this@FindIdActivity, "인증번호를 재발송했습니다.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        // 재발송 실패 — 다시 시도할 수 있도록 재전송 버튼 복구
+                        tvResend.visibility = View.VISIBLE
+                        Toast.makeText(
+                            this@FindIdActivity,
+                            response.body()?.message ?: "인증번호 재발송에 실패했습니다.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 } catch (e: Exception) {
+                    tvResend.visibility = View.VISIBLE
                     Toast.makeText(this@FindIdActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -155,6 +167,8 @@ class FindIdActivity : AppCompatActivity() {
         layoutCode.visibility = View.VISIBLE
         tvResend.visibility = View.VISIBLE
         tvTimer.visibility = View.VISIBLE
+        btnConfirm.isEnabled = true
+        btnConfirm.alpha = 1.0f
         Toast.makeText(this, "인증번호를 발송했습니다.", Toast.LENGTH_SHORT).show()
         startTimer()
     }
@@ -191,5 +205,11 @@ class FindIdActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         countDownTimer?.cancel()
+    }
+
+    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
     }
 }

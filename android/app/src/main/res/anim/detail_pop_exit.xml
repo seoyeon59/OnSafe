@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- detail_enter의 반대 — 뒤로가기로 알림 화면이 오른쪽으로 빠져나가며 닫힘 -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shareInterpolator="false">
+    <translate
+        android:duration="180"
+        android:fromXDelta="0"
+        android:toXDelta="30%p"
+        android:interpolator="@android:interpolator/fast_out_linear_in" />
+    <alpha
+        android:duration="180"
+        android:fromAlpha="1.0"
+        android:toAlpha="0.3"
+        android:interpolator="@android:interpolator/fast_out_linear_in" />
+</set>
