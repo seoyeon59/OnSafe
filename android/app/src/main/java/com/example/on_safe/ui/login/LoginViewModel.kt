@@ -1,0 +1,69 @@
+package com.example.on_safe.ui.login
+
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import android.util.Log
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.LoginRequest
+import kotlinx.coroutines.launch
+
+// 로그인 화면 상태 — 로딩 여부, 인라인 에러 메시지(비었으면 표시 안 함)
+data class LoginUiState(
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
+)
+
+// 로그인 성공 결과 — 토큰 저장(TokenManager)과 화면 이동 판단은 Context가 필요해서 Activity가 담당
+data class LoginSuccess(
+    val accessToken: String,
+    val refreshToken: String,
+    val userId: String
+)
+
+class LoginViewModel : ViewModel() {
+
+    private val _uiState = MutableLiveData(LoginUiState())
+    val uiState: LiveData<LoginUiState> = _uiState
+
+    // 1회성 이벤트 — 소비 후 onLoginHandled()로 다시 null 처리
+    private val _loginSuccess = MutableLiveData<LoginSuccess?>()
+    val loginSuccess: LiveData<LoginSuccess?> = _loginSuccess
+
+    // id/pw 빈 값 체크와 테두리 강조는 순수 View 로직이라 Activity에서 미리 걸러서 호출한다
+    fun login(id: String, password: String, deviceId: String) {
+        setState { copy(isLoading = true, errorMessage = null) }
+        viewModelScope.launch {
+            try {
+                val response = ApiClient.api.login(
+                    LoginRequest(userId = id, password = password, deviceId = deviceId)
+                )
+                val body = response.body()
+                if (response.isSuccessful && body?.success == true && body.data != null) {
+                    val data = body.data
+                    _loginSuccess.value = LoginSuccess(data.accessToken, data.refreshToken, data.userId)
+                } else {
+                    val message = body?.message
+                        ?: ApiClient.parseErrorMessage(response.errorBody(), "아이디 또는 비밀번호가 올바르지 않습니다.")
+                    Log.w("Login", "실패 — HTTP ${response.code()}: $message")
+                    setState { copy(errorMessage = message) }
+                }
+            } catch (e: Exception) {
+                Log.e("Login", "네트워크 오류", e)
+                setState { copy(errorMessage = "네트워크 오류가 발생했습니다.") }
+            } finally {
+                setState { copy(isLoading = false) }
+            }
+        }
+    }
+
+    // 로그인 성공 이벤트를 Activity가 처리(토큰 저장 + 화면 이동)한 뒤 호출 — 재구독 시 재실행 방지
+    fun onLoginHandled() {
+        _loginSuccess.value = null
+    }
+
+    private inline fun setState(update: LoginUiState.() -> LoginUiState) {
+        _uiState.value = (_uiState.value ?: LoginUiState()).update()
+    }
+}
