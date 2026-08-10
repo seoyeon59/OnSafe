@@ -1,0 +1,56 @@
+package com.example.on_safe.ui.login
+
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.on_safe.network.JusoApiClient
+import com.example.on_safe.network.dto.JusoItem
+import kotlinx.coroutines.launch
+
+// 주소 검색 화면 상태 — 팁 안내 / 결과 목록 / 결과 없음(에러 메시지 포함) 세 가지뿐
+sealed class AddressSearchUiState {
+    object Tip : AddressSearchUiState()
+    data class Results(val list: List<JusoItem>) : AddressSearchUiState()
+    data class Empty(val message: String) : AddressSearchUiState()
+}
+
+class AddressSearchViewModel : ViewModel() {
+
+    companion object {
+        // ⚠️ 검색 API 전용 승인키 (팝업 키 아님!)
+        // TODO: [보안] 이 키가 소스코드에 평문으로 들어있고 공개 저장소에 커밋된 상태입니다.
+        //       local.properties + BuildConfig로 옮겨서 저장소에는 값이 노출되지 않도록 해야 합니다.
+        //       이미 git 히스토리에 노출된 값이므로, 옮기는 것과 별개로 juso.go.kr에서 키 재발급도 검토해주세요.
+        private const val CONFM_KEY = "devU01TX0FVVEgyMDI2MDYwMjAyMDEyODExODk3NTM="
+    }
+
+    private val _uiState = MutableLiveData<AddressSearchUiState>(AddressSearchUiState.Tip)
+    val uiState: LiveData<AddressSearchUiState> = _uiState
+
+    fun search(keyword: String) {
+        viewModelScope.launch {
+            try {
+                val response = JusoApiClient.api.searchAddress(
+                    confmKey     = CONFM_KEY,
+                    currentPage  = 1,
+                    countPerPage = 20,
+                    keyword      = keyword
+                )
+                val results = response.body()?.results
+                _uiState.value = if (response.isSuccessful && results?.common?.errorCode == "0") {
+                    val list = results.juso ?: emptyList()
+                    if (list.isEmpty()) {
+                        AddressSearchUiState.Empty("'$keyword' 검색 결과가 없습니다.\n도로명, 건물명, 지번으로 다시 검색해보세요.")
+                    } else {
+                        AddressSearchUiState.Results(list)
+                    }
+                } else {
+                    AddressSearchUiState.Empty(results?.common?.errorMessage ?: "검색에 실패했습니다.")
+                }
+            } catch (e: Exception) {
+                _uiState.value = AddressSearchUiState.Empty("네트워크 오류가 발생했습니다.\n연결 상태를 확인해주세요.")
+            }
+        }
+    }
+}

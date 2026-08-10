@@ -1,7 +1,6 @@
 package com.example.on_safe.ui.login
 
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -10,16 +9,13 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
-import com.example.on_safe.network.ApiClient
-import com.example.on_safe.network.dto.FindIdRequest
-import com.example.on_safe.network.dto.SendEmailCodeRequest
-import com.example.on_safe.network.dto.VerifyEmailCodeRequest
-import kotlinx.coroutines.launch
 
 class FindIdActivity : AppCompatActivity() {
+
+    private val viewModel: FindIdViewModel by viewModels()
 
     private lateinit var etName: EditText
     private lateinit var etEmail: EditText
@@ -34,8 +30,6 @@ class FindIdActivity : AppCompatActivity() {
     private lateinit var tvResend: TextView
     private lateinit var tvFoundId: TextView
     private lateinit var pbLoading: ProgressBar
-
-    private var countDownTimer: CountDownTimer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,7 +52,7 @@ class FindIdActivity : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
         btnGoLogin.setOnClickListener { finish() }
 
-        // 인증코드 발송
+        // 인증코드 발송 — 입력값 형식 검증만 여기서 하고, 실제 요청/상태 처리는 뷰모델에 맡김
         btnRequestCode.setOnClickListener {
             val name = etName.text.toString().trim()
             val email = etEmail.text.toString().trim()
@@ -77,24 +71,7 @@ class FindIdActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            btnRequestCode.isEnabled = false
-            pbLoading.visibility = View.VISIBLE
-            lifecycleScope.launch {
-                try {
-                    val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = email))
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        startVerification()
-                    } else {
-                        Toast.makeText(this@FindIdActivity, response.body()?.message ?: "인증 메일 발송에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                        btnRequestCode.isEnabled = true
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this@FindIdActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-                    btnRequestCode.isEnabled = true
-                } finally {
-                    pbLoading.visibility = View.GONE
-                }
-            }
+            viewModel.requestCode(email)
         }
 
         // 인증코드 확인 → 아이디 조회
@@ -104,107 +81,48 @@ class FindIdActivity : AppCompatActivity() {
                 Toast.makeText(this, "인증코드를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            btnConfirm.isEnabled = false
-            pbLoading.visibility = View.VISIBLE
             val email = etEmail.text.toString().trim()
             val name = etName.text.toString().trim()
-            lifecycleScope.launch {
-                try {
-                    val verifyResponse = ApiClient.api.verifyEmailCode(VerifyEmailCodeRequest(mail = email, code = code))
-                    if (verifyResponse.isSuccessful && verifyResponse.body()?.success == true) {
-                        val findResponse = ApiClient.api.findId(FindIdRequest(name = name, mail = email))
-                        val findBody = findResponse.body()
-                        if (findResponse.isSuccessful && findBody?.success == true && findBody.data != null) {
-                            countDownTimer?.cancel()
-                            showResult(findBody.data.userId)
-                        } else {
-                            Toast.makeText(this@FindIdActivity, findBody?.message ?: "아이디를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
-                            btnConfirm.isEnabled = true
-                        }
-                    } else {
-                        Toast.makeText(this@FindIdActivity, verifyResponse.body()?.message ?: "인증코드가 올바르지 않습니다.", Toast.LENGTH_SHORT).show()
-                        btnConfirm.isEnabled = true
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this@FindIdActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-                    btnConfirm.isEnabled = true
-                } finally {
-                    pbLoading.visibility = View.GONE
-                }
-            }
+            viewModel.confirmCode(code, email, name)
         }
 
         // 재전송
         tvResend.setOnClickListener {
             etCode.text.clear()
-            tvResend.visibility = View.GONE
-            lifecycleScope.launch {
-                try {
-                    val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        startVerification()
-                        Toast.makeText(this@FindIdActivity, "인증번호를 재발송했습니다.", Toast.LENGTH_SHORT).show()
-                    } else {
-                        // 재발송 실패 — 다시 시도할 수 있도록 재전송 버튼 복구
-                        tvResend.visibility = View.VISIBLE
-                        Toast.makeText(
-                            this@FindIdActivity,
-                            response.body()?.message ?: "인증번호 재발송에 실패했습니다.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                } catch (e: Exception) {
-                    tvResend.visibility = View.VISIBLE
-                    Toast.makeText(this@FindIdActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-                }
+            viewModel.resendCode(etEmail.text.toString().trim())
+        }
+
+        observeViewModel()
+    }
+
+    private fun observeViewModel() {
+        viewModel.uiState.observe(this) { state ->
+            pbLoading.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+
+            btnRequestCode.isEnabled = state.isRequestCodeEnabled
+            btnRequestCode.alpha = if (state.isRequestCodeEnabled) 1.0f else 0.4f
+
+            layoutCode.visibility = if (state.isCodeLayoutVisible) View.VISIBLE else View.GONE
+            tvTimer.visibility = if (state.isCodeLayoutVisible) View.VISIBLE else View.GONE
+            tvTimer.text = state.timerText
+
+            tvResend.visibility = if (state.isResendVisible) View.VISIBLE else View.GONE
+
+            btnConfirm.isEnabled = state.isConfirmEnabled
+            btnConfirm.alpha = if (state.isConfirmEnabled) 1.0f else 0.4f
+
+            if (state.isResultVisible) {
+                tvFoundId.text = state.foundId
+                layoutResult.visibility = View.VISIBLE
             }
         }
-    }
 
-    private fun startVerification() {
-        btnRequestCode.isEnabled = false
-        btnRequestCode.alpha = 0.4f
-        layoutCode.visibility = View.VISIBLE
-        tvResend.visibility = View.VISIBLE
-        tvTimer.visibility = View.VISIBLE
-        btnConfirm.isEnabled = true
-        btnConfirm.alpha = 1.0f
-        Toast.makeText(this, "인증번호를 발송했습니다.", Toast.LENGTH_SHORT).show()
-        startTimer()
-    }
-
-    private fun startTimer() {
-        countDownTimer?.cancel()
-        countDownTimer = object : CountDownTimer(180_000L, 1000L) {
-            override fun onTick(millisUntilFinished: Long) {
-                val minutes = millisUntilFinished / 60000
-                val seconds = (millisUntilFinished % 60000) / 1000
-                tvTimer.text = String.format("%d:%02d", minutes, seconds)
+        viewModel.toastMessage.observe(this) { message ->
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                viewModel.onToastShown()
             }
-
-            override fun onFinish() {
-                tvTimer.text = "0:00"
-                btnConfirm.isEnabled = false
-                btnConfirm.alpha = 0.4f
-                tvResend.visibility = View.VISIBLE
-                btnRequestCode.isEnabled = true
-                btnRequestCode.alpha = 1.0f
-            }
-        }.start()
-    }
-
-    private fun showResult(foundId: String) {
-        tvFoundId.text = foundId
-        layoutResult.visibility = View.VISIBLE
-        layoutCode.visibility = View.GONE
-        tvTimer.visibility = View.GONE
-        btnConfirm.isEnabled = true
-        btnConfirm.alpha = 1.0f
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        countDownTimer?.cancel()
+        }
     }
 
     // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환

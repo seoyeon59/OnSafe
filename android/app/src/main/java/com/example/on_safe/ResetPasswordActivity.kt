@@ -14,13 +14,9 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
-import com.example.on_safe.network.ApiClient
-import com.example.on_safe.network.dto.ResetPasswordRequest
-import com.example.on_safe.util.PasswordValidator
-import kotlinx.coroutines.launch
 
 class ResetPasswordActivity : AppCompatActivity() {
 
@@ -29,6 +25,8 @@ class ResetPasswordActivity : AppCompatActivity() {
         const val MODE_FIND_PW = "find_pw"     // 비밀번호 찾기 후 진입 (현재 비번 칸 숨김)
         const val MODE_SETTINGS = "settings"   // 설정에서 진입 (현재 비번 칸 표시)
     }
+
+    private val viewModel: ResetPasswordViewModel by viewModels()
 
     private lateinit var layoutCurrentPw: LinearLayout
     private lateinit var etCurrentPw: EditText
@@ -48,16 +46,9 @@ class ResetPasswordActivity : AppCompatActivity() {
     private var isNewPwVisible = false
     private var isNewPwConfirmVisible = false
 
-    private var isNewPwValid = false
-    private var isNewPwConfirmValid = false
-
     private val COLOR_RED = 0xFFEF4444.toInt()
     private val COLOR_GREEN = 0xFF22C55E.toInt()
     private val COLOR_NORMAL = 0xFFF4F7FB.toInt()
-
-    // onCreate에서 한 번만 읽어 캐싱 — 매 TextWatcher 호출마다 Intent를 재조회하지 않도록
-    private var currentMode = MODE_FIND_PW
-    private var currentUserId = ""
 
     private var dpScale = 0f
     private var cornerPx = 0f
@@ -83,9 +74,10 @@ class ResetPasswordActivity : AppCompatActivity() {
         tvNewPwConfirmMessage = findViewById(R.id.tvNewPwConfirmMessage)
 
         // MODE_SETTINGS이면 현재 비밀번호 입력란 표시
-        currentMode = intent.getStringExtra("mode") ?: MODE_FIND_PW
-        currentUserId = intent.getStringExtra("userId") ?: ""
-        if (currentMode == MODE_SETTINGS) {
+        val mode = intent.getStringExtra("mode") ?: MODE_FIND_PW
+        val userId = intent.getStringExtra("userId") ?: ""
+        viewModel.init(mode, userId)
+        if (mode == MODE_SETTINGS) {
             layoutCurrentPw.visibility = View.VISIBLE
         }
 
@@ -124,26 +116,10 @@ class ResetPasswordActivity : AppCompatActivity() {
             )
         }
 
-        // 새 비밀번호 유효성
+        // 새 비밀번호 유효성 — 판단은 뷰모델이 하고, Activity는 결과를 화면에 표시만 함
         etNewPw.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                val pw = s.toString()
-                if (pw.isEmpty()) {
-                    tvNewPwMessage.visibility = View.GONE
-                    setInputBorderNormal(etNewPw)
-                    isNewPwValid = false
-                } else {
-                    isNewPwValid = PasswordValidator.isValid(pw)
-                    if (isNewPwValid) {
-                        showMessage(tvNewPwMessage, PasswordValidator.SUCCESS_MSG, COLOR_GREEN)
-                        setInputBorderColor(etNewPw, COLOR_GREEN)
-                    } else {
-                        showMessage(tvNewPwMessage, PasswordValidator.ERROR_MSG, COLOR_RED)
-                        setInputBorderColor(etNewPw, COLOR_RED)
-                    }
-                }
-                validateConfirm(etNewPwConfirm.text.toString())
-                updateSaveButton()
+                viewModel.onNewPasswordChanged(s.toString())
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -152,8 +128,7 @@ class ResetPasswordActivity : AppCompatActivity() {
         // 비밀번호 확인 유효성
         etNewPwConfirm.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                validateConfirm(s.toString())
-                updateSaveButton()
+                viewModel.onConfirmChanged(s.toString())
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -161,60 +136,60 @@ class ResetPasswordActivity : AppCompatActivity() {
 
         // MODE_SETTINGS: 현재 비밀번호 입력도 버튼 활성화 조건에 포함
         etCurrentPw.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) { updateSaveButton() }
+            override fun afterTextChanged(s: Editable?) {
+                viewModel.onCurrentPasswordChanged(s.toString().isNotEmpty())
+            }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
         btnSave.setOnClickListener {
-            btnSave.isEnabled = false
-            pbLoading.visibility = View.VISIBLE
-            lifecycleScope.launch {
-                try {
-                    // TODO: 백엔드 currentPassword 필드 추가 시 etCurrentPw 값도 함께 전송
-                    val response = ApiClient.api.resetPassword(
-                        ResetPasswordRequest(userId = currentUserId, newPassword = etNewPw.text.toString().trim())
-                    )
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        Toast.makeText(this@ResetPasswordActivity, "비밀번호가 변경되었습니다.", Toast.LENGTH_SHORT).show()
-                        finish()
-                    } else {
-                        Toast.makeText(this@ResetPasswordActivity, response.body()?.message ?: "비밀번호 변경에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                        btnSave.isEnabled = true
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this@ResetPasswordActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-                    btnSave.isEnabled = true
-                } finally {
-                    pbLoading.visibility = View.GONE
-                }
+            viewModel.save()
+        }
+
+        observeViewModel()
+    }
+
+    private fun observeViewModel() {
+        viewModel.uiState.observe(this) { state ->
+            pbLoading.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+            btnSave.isEnabled = state.isSaveEnabled && !state.isLoading
+            btnSave.alpha = if (state.isSaveEnabled) 1.0f else 0.4f
+
+            applyValidation(etNewPw, tvNewPwMessage, state.newPwValidation)
+            applyValidation(etNewPwConfirm, tvNewPwConfirmMessage, state.confirmValidation)
+        }
+
+        viewModel.toastMessage.observe(this) { message ->
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                viewModel.onToastShown()
+            }
+        }
+
+        viewModel.saveSuccess.observe(this) { success ->
+            if (success) {
+                viewModel.onSaveHandled()
+                finish()
             }
         }
     }
 
-    private fun validateConfirm(confirm: String) {
-        val pw = etNewPw.text.toString()
-        if (confirm.isEmpty()) {
-            tvNewPwConfirmMessage.visibility = View.GONE
-            setInputBorderNormal(etNewPwConfirm)
-            isNewPwConfirmValid = false
-            return
+    private fun applyValidation(et: EditText, tv: TextView, validation: FieldValidation) {
+        when (validation) {
+            is FieldValidation.Empty -> {
+                tv.visibility = View.GONE
+                setInputBorderNormal(et)
+            }
+            is FieldValidation.Valid -> {
+                showMessage(tv, validation.message, COLOR_GREEN)
+                setInputBorderColor(et, COLOR_GREEN)
+            }
+            is FieldValidation.Invalid -> {
+                showMessage(tv, validation.message, COLOR_RED)
+                setInputBorderColor(et, COLOR_RED)
+            }
         }
-        isNewPwConfirmValid = pw == confirm
-        if (isNewPwConfirmValid) {
-            showMessage(tvNewPwConfirmMessage, PasswordValidator.MATCH_MSG, COLOR_GREEN)
-            setInputBorderColor(etNewPwConfirm, COLOR_GREEN)
-        } else {
-            showMessage(tvNewPwConfirmMessage, PasswordValidator.MISMATCH_MSG, COLOR_RED)
-            setInputBorderColor(etNewPwConfirm, COLOR_RED)
-        }
-    }
-
-    private fun updateSaveButton() {
-        val allValid = isNewPwValid && isNewPwConfirmValid &&
-                (currentMode == MODE_FIND_PW || etCurrentPw.text.isNotEmpty())
-        btnSave.isEnabled = allValid
-        btnSave.alpha = if (allValid) 1.0f else 0.4f
     }
 
     private fun showMessage(tv: TextView, msg: String, color: Int) {
