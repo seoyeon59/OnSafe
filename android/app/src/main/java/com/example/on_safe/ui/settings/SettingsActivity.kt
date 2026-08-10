@@ -23,6 +23,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
@@ -67,6 +68,13 @@ class SettingsActivity : AppCompatActivity() {
 
     // 프로그래밍적으로 토글을 세팅할 때 리스너 재발화(재-PUT) 방지
     private var suppressToggleListeners = false
+
+    // 빠르게 연속으로 토글할 때 같은 항목의 이전 PUT이 늦게 도착해 최신 상태를 덮어쓰지 않도록,
+    // 항목(알림/소리/진동)별로 별도 Job을 두고 같은 항목이 다시 바뀔 때만 이전 요청을 취소한다.
+    // (하나의 Job만 공유하면 예: 진동 저장 중 소리를 바로 바꿨을 때 진동 저장이 취소되어 버리는 새 문제가 생김)
+    private var notificationUpdateJob: Job? = null
+    private var soundUpdateJob: Job? = null
+    private var vibrationUpdateJob: Job? = null
 
     private val settingsPrefs by lazy { getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
 
@@ -203,6 +211,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     // 사용자 조작 시 서버 PUT (부분 업데이트). 실패해도 캐시는 갱신된 상태 유지.
+    // notification이 null이 아니면(마스터 스위치) notificationUpdateJob을, 그 외엔 바뀐 항목(sound/vibration) 전용 Job을 사용
     private fun updateNotificationSetting(
         notification: Boolean? = null,
         sound: Boolean? = null,
@@ -210,7 +219,8 @@ class SettingsActivity : AppCompatActivity() {
     ) {
         val userId = TokenManager.getUserId(this)
         if (userId.isBlank()) return
-        lifecycleScope.launch {
+
+        val newJob = lifecycleScope.launch {
             try {
                 val response = ApiClient.api.updateNotificationSettings(
                     userId,
@@ -227,13 +237,31 @@ class SettingsActivity : AppCompatActivity() {
                 Toast.makeText(this@SettingsActivity, "설정 저장 실패", Toast.LENGTH_SHORT).show()
             }
         }
+
+        when {
+            notification != null -> {
+                notificationUpdateJob?.cancel()
+                notificationUpdateJob = newJob
+            }
+            sound != null -> {
+                soundUpdateJob?.cancel()
+                soundUpdateJob = newJob
+            }
+            vibration != null -> {
+                vibrationUpdateJob?.cancel()
+                vibrationUpdateJob = newJob
+            }
+        }
     }
 
     // 알림 권한 (API 33+)
+    // 권한 허용 시 반드시 turnNotificationOn()을 거쳐야 소리/진동 활성화 + 서버 반영까지 완료됨
+    // (스위치의 isChecked만 true로 두면 겉보기엔 켜졌지만 실제로는 아무 것도 저장되지 않는 상태가 됨)
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (!granted) {
-                switchNotification.isChecked = false
+            if (granted) {
+                turnNotificationOn()
+            } else {
                 val permanentlyDenied =
                     !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
                 if (permanentlyDenied) showNotificationSettingsDialog()
@@ -242,8 +270,8 @@ class SettingsActivity : AppCompatActivity() {
 
     private val openNotificationSettings =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (!isNotificationPermissionGranted()) {
-                switchNotification.isChecked = false
+            if (isNotificationPermissionGranted()) {
+                turnNotificationOn()
             }
         }
 
@@ -284,46 +312,59 @@ class SettingsActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    // 알림 마스터 스위치 ON — 소리·진동도 함께 켜고, 서버에 반영
+    // 스위치 직접 조작 / 권한 허용 콜백(requestNotificationPermission, openNotificationSettings) 양쪽에서 공용으로 호출
+    private fun turnNotificationOn() {
+        suppressToggleListeners = true
+        switchNotification.isChecked = true
+        switchSound.isEnabled = true
+        switchVibration.isEnabled = true
+        switchSound.isChecked = true
+        switchVibration.isChecked = true
+        updateNotificationIcon(true)
+        updateSoundIcon(true)
+        updateVibrationIcon(true)
+        suppressToggleListeners = false
+        writeCache(notification = true, sound = true, vibration = true)
+        updateNotificationSetting(notification = true, sound = true, vibration = true)
+    }
+
+    // 알림 마스터 스위치 OFF — 소리·진동도 함께 끄고 비활성화, 서버에 반영
+    private fun turnNotificationOff() {
+        suppressToggleListeners = true
+        switchNotification.isChecked = false
+        switchSound.isEnabled = false
+        switchVibration.isEnabled = false
+        switchSound.isChecked = false
+        switchVibration.isChecked = false
+        updateNotificationIcon(false)
+        updateSoundIcon(false)
+        updateVibrationIcon(false)
+        suppressToggleListeners = false
+        writeCache(notification = false, sound = false, vibration = false)
+        updateNotificationSetting(notification = false, sound = false, vibration = false)
+    }
+
     // 알림 ON → 소리·진동도 함께 ON / 알림 OFF → 소리·진동 함께 OFF·비활성화
     private fun setupToggleDependency() {
         switchNotification.setOnCheckedChangeListener { _, isChecked ->
             if (suppressToggleListeners) return@setOnCheckedChangeListener
 
             if (isChecked && !isNotificationPermissionGranted()) {
+                // 권한 응답이 오기 전까지는 스위치를 다시 꺼둔다 — 응답 결과는
+                // requestNotificationPermission 콜백에서 turnNotificationOn()으로 최종 반영됨
+                suppressToggleListeners = true
+                switchNotification.isChecked = false
+                suppressToggleListeners = false
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
                 return@setOnCheckedChangeListener
             }
 
-            switchSound.isEnabled = isChecked
-            switchVibration.isEnabled = isChecked
-            updateNotificationIcon(isChecked)
-
-            if (!isChecked) {
-                // 알림 OFF → 소리/진동도 함께 OFF. 리스너 억제하고 한 번의 PUT으로 처리
-                suppressToggleListeners = true
-                switchSound.isChecked = false
-                switchVibration.isChecked = false
-                updateSoundIcon(false)
-                updateVibrationIcon(false)
-                suppressToggleListeners = false
-                writeCache(notification = false, sound = false, vibration = false)
-                updateNotificationSetting(notification = false, sound = false, vibration = false)
-            } else {
-                // 알림 ON → 소리/진동도 함께 ON (꺼져있던 상태에서 복귀 시 항상 켜진 상태로 시작)
-                suppressToggleListeners = true
-                switchSound.isChecked = true
-                switchVibration.isChecked = true
-                updateSoundIcon(true)
-                updateVibrationIcon(true)
-                suppressToggleListeners = false
-                writeCache(notification = true, sound = true, vibration = true)
-                updateNotificationSetting(notification = true, sound = true, vibration = true)
-            }
+            if (isChecked) turnNotificationOn() else turnNotificationOff()
         }
 
-        // 소리 스위치: 알림 OFF 상태에서 토글 시도 → 상태 되돌리고 토스트 (isUpdatingToggles로 무한 루프 방지)
         switchSound.setOnCheckedChangeListener { _, isChecked ->
             if (suppressToggleListeners) return@setOnCheckedChangeListener
             updateSoundIcon(isChecked)
@@ -331,7 +372,6 @@ class SettingsActivity : AppCompatActivity() {
             updateNotificationSetting(sound = isChecked)
         }
 
-        // 진동 스위치: 동일 패턴
         switchVibration.setOnCheckedChangeListener { _, isChecked ->
             if (suppressToggleListeners) return@setOnCheckedChangeListener
             updateVibrationIcon(isChecked)

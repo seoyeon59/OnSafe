@@ -85,6 +85,7 @@
                     android:background="@drawable/bg_container_gray">
 
                     <ImageView
+                        android:id="@+id/iconGuardian"
                         android:layout_width="28dp"
                         android:layout_height="28dp"
                         android:layout_gravity="center"
@@ -195,6 +196,7 @@
                     android:background="@drawable/bg_container_gray">
 
                     <ImageView
+                        android:id="@+id/iconCamera"
                         android:layout_width="28dp"
                         android:layout_height="28dp"
                         android:layout_gravity="center"

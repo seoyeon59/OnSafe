@@ -1,13 +1,16 @@
 package com.example.on_safe.ui.login
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ui.camera.CameraModeActivity
@@ -18,6 +21,8 @@ class ModeSelectActivity : AppCompatActivity() {
     private lateinit var cardCamera: LinearLayout
     private lateinit var iconContainerGuardian: FrameLayout
     private lateinit var iconContainerCamera: FrameLayout
+    private lateinit var iconGuardian: ImageView
+    private lateinit var iconCamera: ImageView
     private lateinit var tagContainerGuardian: ViewGroup
     private lateinit var tagContainerCamera: ViewGroup
     private lateinit var btnNext: Button
@@ -33,6 +38,8 @@ class ModeSelectActivity : AppCompatActivity() {
         cardCamera          = findViewById(R.id.cardCamera)
         iconContainerGuardian = findViewById(R.id.iconContainerGuardian)
         iconContainerCamera   = findViewById(R.id.iconContainerCamera)
+        iconGuardian         = findViewById(R.id.iconGuardian)
+        iconCamera           = findViewById(R.id.iconCamera)
         tagContainerGuardian  = findViewById(R.id.tagContainerGuardian)
         tagContainerCamera    = findViewById(R.id.tagContainerCamera)
         btnNext             = findViewById(R.id.btnNext)
@@ -79,6 +86,12 @@ class ModeSelectActivity : AppCompatActivity() {
         iconContainerCamera.setBackgroundResource(
             if (!isGuardian) R.drawable.bg_container_blue else R.drawable.bg_container_gray
         )
+
+        // 아이콘 자체 색상 — 선택되면 파란색, 아니면 원래 잉크색
+        val colorBlue = ContextCompat.getColor(this, R.color.primary_blue)
+        val colorInk = ContextCompat.getColor(this, R.color.ink_900)
+        iconGuardian.imageTintList = ColorStateList.valueOf(if (isGuardian) colorBlue else colorInk)
+        iconCamera.imageTintList = ColorStateList.valueOf(if (!isGuardian) colorBlue else colorInk)
 
         // 태그 텍스트 색상 + 배경 변경
         applyTagStyle(tagContainerGuardian, isGuardian)

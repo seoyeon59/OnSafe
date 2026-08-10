@@ -87,7 +87,6 @@ object ApiClient {
             val refreshToken = TokenManager.getRefreshToken(appContext)
             if (refreshToken.isNullOrBlank()) return@synchronized null
 
-            val userId = TokenManager.getUserId(appContext)
             val refreshResponse = try {
                 runBlocking { api.refresh(refreshToken) }
             } catch (e: Exception) {
@@ -104,7 +103,8 @@ object ApiClient {
                 return@synchronized null
             }
 
-            TokenManager.saveTokens(appContext, newTokens.accessToken, newTokens.refreshToken, userId)
+            // 조용한 자동 갱신 — login_time은 그대로 두고 토큰만 교체 (saveTokens 아님)
+            TokenManager.updateAccessToken(appContext, newTokens.accessToken, newTokens.refreshToken)
             response.request.newBuilder()
                 .header("Authorization", "Bearer ${newTokens.accessToken}")
                 .build()
