@@ -11,6 +11,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.MotionEvent
+import android.view.View
 import android.view.Window
 import android.view.WindowManager
 import android.widget.ImageButton
@@ -378,6 +380,18 @@ class SettingsActivity : AppCompatActivity() {
             writeCache(notification = null, sound = null, vibration = isChecked)
             updateNotificationSetting(vibration = isChecked)
         }
+
+        // 알림이 꺼져있을 땐 소리/진동 스위치가 isEnabled=false라 탭해도 아무 반응이 없는데,
+        // 이유를 몰라 오작동처럼 보일 수 있어 비활성 상태에서 탭하면 안내 토스트를 띄운다.
+        // OnTouchListener는 dispatchTouchEvent 단계에서 먼저 소비되므로 isEnabled=false여도 호출됨.
+        val disabledSwitchHint = View.OnTouchListener { view, event ->
+            if (!view.isEnabled && event.action == MotionEvent.ACTION_UP) {
+                Toast.makeText(this, "먼저 알림을 켜주세요.", Toast.LENGTH_SHORT).show()
+            }
+            !view.isEnabled
+        }
+        switchSound.setOnTouchListener(disabledSwitchHint)
+        switchVibration.setOnTouchListener(disabledSwitchHint)
     }
 
     private fun setupClickListeners() {

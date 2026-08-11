@@ -50,7 +50,7 @@
                 android:includeFontPadding="false"
                 android:textSize="28sp"
                 android:textColor="#4D80FF"
-                android:fontFamily="@font/gmarket_sans_bold"
+                android:fontFamily="@font/pretendard_bold"
                 android:layout_marginTop="10dp"
                 android:letterSpacing="-0.025" />
 

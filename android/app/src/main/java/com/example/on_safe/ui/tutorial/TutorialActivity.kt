@@ -110,8 +110,8 @@ class TutorialActivity : AppCompatActivity() {
     }
 
     private fun renderPage(page: Int) {
-        // 진행 바
-        progressBar.progress = (page + 1) * 100 / totalPages
+        // 진행 바 — setProgress(value, animate=true)로 부드럽게 채워지도록 (minSdk 24+라 별도 분기 불필요)
+        progressBar.setProgress((page + 1) * 100 / totalPages, true)
 
         // 카운터
         tvCounter.text = "${page + 1}/$totalPages"

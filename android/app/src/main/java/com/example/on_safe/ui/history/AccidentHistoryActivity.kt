@@ -16,6 +16,7 @@ import android.provider.Settings
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,15 +37,21 @@ import kotlinx.coroutines.withContext
 // 사고 이력 화면 (위험 이력만 표시 / 최신순·오래된순 정렬 / 영상 보기·다운로드·삭제)
 class AccidentHistoryActivity : AppCompatActivity() {
 
-    private lateinit var rvHistory:      RecyclerView
-    private lateinit var tvEmpty:        TextView
-    private lateinit var tvHistoryCount: TextView  // 건수 숫자 ("N건")
-    private lateinit var chipNewest:     TextView
-    private lateinit var chipOldest:     TextView
+    private lateinit var rvHistory:       RecyclerView
+    private lateinit var layoutEmptyState: LinearLayout
+    private lateinit var tvEmpty:         TextView
+    private lateinit var btnRetry:        TextView
+    private lateinit var tvHistoryCount:  TextView  // 건수 숫자 ("N건")
+    private lateinit var chipNewest:      TextView
+    private lateinit var chipOldest:      TextView
 
     private lateinit var adapter: AccidentHistoryAdapter
 
     private var currentSort = SortOrder.NEWEST_FIRST
+
+    // 마지막 조회가 실패했는지 — true면 빈 상태 뷰에 "불러오지 못했습니다" + 재시도 버튼을,
+    // false면 "이력이 없습니다" 안내만 표시 (실패와 진짜 빈 목록을 구분하기 위함)
+    private var lastLoadFailed = false
 
     // 권한 승인 후 재시도할 다운로드 항목
     private var pendingDownloadEntry: HistoryListItem.HistoryEntry? = null
@@ -102,9 +109,12 @@ class AccidentHistoryActivity : AppCompatActivity() {
                 val entries = accidentHistoryRepository.getHistoryEntries(userId)
                 rawEntries.clear()
                 rawEntries.addAll(entries)
+                lastLoadFailed = false
             } catch (e: IllegalStateException) {
+                lastLoadFailed = true
                 Toast.makeText(this@AccidentHistoryActivity, e.message ?: "사고 이력을 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
+                lastLoadFailed = true
                 Toast.makeText(this@AccidentHistoryActivity, "네트워크 오류로 사고 이력을 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
             }
             applySort(currentSort)
@@ -112,11 +122,15 @@ class AccidentHistoryActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
-        rvHistory      = findViewById(R.id.rvHistory)
-        tvEmpty        = findViewById(R.id.tvEmpty)
-        tvHistoryCount = findViewById(R.id.tvHistoryCount)
-        chipNewest     = findViewById(R.id.chipNewest)
-        chipOldest     = findViewById(R.id.chipOldest)
+        rvHistory        = findViewById(R.id.rvHistory)
+        layoutEmptyState = findViewById(R.id.layoutEmptyState)
+        tvEmpty          = findViewById(R.id.tvEmpty)
+        btnRetry         = findViewById(R.id.btnRetry)
+        tvHistoryCount   = findViewById(R.id.tvHistoryCount)
+        chipNewest       = findViewById(R.id.chipNewest)
+        chipOldest       = findViewById(R.id.chipOldest)
+
+        btnRetry.setOnClickListener { loadHistory() }
 
         // btnBack은 레이아웃에서 제거됨 (바텀탭으로 이동하는 구조이므로 불필요)
         // findViewById<ImageButton>(R.id.btnBack)?.setOnClickListener { finish() }
@@ -164,11 +178,27 @@ class AccidentHistoryActivity : AppCompatActivity() {
         adapter.submitList(rawEntries, sort)
         updateSortChipUi(sort)
         updateCountDisplay()
-        tvEmpty.visibility    = if (adapter.isEmpty()) View.VISIBLE else View.GONE
-        rvHistory.visibility  = if (adapter.isEmpty()) View.GONE  else View.VISIBLE
+        updateEmptyState()
         // 정렬 변경 시 DiffUtil이 이전 스크롤 위치를 그대로 두는 경우가 있어 항상 맨 위로 리셋
         // 순간이동 대신 부드럽게 스크롤해서 "위로 올라갔다"는 게 눈에 보이도록 함
         rvHistory.smoothScrollToPosition(0)
+    }
+
+    // 목록이 비어있을 때: 진짜로 이력이 없는 경우엔 안내 문구만, 조회 자체가 실패한 경우엔
+    // 오류 문구 + 재시도 버튼을 함께 보여준다 (구분하지 않으면 조회 실패도 "이력 없음"으로 오해할 수 있음)
+    private fun updateEmptyState() {
+        val isEmpty = adapter.isEmpty()
+        layoutEmptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        rvHistory.visibility        = if (isEmpty) View.GONE else View.VISIBLE
+        if (isEmpty) {
+            if (lastLoadFailed) {
+                tvEmpty.text = "사고 이력을 불러오지 못했습니다."
+                btnRetry.visibility = View.VISIBLE
+            } else {
+                tvEmpty.text = "사고 이력이 없습니다."
+                btnRetry.visibility = View.GONE
+            }
+        }
     }
 
     // active 칩: 파란 pill + 흰 텍스트 / inactive: 회색 pill + ink_500 텍스트
@@ -297,8 +327,8 @@ class AccidentHistoryActivity : AppCompatActivity() {
                     rawEntries.removeAll { it.id == entry.id }
                     adapter.removeItem(entry.id)
                     updateCountDisplay()
-                    tvEmpty.visibility = if (adapter.isEmpty()) View.VISIBLE else View.GONE
-                    rvHistory.visibility = if (adapter.isEmpty()) View.GONE else View.VISIBLE
+                    lastLoadFailed = false
+                    updateEmptyState()
                     Toast.makeText(this@AccidentHistoryActivity, "이력이 삭제되었습니다.", Toast.LENGTH_SHORT).show()
                 } else {
                     val message = ApiClient.parseErrorMessage(response.errorBody(), "삭제에 실패했습니다.")
