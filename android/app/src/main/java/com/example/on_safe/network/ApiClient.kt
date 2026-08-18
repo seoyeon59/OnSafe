@@ -69,6 +69,13 @@ object ApiClient {
     private val refreshLock = Any()
 
     private val tokenAuthenticator = Authenticator { _: Route?, response: Response ->
+        // 로그인 등 공개 엔드포인트는 애초에 인증 대상이 아니므로 여기서 바로 걸러야 함.
+        // 이 가드가 없으면: 예전에 캐시된(만료된) 액세스 토큰이 남아있는 상태에서 로그인 시도 시,
+        // 401 응답을 이 Authenticator가 가로채 그 캐시 토큰을 로그인 요청에 억지로 붙여 재시도하고,
+        // 그마저 401이면 다시 한번 처리되면서 로그인 요청이 두 번 나가는 것처럼 보임(루프처럼 느껴짐).
+        val path = response.request.url.encodedPath.trimStart('/')
+        if (path in publicEndpoints) return@Authenticator null
+
         // 이미 한 번 재시도했다면 그만 (Authenticator 무한 루프 방지)
         if (responseCount(response) >= 2) return@Authenticator null
         if (!::appContext.isInitialized) return@Authenticator null

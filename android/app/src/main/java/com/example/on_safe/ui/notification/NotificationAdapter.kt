@@ -17,19 +17,22 @@ enum class NotificationType {
 
 // ─── 알림 데이터 클래스 ────────────────────────────────────────
 data class NotificationItem(
+    val id: String,              // 서버 낙상 로그 id(logId) — 읽음 처리(confirm)에 사용
     val type: NotificationType,
     val title: String,
     val time: String,           // 표시용 문자열 (예: "오늘 · 오후 02:23")
     val riskScore: Int,
-    val detectedAtMillis: Long, // 모달에 감지 시각 표시용 (API 연동 시 서버 timestamp 사용)
+    val detectedAtMillis: Long, // 모달에 감지 시각 표시용
     val isUnread: Boolean = false
 )
 
 // ─── 어댑터 ───────────────────────────────────────────────────
-// onFallItemClick: FALL 아이템 클릭 시 호출 (position, item 전달)
+// 목록 상태(읽음 처리 포함)는 NotificationViewModel이 갖고 있고, 어댑터는 그 상태를
+// updateItems()로 받아 그리기만 하는 순수 렌더러다.
+// onFallItemClick: FALL 아이템 클릭 시 호출
 class NotificationAdapter(
     private val items: MutableList<NotificationItem>,
-    private val onFallItemClick: (position: Int, item: NotificationItem) -> Unit
+    private val onFallItemClick: (item: NotificationItem) -> Unit
 ) : RecyclerView.Adapter<NotificationAdapter.ViewHolder>() {
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -68,7 +71,7 @@ class NotificationAdapter(
                 holder.ivArrow.visibility = View.VISIBLE
                 holder.itemView.setOnClickListener {
                     val pos = holder.adapterPosition
-                    if (pos != RecyclerView.NO_POSITION) onFallItemClick(pos, items[pos])
+                    if (pos != RecyclerView.NO_POSITION) onFallItemClick(items[pos])
                 }
             }
             NotificationType.WARNING -> {
@@ -88,28 +91,8 @@ class NotificationAdapter(
 
     override fun getItemCount() = items.size
 
-    // FALL 모달에서 확인/119 후 호출 — 해당 항목 읽음 처리
-    fun markAsRead(position: Int) {
-        val item = items.getOrNull(position) ?: return
-        if (!item.isUnread) return
-        items[position] = item.copy(isUnread = false)
-        notifyItemChanged(position)
-    }
-
-    // 화면 진입 시 WARNING 전체 일괄 읽음 처리
-    // 바뀐 항목만 notifyItemChanged로 갱신 (전체 리스트를 다시 그리지 않아 깜빡임 없음)
-    fun markAllWarningsAsRead() {
-        items.forEachIndexed { index, item ->
-            if (item.type == NotificationType.WARNING && item.isUnread) {
-                items[index] = item.copy(isUnread = false)
-                notifyItemChanged(index)
-            }
-        }
-    }
-
-    fun hasUnreadItems(): Boolean = items.any { it.isUnread }
-
-    // TODO: GET /notification/list API 연동 시 호출
+    // 읽음 처리를 포함한 목록 상태는 NotificationViewModel이 갖고 있어, 상태가 바뀔 때마다
+    // 여기서 통째로 다시 받아 그린다.
     fun updateItems(newItems: List<NotificationItem>) {
         items.clear()
         items.addAll(newItems)

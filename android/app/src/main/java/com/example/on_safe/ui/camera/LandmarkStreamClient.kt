@@ -30,13 +30,17 @@ class LandmarkStreamClient(private val listener: Listener) {
     companion object {
         private val BASE_WS_URL = BuildConfig.AI_WS_URL
         private const val TAG = "LandmarkStreamClient"
+
+        // 촬영을 시작/종료할 때마다 새 LandmarkStreamClient 인스턴스가 만들어지는데,
+        // 그때마다 OkHttpClient(내부 스레드풀·커넥션풀 포함)를 새로 만들면 자원이 낭비된다.
+        // ApiClient와 같은 방식으로 인스턴스 간에 하나만 공유해서 재사용한다.
+        private val sharedClient = OkHttpClient.Builder().build()
     }
 
     private val gson = GsonBuilder()
         .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
         .create()
 
-    private val client = OkHttpClient.Builder().build()
     private var webSocket: WebSocket? = null
 
     fun connect(userId: String, deviceId: String, accessToken: String) {
@@ -44,7 +48,7 @@ class LandmarkStreamClient(private val listener: Listener) {
             .url("$BASE_WS_URL?token=$accessToken")
             .build()
 
-        webSocket = client.newWebSocket(request, object : WebSocketListener() {
+        webSocket = sharedClient.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 val init = InitMessage(userId = userId, deviceId = deviceId)
                 webSocket.send(gson.toJson(init))

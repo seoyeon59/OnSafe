@@ -58,6 +58,9 @@ class RegisterStep2Activity : AppCompatActivity() {
     private var isPwConfirmVisible = false
     private var isFormattingPhone = false
 
+    // Step1에서 넘어온 마케팅 정보 수신 동의 여부 (기본값 false — 값이 안 넘어온 경우 대비)
+    private var marketingConsent = false
+
     private val COLOR_RED = 0xFFEF4444.toInt()
     private val COLOR_GREEN = 0xFF22C55E.toInt()
     private val COLOR_NORMAL = 0xFFF4F7FB.toInt()
@@ -85,6 +88,8 @@ class RegisterStep2Activity : AppCompatActivity() {
 
         dpScale = resources.displayMetrics.density
         cornerPx = 48f * dpScale
+
+        marketingConsent = intent.getBooleanExtra(EXTRA_MARKETING_CONSENT, false)
 
         etId = findViewById(R.id.etId)
         etPw = findViewById(R.id.etPw)
@@ -239,7 +244,8 @@ class RegisterStep2Activity : AppCompatActivity() {
             viewModel.register(
                 password = etPw.text.toString(),
                 phone = etPhone.text.toString(),
-                addressDetail = etAddressDetail.text.toString()
+                addressDetail = etAddressDetail.text.toString(),
+                marketingConsent = marketingConsent
             )
         }
 
@@ -342,5 +348,9 @@ class RegisterStep2Activity : AppCompatActivity() {
     override fun finish() {
         super.finish()
         overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
+    }
+
+    companion object {
+        const val EXTRA_MARKETING_CONSENT = "extra_marketing_consent"
     }
 }

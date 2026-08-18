@@ -9,11 +9,8 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.provider.Settings
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
@@ -25,6 +22,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.annotation.IdRes
+import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.camera.core.CameraSelector
@@ -39,10 +39,18 @@ import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.LandmarkPoint
 import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.util.TokenManager
-import kotlin.random.Random
 import kotlinx.coroutines.launch
 
+private const val TAG = "CameraModeActivity"
+
 class CameraModeActivity : AppCompatActivity() {
+
+    private val viewModel: CameraModeViewModel by viewModels()
+
+    // 이 기기의 식별자 — 낙상 로그/랜드마크 스트림에도 그대로 쓰이는 값이라 한 곳에서만 계산해 공유한다
+    private val deviceId: String by lazy {
+        Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+    }
 
     private lateinit var previewView: androidx.camera.view.PreviewView
     private lateinit var layoutStandby: LinearLayout
@@ -62,10 +70,11 @@ class CameraModeActivity : AppCompatActivity() {
     private lateinit var btnFullscreen: FrameLayout
     private lateinit var btnHamburger: ImageButton
     private lateinit var btnTutorial: ImageView
-    private lateinit var rootLayout: FrameLayout
+
+    // 화면보호기/번인방지/자동 dim — 카메라 로직과 독립적인 관심사라 별도 클래스로 분리
+    private lateinit var screenSaverController: ScreenSaverController
 
     private var isPanelVisible = true
-    private var screenSaverView: View? = null
 
     private var landmarkStreamClient: LandmarkStreamClient? = null
     private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
@@ -76,33 +85,12 @@ class CameraModeActivity : AppCompatActivity() {
     private var latestFallLevel: String = "정상"
     private var lastHandledDangerLogId: String? = null
 
-    // 화면 보호기 타이머
-    private val screenHandler = Handler(Looper.getMainLooper())
-    private val inactivityRunnable = Runnable { triggerScreenSaver() }
-    private val dimRestorationRunnable = Runnable { dimScreen() }   
-    // 번인 방지: 화면 보호기 표시 중 주기적으로 콘텐츠 위치를 살짝 이동
-    private val pixelShiftRunnable = Runnable { applyPixelShift() }
-
-    // 화면이 어두운 상태인지 추적
-    private var isScreenDimmed = false
-    // 어두운 상태에서 첫 터치로 밝기가 복원된 직후 플래그 (btnWakeUp 즉시 해제 방지)
-    private var justRestoredFromDim = false
-    private val clearJustRestored = Runnable { justRestoredFromDim = false }
     // 카메라 provider 보관용 (화면 종료 시 해제하려고 들고 있음)
     private var cameraProvider: ProcessCameraProvider? = null
     // startCamera()에서 바인딩한 프리뷰 — 촬영 시작/종료 시 ImageAnalysis를 붙였다 뗐다 하며 재바인딩할 때 재사용
-    private var preview: Preview? = null
+    private var previewUseCase: Preview? = null
     private var imageAnalysis: ImageAnalysis? = null
     private var videoCapture: VideoCapture<Recorder>? = null
-
-    companion object {
-        private const val INACTIVITY_TIMEOUT_MS  = 10 * 60 * 1000L
-        private const val BRIGHTNESS_RESTORE_MS  = 10_000L  // 터치 후 밝기 유지 시간
-        private const val BRIGHTNESS_DIM         = 0.01f
-        private const val BRIGHTNESS_SYSTEM      = -1f
-        private const val PIXEL_SHIFT_INTERVAL_MS = 60_000L  // 번인 방지: 60초마다 위치 이동
-        private const val PIXEL_SHIFT_RANGE_PX    = 5        // ±5px 범위에서 랜덤 이동
-    }
 
     enum class CameraState { STANDBY, CONNECTING, STREAMING, FAILED }
     private var currentState = CameraState.STANDBY
@@ -150,6 +138,9 @@ class CameraModeActivity : AppCompatActivity() {
 
         bindViews()
         setState(CameraState.STANDBY)
+        observeViewModel()
+        viewModel.setDeviceId(deviceId)
+        viewModel.loadGuardianName(TokenManager.getUserId(this))
 
         // 권한이 있으면 바로 카메라 켜고, 없으면 권한 요청
         if (areCameraPermissionsGranted()) {
@@ -159,7 +150,7 @@ class CameraModeActivity : AppCompatActivity() {
         }
 
         setupClickListeners()
-        resetInactivityTimer()
+        screenSaverController.resetInactivityTimer()
 
         // 패널이 닫혀 있으면 뒤로가기로 패널 복귀, 열려 있으면 기본 동작(finish)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -176,21 +167,18 @@ class CameraModeActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        resetInactivityTimer()
+        screenSaverController.resetInactivityTimer()
     }
 
     override fun onPause() {
         super.onPause()
-        screenHandler.removeCallbacks(inactivityRunnable)
-        screenHandler.removeCallbacks(dimRestorationRunnable)
-        restoreBrightness()
+        screenSaverController.pauseTimers()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cameraProvider?.unbindAll()     //화면 종료 시 카메라 해제
-        screenHandler.removeCallbacksAndMessages(null)
-        justRestoredFromDim = false
+        screenSaverController.release()
         // 상태와 무관하게 항상 정리 — FAILED 상태(WS 끊김 등)에서도 리소스가 살아있을 수 있어
         // STREAMING/CONNECTING일 때만 정리하면 새는 경우가 있었음
         poseLandmarkerHelper?.stop()
@@ -200,22 +188,13 @@ class CameraModeActivity : AppCompatActivity() {
 
     override fun onUserInteraction() {
         super.onUserInteraction()
-        if (screenSaverView != null) {
-            if (isScreenDimmed) {
-                // 화면 어두울 때 첫 터치 → 밝기만 복원, 보호기 유지
-                // justRestoredFromDim 플래그를 켜서 같은 터치의 btnWakeUp 클릭이 해제 동작 못 하게 막음
-                justRestoredFromDim = true
-                screenHandler.removeCallbacks(clearJustRestored)
-                screenHandler.postDelayed(clearJustRestored, 300)
-            }
-            restoreBrightnessTemporarily()
-        } else {
-            resetInactivityTimer()
-        }
+        screenSaverController.onUserInteraction()
     }
 
     private fun bindViews() {
-        rootLayout              = findViewById(android.R.id.content)
+        val rootLayout = findViewById<FrameLayout>(android.R.id.content)
+        screenSaverController = ScreenSaverController(window, rootLayout)
+
         previewView             = findViewById(R.id.previewView)
         layoutStandby           = findViewById(R.id.layoutStandby)
         layoutLiveBadge         = findViewById(R.id.layoutLiveBadge)
@@ -236,8 +215,13 @@ class CameraModeActivity : AppCompatActivity() {
         btnTutorial             = findViewById(R.id.btnTutorial)
 
         layoutStatusBadge.background = statusBadgeBg
+    }
 
-        // TODO: API에서 보호자 이름, 기기 ID 받아서 tvGuardianName / tvDeviceId에 설정
+    private fun observeViewModel() {
+        viewModel.uiState.observe(this) { state ->
+            if (state.guardianName.isNotBlank()) tvGuardianName.text = state.guardianName
+            if (state.deviceId.isNotBlank()) tvDeviceId.text = state.deviceId
+        }
     }
 
     private fun setupClickListeners() {
@@ -289,12 +273,15 @@ class CameraModeActivity : AppCompatActivity() {
         }
     }
 
+    // ──────────────────────────────────────────────────────────
+    // 촬영 시작/종료 — WS 연결 + landmark 추론 + 위험 클립 업로드 오케스트레이션
+    // ──────────────────────────────────────────────────────────
+
     private fun startRecording() {
         setState(CameraState.CONNECTING)
 
         val userId = TokenManager.getUserId(this)
         val accessToken = TokenManager.getAccessToken(this)
-        val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
 
         if (accessToken.isNullOrBlank() || userId.isBlank()) {
             Toast.makeText(this, "로그인 정보가 없습니다.", Toast.LENGTH_SHORT).show()
@@ -302,24 +289,19 @@ class CameraModeActivity : AppCompatActivity() {
             return
         }
 
-        landmarkStreamClient = LandmarkStreamClient(object : LandmarkStreamClient.Listener {
+        landmarkStreamClient = LandmarkStreamClient(createStreamListener())
+        landmarkStreamClient?.connect(userId, deviceId, accessToken)
+    }
+
+    // WS 연결 생명주기 콜백 — startRecording()에서 분리해 "무엇을 트리거하는지"와
+    // "연결이 시작/진행/종료될 때 무엇을 하는지"를 나눴다 (내용은 원본과 동일, 위치만 이동)
+    private fun createStreamListener(): LandmarkStreamClient.Listener =
+        object : LandmarkStreamClient.Listener {
             override fun onInitOk() {
                 runOnUiThread {
                     poseLandmarkerHelper = PoseLandmarkerHelper(
                         this@CameraModeActivity,
-                        object : PoseLandmarkerHelper.Listener {
-                            override fun onLandmarks(
-                                frameIndex: Int,
-                                timestampSec: Float,
-                                landmarks: List<LandmarkPoint>
-                            ) {
-                                landmarkStreamClient?.sendFrame(frameIndex, timestampSec, landmarks)
-                            }
-
-                            override fun onError(message: String) {
-                                Log.w("CameraModeActivity", "PoseLandmarkerHelper 오류: $message")
-                            }
-                        }
+                        createPoseListener()
                     )
                     val helper = poseLandmarkerHelper ?: return@runOnUiThread
                     helper.start()
@@ -334,7 +316,7 @@ class CameraModeActivity : AppCompatActivity() {
             override fun onResult(fallScore: Float, fall: Boolean, level: String, logId: String?) {
                 latestFallScore = fallScore
                 latestFallLevel = level
-                Log.d("CameraModeActivity", "낙상 추론 결과: score=$fallScore fall=$fall level=$level logId=$logId")
+                Log.d(TAG, "낙상 추론 결과: score=$fallScore fall=$fall level=$level logId=$logId")
 
                 if (level == "위험" && logId != null && logId != lastHandledDangerLogId) {
                     lastHandledDangerLogId = logId
@@ -345,7 +327,7 @@ class CameraModeActivity : AppCompatActivity() {
                             lifecycleScope.launch { fallVideoUploader.upload(ownerUserId, logId, clipFile) }
                         },
                         onError = { e ->
-                            Log.w("CameraModeActivity", "위험 이벤트 클립 합성 실패 (logId=$logId)", e)
+                            Log.w(TAG, "위험 이벤트 클립 합성 실패 (logId=$logId)", e)
                         }
                     )
                 }
@@ -353,18 +335,32 @@ class CameraModeActivity : AppCompatActivity() {
 
             override fun onFailure(t: Throwable) {
                 runOnUiThread {
-                    Log.w("CameraModeActivity", "WS 연결 실패", t)
+                    Log.w(TAG, "WS 연결 실패", t)
                     Toast.makeText(this@CameraModeActivity, "서버 연결에 실패했습니다.", Toast.LENGTH_SHORT).show()
                     setState(CameraState.FAILED)
                 }
             }
 
             override fun onClosed() {
-                Log.d("CameraModeActivity", "WS 연결 종료")
+                Log.d(TAG, "WS 연결 종료")
             }
-        })
-        landmarkStreamClient?.connect(userId, deviceId, accessToken)
-    }
+        }
+
+    // MediaPipe pose landmark 콜백 — 프레임을 그대로 WS로 중계
+    private fun createPoseListener(): PoseLandmarkerHelper.Listener =
+        object : PoseLandmarkerHelper.Listener {
+            override fun onLandmarks(
+                frameIndex: Int,
+                timestampSec: Float,
+                landmarks: List<LandmarkPoint>
+            ) {
+                landmarkStreamClient?.sendFrame(frameIndex, timestampSec, landmarks)
+            }
+
+            override fun onError(message: String) {
+                Log.w(TAG, "PoseLandmarkerHelper 오류: $message")
+            }
+        }
 
     private fun startCamera() {
         // 카메라 provider 비동기로 가져오기
@@ -374,10 +370,10 @@ class CameraModeActivity : AppCompatActivity() {
             cameraProvider = provider
 
             // 프리뷰를 만들어서 화면(previewView)에 연결
-            val previewUseCase = Preview.Builder().build().also {
+            val preview = Preview.Builder().build().also {
                 it.setSurfaceProvider(previewView.surfaceProvider)
             }
-            preview = previewUseCase
+            previewUseCase = preview
 
             try {
                 provider.unbindAll()  // 기존 연결 정리
@@ -385,10 +381,11 @@ class CameraModeActivity : AppCompatActivity() {
                 provider.bindToLifecycle(
                     this,
                     CameraSelector.DEFAULT_BACK_CAMERA,
-                    previewUseCase
+                    preview
                 )
             } catch (e: Exception) {
                 // 바인딩 실패 시 사용자에게 알림
+                Log.w(TAG, "카메라 바인딩 실패", e)
                 Toast.makeText(this, "카메라를 시작할 수 없습니다.", Toast.LENGTH_SHORT).show()
             }
         }, ContextCompat.getMainExecutor(this))  // 메인 스레드에서 실행
@@ -397,7 +394,7 @@ class CameraModeActivity : AppCompatActivity() {
     // 촬영 시작: 이미 켜져 있는 previewUseCase 위에 ImageAnalysis + VideoCapture 추가 바인딩 (프리뷰 재생성 없음)
     private fun bindStreamingUseCases(helper: PoseLandmarkerHelper, bufferManager: RollingVideoBufferManager) {
         val provider = cameraProvider ?: return
-        val previewUseCase = preview ?: return
+        val preview = previewUseCase ?: return
 
         val analysisUseCase = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -414,49 +411,36 @@ class CameraModeActivity : AppCompatActivity() {
             provider.bindToLifecycle(
                 this,
                 CameraSelector.DEFAULT_BACK_CAMERA,
-                previewUseCase,
+                preview,
                 analysisUseCase,
                 videoCaptureUseCase
             )
         } catch (e: Exception) {
-            Log.w("CameraModeActivity", "ImageAnalysis/VideoCapture 바인딩 실패", e)
+            Log.w(TAG, "ImageAnalysis/VideoCapture 바인딩 실패", e)
         }
     }
 
     // 촬영 종료: ImageAnalysis/VideoCapture만 떼고 previewUseCase만 다시 바인딩 (프리뷰는 계속 유지)
     private fun unbindStreamingUseCases() {
         val provider = cameraProvider ?: return
-        val previewUseCase = preview ?: return
+        val preview = previewUseCase ?: return
         imageAnalysis = null
         videoCapture = null
 
         try {
             provider.unbindAll()
-            provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, previewUseCase)
+            provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview)
         } catch (e: Exception) {
-            Log.w("CameraModeActivity", "프리뷰 재바인딩 실패", e)
+            Log.w(TAG, "프리뷰 재바인딩 실패", e)
         }
-    }
-
-    private fun showStopRecordingDialog() {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(R.layout.dialog_stop_recording)
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            val maxWidth = resources.getDimensionPixelSize(R.dimen.logout_dialog_max_width)
-            setLayout(maxWidth, WindowManager.LayoutParams.WRAP_CONTENT)
-        }
-        dialog.setCanceledOnTouchOutside(false)
-        dialog.findViewById<TextView>(R.id.btnStopCancel).setOnClickListener { dialog.dismiss() }
-        dialog.findViewById<TextView>(R.id.btnStopConfirm).setOnClickListener {
-            dialog.dismiss()
-            stopRecording()
-        }
-        dialog.show()
     }
 
     private fun stopRecording() {
+        // 카메라가 프레임/녹화 이벤트를 더 이상 만들지 않도록 먼저 unbind한 뒤에
+        // helper/버퍼 매니저의 executor를 정리한다 (onDestroy()와 동일한 순서).
+        // 반대로 하면 unbind가 실제로 반영되기 전 CameraX가 이미 종료된 executor로
+        // 이벤트를 넘기려다 RejectedExecutionException을 던질 여지가 커진다.
+        unbindStreamingUseCases()
         poseLandmarkerHelper?.stop()
         poseLandmarkerHelper = null
         landmarkStreamClient?.close()
@@ -464,11 +448,10 @@ class CameraModeActivity : AppCompatActivity() {
         rollingVideoBufferManager?.stop()
         rollingVideoBufferManager = null
         lastHandledDangerLogId = null
-        unbindStreamingUseCases()
         setState(CameraState.STANDBY)
     }
 
-    fun setState(state: CameraState) {
+    private fun setState(state: CameraState) {
         currentState = state
         when (state) {
             CameraState.STANDBY -> {
@@ -530,25 +513,6 @@ class CameraModeActivity : AppCompatActivity() {
             android.content.res.ColorStateList.valueOf(bgColor)
     }
 
-    private fun showLogoutDialog() {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(R.layout.dialog_logout)
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            // 가로 화면에서 모달이 너무 넓어지지 않도록 최대 너비 제한
-            val maxWidth = resources.getDimensionPixelSize(R.dimen.logout_dialog_max_width)
-            setLayout(maxWidth, WindowManager.LayoutParams.WRAP_CONTENT)
-        }
-        dialog.setCanceledOnTouchOutside(false)
-        dialog.findViewById<TextView>(R.id.btnLogoutCancel).setOnClickListener { dialog.dismiss() }
-        dialog.findViewById<TextView>(R.id.btnLogoutConfirm).setOnClickListener {
-            dialog.dismiss()
-            handleLogout()
-        }
-        dialog.show()
-    }
-
     // 서버 로그아웃(리프레시 토큰 블랙리스트) → 로컬 토큰 정리 → 로그인 화면 이동.
     // 서버 호출이 실패해도 로컬 로그아웃은 진행 — 사용자 관점에서 항상 성공해야 함.
     private fun handleLogout() {
@@ -565,125 +529,101 @@ class CameraModeActivity : AppCompatActivity() {
         }
     }
 
-    fun showScreenSaver() {
-        if (screenSaverView != null) return
-        val overlay = LayoutInflater.from(this).inflate(R.layout.activity_screen_saver, rootLayout, false)
-        overlay.findViewById<View>(R.id.btnWakeUp).setOnClickListener { hideScreenSaver() }
-        rootLayout.addView(overlay)
-        screenSaverView = overlay
-        // 번인 방지: 60초마다 콘텐츠 위치를 ±5px 범위에서 랜덤 이동
-        screenHandler.postDelayed(pixelShiftRunnable, PIXEL_SHIFT_INTERVAL_MS)
-    }
-
-    // 번인 방지 — 화면 보호기 뷰를 살짝 랜덤 이동시키고 다음 이동을 다시 예약
-    private fun applyPixelShift() {
-        val view = screenSaverView ?: return
-        view.translationX = Random.nextInt(-PIXEL_SHIFT_RANGE_PX, PIXEL_SHIFT_RANGE_PX + 1).toFloat()
-        view.translationY = Random.nextInt(-PIXEL_SHIFT_RANGE_PX, PIXEL_SHIFT_RANGE_PX + 1).toFloat()
-        screenHandler.postDelayed(pixelShiftRunnable, PIXEL_SHIFT_INTERVAL_MS)
-    }
-
-    fun hideScreenSaver() {
-        // 화면이 어두운 상태에서의 첫 터치로 밝기가 방금 복원된 경우 → 해제 차단
-        if (justRestoredFromDim) return
-        screenSaverView?.let {
-            rootLayout.removeView(it)
-            screenSaverView = null
-        }
-        screenHandler.removeCallbacks(dimRestorationRunnable)
-        screenHandler.removeCallbacks(clearJustRestored)
-        screenHandler.removeCallbacks(pixelShiftRunnable)
-        restoreBrightness()
-        resetInactivityTimer()
-    }
-
-    private fun resetInactivityTimer() {
-        screenHandler.removeCallbacks(inactivityRunnable)
-        screenHandler.postDelayed(inactivityRunnable, INACTIVITY_TIMEOUT_MS)
-    }
-
-    private fun triggerScreenSaver() {
-        dimScreen()
-        showScreenSaver()
-    }
-
-    private fun dimScreen() {
-        isScreenDimmed = true
-        window.attributes = window.attributes.also { it.screenBrightness = BRIGHTNESS_DIM }
-    }
-
-    private fun restoreBrightness() {
-        isScreenDimmed = false
-        screenHandler.removeCallbacks(dimRestorationRunnable)
-        window.attributes = window.attributes.also { it.screenBrightness = BRIGHTNESS_SYSTEM }
-    }
-
-    // 터치 시 밝기 10초간 복원 후 다시 어둡게 (화면 보호기 유지)
-    private fun restoreBrightnessTemporarily() {
-        isScreenDimmed = false
-        screenHandler.removeCallbacks(dimRestorationRunnable)
-        window.attributes = window.attributes.also { it.screenBrightness = BRIGHTNESS_SYSTEM }
-        screenHandler.postDelayed(dimRestorationRunnable, BRIGHTNESS_RESTORE_MS)
-    }
-
     private fun areCameraPermissionsGranted(): Boolean =
         cameraPermissions.all { perm ->
             ContextCompat.checkSelfPermission(this, perm) == PackageManager.PERMISSION_GRANTED
         }
 
+    // ──────────────────────────────────────────────────────────
+    // 다이얼로그 — 원본에서 4개 메서드가 레이아웃/취소·확인 버튼 세팅 로직을 거의 동일하게
+    // 반복하고 있어서, 공통 뼈대만 showConfirmDialog()/showPermissionDialog()로 뽑아냈다.
+    // 각 다이얼로그가 실제로 무엇을 확인/거절하는지(비즈니스 로직)는 전혀 바꾸지 않았다.
+    // ──────────────────────────────────────────────────────────
+
+    private fun showStopRecordingDialog() {
+        showConfirmDialog(
+            layoutRes = R.layout.dialog_stop_recording,
+            cancelId = R.id.btnStopCancel,
+            confirmId = R.id.btnStopConfirm,
+            onConfirm = ::stopRecording
+        )
+    }
+
+    private fun showLogoutDialog() {
+        showConfirmDialog(
+            layoutRes = R.layout.dialog_logout,
+            cancelId = R.id.btnLogoutCancel,
+            confirmId = R.id.btnLogoutConfirm,
+            onConfirm = ::handleLogout
+        )
+    }
+
     // 권한 완전 거부 ('다시 묻지 않음') → 설정 화면으로 안내
     private fun showPermissionSettingsDialog() {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(R.layout.dialog_permission_settings)
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            val maxWidth = resources.getDimensionPixelSize(R.dimen.logout_dialog_max_width)
-            setLayout(maxWidth, WindowManager.LayoutParams.WRAP_CONTENT)
-        }
-        dialog.setCanceledOnTouchOutside(false)
-
-        dialog.findViewById<TextView>(R.id.tvPermDialogMessage).text =
-            "카메라·마이크 권한이 '다시 묻지 않음'으로\n거부되었습니다. 앱 설정에서 직접 허용해주세요."
-
-        dialog.findViewById<TextView>(R.id.btnPermDialogCancel).setOnClickListener {
-            dialog.dismiss()
-            finish()
-        }
-        dialog.findViewById<TextView>(R.id.btnPermDialogConfirm).setOnClickListener {
-            dialog.dismiss()
+        showPermissionDialog(
+            message = "카메라·마이크 권한이 '다시 묻지 않음'으로\n거부되었습니다. 앱 설정에서 직접 허용해주세요."
+        ) {
             openSettings.launch(
                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     data = Uri.fromParts("package", packageName, null)
                 }
             )
         }
-        dialog.show()
     }
 
     // 권한 일시 거부 → 재요청 안내 다이얼로그
     private fun showPermissionRationaleDialog() {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(R.layout.dialog_permission_settings)
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            val maxWidth = resources.getDimensionPixelSize(R.dimen.logout_dialog_max_width)
-            setLayout(maxWidth, WindowManager.LayoutParams.WRAP_CONTENT)
+        showPermissionDialog(
+            message = "카메라·마이크 권한이 필요합니다.\n권한을 허용해야 카메라 모드를 사용할 수 있습니다."
+        ) {
+            requestCameraPermissions.launch(cameraPermissions)
         }
-        dialog.setCanceledOnTouchOutside(false)
+    }
 
-        dialog.findViewById<TextView>(R.id.tvPermDialogMessage).text =
-            "카메라·마이크 권한이 필요합니다.\n권한을 허용해야 카메라 모드를 사용할 수 있습니다."
+    // 취소/확인 버튼 두 개짜리 단순 확인 다이얼로그 공통 뼈대
+    // (dialog_stop_recording, dialog_logout 레이아웃이 대상 — 둘 다 원본에서 이미 같은
+    // maxWidth 치수(logout_dialog_max_width)를 공유하고 있어 합쳐도 동작 차이가 없다)
+    private fun showConfirmDialog(
+        @LayoutRes layoutRes: Int,
+        @IdRes cancelId: Int,
+        @IdRes confirmId: Int,
+        onConfirm: () -> Unit
+    ) {
+        val dialog = buildBaseDialog(layoutRes)
+        dialog.findViewById<TextView>(cancelId).setOnClickListener { dialog.dismiss() }
+        dialog.findViewById<TextView>(confirmId).setOnClickListener {
+            dialog.dismiss()
+            onConfirm()
+        }
+        dialog.show()
+    }
 
+    // 권한 안내 다이얼로그 공통 뼈대 — 취소 시 항상 finish()하는 것까지 두 원본 메서드에서 동일했다
+    private fun showPermissionDialog(message: String, onConfirm: () -> Unit) {
+        val dialog = buildBaseDialog(R.layout.dialog_permission_settings)
+        dialog.findViewById<TextView>(R.id.tvPermDialogMessage).text = message
         dialog.findViewById<TextView>(R.id.btnPermDialogCancel).setOnClickListener {
             dialog.dismiss()
             finish()
         }
         dialog.findViewById<TextView>(R.id.btnPermDialogConfirm).setOnClickListener {
             dialog.dismiss()
-            requestCameraPermissions.launch(cameraPermissions)
+            onConfirm()
         }
         dialog.show()
+    }
+
+    // 투명 배경 + 제목 없음 + 화면 폭에 맞춘 최대 너비 + 바깥 터치로 안 닫힘 — 4개 다이얼로그 공통 설정
+    private fun buildBaseDialog(@LayoutRes layoutRes: Int): Dialog {
+        val dialog = Dialog(this)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(layoutRes)
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            val maxWidth = resources.getDimensionPixelSize(R.dimen.logout_dialog_max_width)
+            setLayout(maxWidth, WindowManager.LayoutParams.WRAP_CONTENT)
+        }
+        dialog.setCanceledOnTouchOutside(false)
+        return dialog
     }
 }

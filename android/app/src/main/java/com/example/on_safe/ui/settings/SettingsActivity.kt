@@ -21,20 +21,14 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Job
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
-import com.example.on_safe.network.ApiClient
-import com.example.on_safe.network.dto.NotificationSettingsRequest
 import com.example.on_safe.util.TokenManager
-import kotlinx.coroutines.launch
-import com.example.on_safe.data.fake.FakeUserRepository
-import com.example.on_safe.data.repository.UserRepository
 
 // 설정 화면 (알림 토글, 개인정보 수정, 비밀번호 변경, 로그아웃, 회원탈퇴)
 //
@@ -71,17 +65,9 @@ class SettingsActivity : AppCompatActivity() {
     // 프로그래밍적으로 토글을 세팅할 때 리스너 재발화(재-PUT) 방지
     private var suppressToggleListeners = false
 
-    // 빠르게 연속으로 토글할 때 같은 항목의 이전 PUT이 늦게 도착해 최신 상태를 덮어쓰지 않도록,
-    // 항목(알림/소리/진동)별로 별도 Job을 두고 같은 항목이 다시 바뀔 때만 이전 요청을 취소한다.
-    // (하나의 Job만 공유하면 예: 진동 저장 중 소리를 바로 바꿨을 때 진동 저장이 취소되어 버리는 새 문제가 생김)
-    private var notificationUpdateJob: Job? = null
-    private var soundUpdateJob: Job? = null
-    private var vibrationUpdateJob: Job? = null
-
     private val settingsPrefs by lazy { getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
 
-    // 테스트용 로컬 더미 저장소 (로그인 정보 없을 때 이름 표시)
-    private val userRepository: UserRepository = FakeUserRepository()
+    private val viewModel: SettingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,9 +76,61 @@ class SettingsActivity : AppCompatActivity() {
         initViews()
         setupToggleDependency()
         setupClickListeners()
+        observeViewModel()
 
-        loadUserName()
-        loadNotificationSettings()
+        val userId = TokenManager.getUserId(this)
+        viewModel.loadUserName(userId)
+        viewModel.loadNotificationSettings(userId)
+    }
+
+    private fun observeViewModel() {
+        viewModel.userName.observe(this) { name -> tvUserName.text = name }
+
+        viewModel.serverSettings.observe(this) { data ->
+            if (data != null) {
+                applyNotificationValues(
+                    notification = data.notificationEnabled,
+                    sound = data.soundEnabled,
+                    vibration = data.vibrationEnabled
+                )
+                writeCache(data.notificationEnabled, data.soundEnabled, data.vibrationEnabled)
+            }
+        }
+
+        viewModel.toastEvent.observe(this) { event ->
+            if (event != null) {
+                Toast.makeText(this, event.message, Toast.LENGTH_SHORT).show()
+                viewModel.onToastHandled()
+            }
+        }
+
+        viewModel.logoutEvent.observe(this) { fired ->
+            if (fired == true) {
+                TokenManager.clear(this)
+                Toast.makeText(this, "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show()
+                goToLogin()
+                viewModel.onLogoutHandled()
+            }
+        }
+
+        viewModel.withdrawResult.observe(this) { result ->
+            if (result != null) {
+                Toast.makeText(this, result.message, Toast.LENGTH_SHORT).show()
+                if (result.success) {
+                    TokenManager.clear(this)
+                    goToLogin()
+                }
+                viewModel.onWithdrawHandled()
+            }
+        }
+    }
+
+    private fun goToLogin() {
+        startActivity(
+            Intent(this, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+        )
     }
 
     override fun onResume() {
@@ -168,94 +206,6 @@ class SettingsActivity : AppCompatActivity() {
         editor.apply()
     }
 
-    private fun loadUserName() {
-        val userId = TokenManager.getUserId(this)
-        if (userId.isBlank()) {
-            tvUserName.text = "${userRepository.getUserName()}님"
-            return
-        }
-        lifecycleScope.launch {
-            try {
-                val response = ApiClient.api.getUser(userId)
-                val body = response.body()
-                if (response.isSuccessful && body?.success == true && body.data != null) {
-                    tvUserName.text = "${body.data.name} 보호자님"
-                } else {
-                    tvUserName.text = "보호자님"
-                }
-            } catch (_: Exception) {
-                tvUserName.text = "보호자님"
-            }
-        }
-    }
-
-    // 서버 최신 값으로 UI + 캐시 갱신. 실패 시 캐시로 표시한 값 그대로 둠.
-    private fun loadNotificationSettings() {
-        val userId = TokenManager.getUserId(this)
-        if (userId.isBlank()) return
-        lifecycleScope.launch {
-            try {
-                val response = ApiClient.api.getNotificationSettings(userId)
-                val body = response.body()
-                if (response.isSuccessful && body?.success == true && body.data != null) {
-                    val data = body.data
-                    applyNotificationValues(
-                        notification = data.notificationEnabled,
-                        sound = data.soundEnabled,
-                        vibration = data.vibrationEnabled
-                    )
-                    writeCache(data.notificationEnabled, data.soundEnabled, data.vibrationEnabled)
-                }
-            } catch (_: Exception) {
-                // 조회 실패 → 캐시로 이미 표시된 값 유지
-            }
-        }
-    }
-
-    // 사용자 조작 시 서버 PUT (부분 업데이트). 실패해도 캐시는 갱신된 상태 유지.
-    // notification이 null이 아니면(마스터 스위치) notificationUpdateJob을, 그 외엔 바뀐 항목(sound/vibration) 전용 Job을 사용
-    private fun updateNotificationSetting(
-        notification: Boolean? = null,
-        sound: Boolean? = null,
-        vibration: Boolean? = null
-    ) {
-        val userId = TokenManager.getUserId(this)
-        if (userId.isBlank()) return
-
-        val newJob = lifecycleScope.launch {
-            try {
-                val response = ApiClient.api.updateNotificationSettings(
-                    userId,
-                    NotificationSettingsRequest(
-                        notificationEnabled = notification,
-                        soundEnabled = sound,
-                        vibrationEnabled = vibration
-                    )
-                )
-                if (!response.isSuccessful || response.body()?.success != true) {
-                    Toast.makeText(this@SettingsActivity, "설정 저장 실패", Toast.LENGTH_SHORT).show()
-                }
-            } catch (_: Exception) {
-                Toast.makeText(this@SettingsActivity, "설정 저장 실패", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        when {
-            notification != null -> {
-                notificationUpdateJob?.cancel()
-                notificationUpdateJob = newJob
-            }
-            sound != null -> {
-                soundUpdateJob?.cancel()
-                soundUpdateJob = newJob
-            }
-            vibration != null -> {
-                vibrationUpdateJob?.cancel()
-                vibrationUpdateJob = newJob
-            }
-        }
-    }
-
     // 알림 권한 (API 33+)
     // 권한 허용 시 반드시 turnNotificationOn()을 거쳐야 소리/진동 활성화 + 서버 반영까지 완료됨
     // (스위치의 isChecked만 true로 두면 겉보기엔 켜졌지만 실제로는 아무 것도 저장되지 않는 상태가 됨)
@@ -328,7 +278,9 @@ class SettingsActivity : AppCompatActivity() {
         updateVibrationIcon(true)
         suppressToggleListeners = false
         writeCache(notification = true, sound = true, vibration = true)
-        updateNotificationSetting(notification = true, sound = true, vibration = true)
+        viewModel.updateNotificationSetting(
+            TokenManager.getUserId(this), notification = true, sound = true, vibration = true
+        )
     }
 
     // 알림 마스터 스위치 OFF — 소리·진동도 함께 끄고 비활성화, 서버에 반영
@@ -344,7 +296,9 @@ class SettingsActivity : AppCompatActivity() {
         updateVibrationIcon(false)
         suppressToggleListeners = false
         writeCache(notification = false, sound = false, vibration = false)
-        updateNotificationSetting(notification = false, sound = false, vibration = false)
+        viewModel.updateNotificationSetting(
+            TokenManager.getUserId(this), notification = false, sound = false, vibration = false
+        )
     }
 
     // 알림 ON → 소리·진동도 함께 ON / 알림 OFF → 소리·진동 함께 OFF·비활성화
@@ -371,14 +325,14 @@ class SettingsActivity : AppCompatActivity() {
             if (suppressToggleListeners) return@setOnCheckedChangeListener
             updateSoundIcon(isChecked)
             writeCache(notification = null, sound = isChecked, vibration = null)
-            updateNotificationSetting(sound = isChecked)
+            viewModel.updateNotificationSetting(TokenManager.getUserId(this), sound = isChecked)
         }
 
         switchVibration.setOnCheckedChangeListener { _, isChecked ->
             if (suppressToggleListeners) return@setOnCheckedChangeListener
             updateVibrationIcon(isChecked)
             writeCache(notification = null, sound = null, vibration = isChecked)
-            updateNotificationSetting(vibration = isChecked)
+            viewModel.updateNotificationSetting(TokenManager.getUserId(this), vibration = isChecked)
         }
 
         // 알림이 꺼져있을 땐 소리/진동 스위치가 isEnabled=false라 탭해도 아무 반응이 없는데,
@@ -429,7 +383,7 @@ class SettingsActivity : AppCompatActivity() {
         // 회원탈퇴
         rowWithdraw.setOnClickListener {
             WithdrawAccountDialog(this) {
-                handleWithdraw()
+                viewModel.withdraw(TokenManager.getUserId(this))
             }.show()
         }
 
@@ -477,57 +431,9 @@ class SettingsActivity : AppCompatActivity() {
         }
         dialog.findViewById<TextView>(R.id.btnLogoutConfirm).setOnClickListener {
             dialog.dismiss()
-            handleLogout()
+            viewModel.logout()
         }
         dialog.show()
-    }
-
-    // 서버 로그아웃 → 로컬 토큰 정리 → 로그인 화면 이동
-    // 서버 호출이 실패해도 로컬 로그아웃은 진행 (사용자 관점에서 항상 성공해야 함)
-    private fun handleLogout() {
-        lifecycleScope.launch {
-            try {
-                ApiClient.api.logout()
-            } catch (_: Exception) {
-                // 무시하고 로컬 정리로 진행
-            }
-            TokenManager.clear(this@SettingsActivity)
-            Toast.makeText(this@SettingsActivity, "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show()
-            startActivity(
-                Intent(this@SettingsActivity, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                }
-            )
-        }
-    }
-
-    // 서버 회원탈퇴 성공 시에만 로컬 정리. 실패 시 계정이 살아있으므로 상태 유지.
-    private fun handleWithdraw() {
-        val userId = TokenManager.getUserId(this)
-        if (userId.isBlank()) {
-            Toast.makeText(this, "로그인 정보가 없습니다.", Toast.LENGTH_SHORT).show()
-            return
-        }
-        lifecycleScope.launch {
-            try {
-                val response = ApiClient.api.deleteUser(userId)
-                val body = response.body()
-                if (response.isSuccessful && body?.success == true) {
-                    TokenManager.clear(this@SettingsActivity)
-                    Toast.makeText(this@SettingsActivity, "회원탈퇴가 완료되었습니다.", Toast.LENGTH_SHORT).show()
-                    startActivity(
-                        Intent(this@SettingsActivity, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        }
-                    )
-                } else {
-                    val message = ApiClient.parseErrorMessage(response.errorBody(), "회원탈퇴에 실패했습니다.")
-                    Toast.makeText(this@SettingsActivity, message, Toast.LENGTH_SHORT).show()
-                }
-            } catch (_: Exception) {
-                Toast.makeText(this@SettingsActivity, "네트워크 오류로 회원탈퇴에 실패했습니다.", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 
     companion object {

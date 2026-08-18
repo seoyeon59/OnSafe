@@ -28,6 +28,11 @@ class RollingVideoBufferManager(private val context: Context) {
         private const val PRE_EVENT_SEGMENTS = 8       // 약 2분
         private const val POST_EVENT_SEGMENTS = 8      // 약 2분
         private const val TARGET_BITRATE = 1_500_000
+        // stop() 이후에도 CameraX가 진행 중이던 세그먼트의 VideoRecordEvent.Finalize를
+        // executor로 비동기 전달할 수 있다. 그 사이에 곧바로 shutdown()하면
+        // CameraX 내부의 executor.execute() 호출이 RejectedExecutionException을 던진다.
+        // Finalize 전달이 끝날 시간을 벌어주기 위한 유예 시간.
+        private const val SHUTDOWN_GRACE_MS = 1_000L
     }
 
     private val executor = Executors.newSingleThreadExecutor()
@@ -79,8 +84,11 @@ class RollingVideoBufferManager(private val context: Context) {
             onClipReady = null
             onClipError = null
         }
-        // 촬영 시작/종료마다 새 인스턴스가 만들어지므로, 여기서 정리 안 하면 스레드가 계속 쌓임
-        executor.shutdown()
+        // 촬영 시작/종료마다 새 인스턴스가 만들어지므로, 여기서 정리 안 하면 스레드가 계속 쌓임.
+        // 단, 바로 위 currentRecording?.stop()의 마지막 Finalize 이벤트가 CameraX 내부에서
+        // 비동기로 executor에 전달되는 도중일 수 있어, 곧바로 shutdown()하면 그 전달 자체가
+        // RejectedExecutionException을 던질 수 있다. 유예 시간을 두고 종료한다.
+        mainHandler.postDelayed({ executor.shutdown() }, SHUTDOWN_GRACE_MS)
     }
 
     private fun rotateSegment() {
@@ -150,15 +158,22 @@ class RollingVideoBufferManager(private val context: Context) {
         onClipReady = null
         onClipError = null
 
-        executor.execute {
-            val outputFile = File(bufferDir, "clip_$logId.mp4")
-            try {
-                FallClipComposer.compose(pre + post, outputFile)
-                readyCb?.invoke(outputFile)
-            } catch (e: Exception) {
-                Log.w(TAG, "클립 합성 실패 (logId=$logId)", e)
-                errorCb?.invoke(e)
+        try {
+            executor.execute {
+                val outputFile = File(bufferDir, "clip_$logId.mp4")
+                try {
+                    FallClipComposer.compose(pre + post, outputFile)
+                    readyCb?.invoke(outputFile)
+                } catch (e: Exception) {
+                    Log.w(TAG, "클립 합성 실패 (logId=$logId)", e)
+                    errorCb?.invoke(e)
+                }
             }
+        } catch (e: java.util.concurrent.RejectedExecutionException) {
+            // stop()으로 executor가 이미 종료된 직후 위험 이벤트가 뒤늦게 마무리된 경우 —
+            // 합성을 포기하고 실패로 처리 (크래시 대신 로그만 남김)
+            Log.w(TAG, "executor 종료 이후라 클립 합성 제출 실패 (logId=$logId)", e)
+            errorCb?.invoke(e)
         }
     }
 }

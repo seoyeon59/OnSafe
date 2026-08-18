@@ -283,7 +283,8 @@ class RegisterStep2ViewModel : ViewModel() {
     }
 
     // ── 최종 회원가입 ──
-    fun register(password: String, phone: String, addressDetail: String) {
+    // marketingConsent: Step1 화면의 마케팅 정보 수신 체크박스 값을 그대로 전달받아 서버에 반영
+    fun register(password: String, phone: String, addressDetail: String, marketingConsent: Boolean) {
         setState { copy(isLoading = true) }
         viewModelScope.launch {
             try {
@@ -295,7 +296,8 @@ class RegisterStep2ViewModel : ViewModel() {
                         mail = email.trim(),
                         phone = phone.trim(),
                         address = addressText.trim().ifEmpty { null },
-                        addressDetail = addressDetail.trim().ifEmpty { null }
+                        addressDetail = addressDetail.trim().ifEmpty { null },
+                        marketingConsent = marketingConsent
                     )
                 )
                 if (response.isSuccessful && response.body()?.success == true) {

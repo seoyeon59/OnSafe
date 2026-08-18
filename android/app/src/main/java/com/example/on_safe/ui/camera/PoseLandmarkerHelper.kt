@@ -3,6 +3,8 @@ package com.example.on_safe.ui.camera
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import androidx.camera.core.ImageProxy
 import com.example.on_safe.network.dto.LandmarkPoint
@@ -31,10 +33,16 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
 
     companion object {
         private const val MODEL_ASSET_PATH = "pose_landmarker_lite.task"
+        // stop() 호출 시점에도 CameraX가 이미 큐에 든 프레임을 이 executor로 계속 전달 중일 수
+        // 있다. unbind가 완전히 반영되기 전에 shutdown()하면 그 전달이 RejectedExecutionException을
+        // 던질 수 있어, 유예 시간을 두고 종료한다. (CameraModeActivity 쪽에서도 카메라 unbind를
+        // stop()보다 먼저 호출하도록 순서를 맞춰 실제로 겹칠 여지 자체를 줄여둔다.)
+        private const val SHUTDOWN_GRACE_MS = 1_000L
     }
 
     // ImageAnalysis.setAnalyzer()에 그대로 넘겨 쓸 전용 실행기 — 레코딩 세션(start~stop)과 생명주기 동일
     val executor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     private var poseLandmarker: PoseLandmarker? = null
     private val frameCounter = AtomicInteger(0)
@@ -109,6 +117,6 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
             poseLandmarker?.close()
             poseLandmarker = null
         }
-        executor.shutdown()
+        mainHandler.postDelayed({ executor.shutdown() }, SHUTDOWN_GRACE_MS)
     }
 }

@@ -1,6 +1,5 @@
 package com.example.on_safe.ui
 
-import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.view.MotionEvent
 import android.widget.ImageButton
@@ -14,8 +13,8 @@ class FullscreenActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 가로 고정
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        // 가로 방향은 매니페스트의 sensorLandscape로 처리 — 여기서 고정 LANDSCAPE로 덮어쓰면
+        // 양방향 회전이 막혀버려 매니페스트 설정이 무효화된다.
         setContentView(R.layout.activity_fullscreen)
 
         Toast.makeText(this, "나가려면 뒤로가기를 누르세요", Toast.LENGTH_SHORT).show()
