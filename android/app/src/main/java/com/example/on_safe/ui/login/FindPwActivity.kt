@@ -2,7 +2,6 @@ package com.example.on_safe.ui.login
 
 import android.content.Intent
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -11,16 +10,14 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
-import com.example.on_safe.network.ApiClient
-import com.example.on_safe.network.dto.SendResetCodeRequest
-import com.example.on_safe.network.dto.VerifyResetCodeRequest
-import kotlinx.coroutines.launch
 
 class FindPwActivity : AppCompatActivity() {
+
+    private val viewModel: FindPwViewModel by viewModels()
 
     private lateinit var etUserId: EditText
     private lateinit var etEmail: EditText
@@ -33,8 +30,6 @@ class FindPwActivity : AppCompatActivity() {
     private lateinit var tvTimer: TextView
     private lateinit var tvResend: TextView
     private lateinit var pbLoading: ProgressBar
-
-    private var countDownTimer: CountDownTimer? = null
 
     // navigateToResetPassword()에서 전환(다음 화면)과 finish()(스택 정리)를 함께 호출할 때,
     // finish()의 기본 "뒤로 나가는" 전환이 방금 지정한 "다음으로 넘어가는" 전환을 덮어쓰지 않도록 함
@@ -59,7 +54,7 @@ class FindPwActivity : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
         btnGoLogin.setOnClickListener { finish() }
 
-        // 재설정 코드 발송
+        // 재설정 코드 발송 — 입력값 형식 검증만 여기서, 실제 요청/상태 처리는 뷰모델에 맡김
         btnRequestCode.setOnClickListener {
             val userId = etUserId.text.toString().trim()
             val email = etEmail.text.toString().trim()
@@ -78,24 +73,7 @@ class FindPwActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            btnRequestCode.isEnabled = false
-            pbLoading.visibility = View.VISIBLE
-            lifecycleScope.launch {
-                try {
-                    val response = ApiClient.api.sendResetCode(SendResetCodeRequest(userId = userId, mail = email))
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        startVerification()
-                    } else {
-                        Toast.makeText(this@FindPwActivity, response.body()?.message ?: "코드 발송에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                        btnRequestCode.isEnabled = true
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this@FindPwActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-                    btnRequestCode.isEnabled = true
-                } finally {
-                    pbLoading.visibility = View.GONE
-                }
-            }
+            viewModel.requestCode(userId, email)
         }
 
         // 재설정 코드 확인
@@ -105,88 +83,48 @@ class FindPwActivity : AppCompatActivity() {
                 Toast.makeText(this, "재설정 코드를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            btnConfirm.isEnabled = false
-            pbLoading.visibility = View.VISIBLE
-            lifecycleScope.launch {
-                try {
-                    val response = ApiClient.api.verifyResetCode(
-                        VerifyResetCodeRequest(userId = etUserId.text.toString().trim(), code = code)
-                    )
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        countDownTimer?.cancel()
-                        navigateToResetPassword()
-                    } else {
-                        Toast.makeText(this@FindPwActivity, response.body()?.message ?: "코드가 올바르지 않습니다.", Toast.LENGTH_SHORT).show()
-                        btnConfirm.isEnabled = true
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this@FindPwActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-                    btnConfirm.isEnabled = true
-                } finally {
-                    pbLoading.visibility = View.GONE
-                }
-            }
+            viewModel.confirmCode(etUserId.text.toString().trim(), code)
         }
 
         // 재전송
         tvResend.setOnClickListener {
             etCode.text.clear()
-            tvResend.visibility = View.GONE
-            lifecycleScope.launch {
-                try {
-                    val response = ApiClient.api.sendResetCode(
-                        SendResetCodeRequest(userId = etUserId.text.toString().trim(), mail = etEmail.text.toString().trim())
-                    )
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        startVerification()
-                        Toast.makeText(this@FindPwActivity, "재설정 코드를 재발송했습니다.", Toast.LENGTH_SHORT).show()
-                    } else {
-                        // 재발송 실패 — 다시 시도할 수 있도록 재전송 버튼 복구
-                        tvResend.visibility = View.VISIBLE
-                        Toast.makeText(
-                            this@FindPwActivity,
-                            response.body()?.message ?: "재설정 코드 재발송에 실패했습니다.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                } catch (e: Exception) {
-                    tvResend.visibility = View.VISIBLE
-                    Toast.makeText(this@FindPwActivity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-                }
+            viewModel.resendCode(etUserId.text.toString().trim(), etEmail.text.toString().trim())
+        }
+
+        observeViewModel()
+    }
+
+    private fun observeViewModel() {
+        viewModel.uiState.observe(this) { state ->
+            pbLoading.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+
+            btnRequestCode.isEnabled = state.isRequestCodeEnabled
+            btnRequestCode.alpha = if (state.isRequestCodeEnabled) 1.0f else 0.4f
+
+            layoutCode.visibility = if (state.isCodeLayoutVisible) View.VISIBLE else View.GONE
+            tvTimer.visibility = if (state.isCodeLayoutVisible) View.VISIBLE else View.GONE
+            tvTimer.text = state.timerText
+
+            tvResend.visibility = if (state.isResendVisible) View.VISIBLE else View.GONE
+
+            btnConfirm.isEnabled = state.isConfirmEnabled
+            btnConfirm.alpha = if (state.isConfirmEnabled) 1.0f else 0.4f
+        }
+
+        viewModel.toastMessage.observe(this) { message ->
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                viewModel.onToastShown()
             }
         }
-    }
 
-    private fun startVerification() {
-        btnRequestCode.isEnabled = false
-        btnRequestCode.alpha = 0.4f
-        layoutCode.visibility = View.VISIBLE
-        tvResend.visibility = View.VISIBLE
-        tvTimer.visibility = View.VISIBLE
-        btnConfirm.isEnabled = true
-        btnConfirm.alpha = 1.0f
-        Toast.makeText(this, "재설정 코드를 발송했습니다.", Toast.LENGTH_SHORT).show()
-        startTimer()
-    }
-
-    private fun startTimer() {
-        countDownTimer?.cancel()
-        countDownTimer = object : CountDownTimer(180_000L, 1000L) {
-            override fun onTick(millisUntilFinished: Long) {
-                val minutes = millisUntilFinished / 60000
-                val seconds = (millisUntilFinished % 60000) / 1000
-                tvTimer.text = String.format("%d:%02d", minutes, seconds)
+        viewModel.navigateToReset.observe(this) { shouldNavigate ->
+            if (shouldNavigate) {
+                navigateToResetPassword()
+                viewModel.onNavigated()
             }
-
-            override fun onFinish() {
-                tvTimer.text = "0:00"
-                btnConfirm.isEnabled = false
-                btnConfirm.alpha = 0.4f
-                tvResend.visibility = View.VISIBLE
-                btnRequestCode.isEnabled = true
-                btnRequestCode.alpha = 1.0f
-            }
-        }.start()
+        }
     }
 
     private fun navigateToResetPassword() {
@@ -197,11 +135,6 @@ class FindPwActivity : AppCompatActivity() {
         overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         suppressFinishTransition = true
         finish()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        countDownTimer?.cancel()
     }
 
     // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환

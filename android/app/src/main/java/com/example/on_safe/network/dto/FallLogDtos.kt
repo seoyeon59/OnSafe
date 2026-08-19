@@ -10,3 +10,8 @@ data class FallLogResponse(
     val hasVideo: Boolean,
     val timestamp: String
 )
+
+data class ConfirmFallLogResponse(
+    val logId: String,
+    val isConfirmed: Boolean
+)

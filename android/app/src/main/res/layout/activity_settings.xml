@@ -641,7 +641,7 @@
                 android:layout_marginTop="12dp"
                 android:gravity="center"
                 android:paddingTop="12dp"
-                android:fontFamily="@font/gmarket_sans_bold"
+                android:fontFamily="@font/pretendard_bold"
                 android:includeFontPadding="false"
                 android:text="늘봄 v1.0.0"
                 android:textColor="@color/ink_500"

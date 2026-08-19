@@ -131,7 +131,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
-            android:fontFamily="@font/gmarket_sans_bold"
+            android:fontFamily="@font/pretendard_bold"
             android:includeFontPadding="false"
             android:text="늘봄"
             android:textColor="@color/primary_blue"

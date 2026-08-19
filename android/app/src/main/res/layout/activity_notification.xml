@@ -54,17 +54,67 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
-    <!-- 알림 목록 -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_notifications"
+    <!-- 알림 목록 / 빈 상태 -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="8dp" />
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_notifications"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp" />
+
+        <LinearLayout
+            android:id="@+id/layoutEmptyState"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_notification"
+                app:tint="@color/ink_500"
+                android:contentDescription="안내 아이콘" />
+
+            <TextView
+                android:id="@+id/tvEmpty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fontFamily="@font/pretendard_medium"
+                android:text="최근 7일간 감지된 알림이 없습니다."
+                android:textColor="@color/ink_500"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/btnRetry"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_outline_blue"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="@font/pretendard_semibold"
+                android:gravity="center"
+                android:paddingHorizontal="16dp"
+                android:text="다시 시도"
+                android:textColor="@color/primary_blue"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+    </FrameLayout>
 
     <!-- 하단 안내 문구 -->
     <LinearLayout

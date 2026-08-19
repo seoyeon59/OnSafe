@@ -24,18 +24,17 @@ import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.R
-import com.example.on_safe.network.ApiClient
-import com.example.on_safe.network.dto.LoginRequest
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.TokenManager
-import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
+
+    private val viewModel: LoginViewModel by viewModels()
 
     private lateinit var etId: EditText
     private lateinit var etPw: EditText
@@ -147,43 +146,7 @@ class LoginActivity : AppCompatActivity() {
             }
 
             val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
-
-            btnLogin.isEnabled = false
-            pbLoading.visibility = View.VISIBLE
-            lifecycleScope.launch {
-                try {
-                    val response = ApiClient.api.login(LoginRequest(userId = id, password = pw, deviceId = deviceId))
-                    val body = response.body()
-                    if (response.isSuccessful && body?.success == true && body.data != null) {
-                        val data = body.data
-                        TokenManager.saveTokens(
-                            this@LoginActivity,
-                            data.accessToken, data.refreshToken, data.userId
-                        )
-                        if (BuildConfig.DEBUG) Log.d("Login", "저장 완료 — userId=${data.userId}")
-                        // 최초 로그인 시 튜토리얼 표시 (기기별 1회)
-                        val next = if (!TutorialActivity.isTutorialShown(this@LoginActivity)) {
-                            TutorialActivity.intentForLogin(this@LoginActivity)
-                        } else {
-                            Intent(this@LoginActivity, ModeSelectActivity::class.java)
-                        }
-                        startActivity(next.apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        })
-                    } else {
-                        val message = body?.message
-                            ?: ApiClient.parseErrorMessage(response.errorBody(), "아이디 또는 비밀번호가 올바르지 않습니다.")
-                        Log.w("Login", "실패 — HTTP ${response.code()}: $message")
-                        showLoginError(message)
-                    }
-                } catch (e: Exception) {
-                    Log.e("Login", "네트워크 오류", e)
-                    showLoginError("네트워크 오류가 발생했습니다.")
-                } finally {
-                    btnLogin.isEnabled = true
-                    pbLoading.visibility = View.GONE
-                }
-            }
+            viewModel.login(id, pw, deviceId)
         }
 
         tvFindId.setOnClickListener {
@@ -200,6 +163,37 @@ class LoginActivity : AppCompatActivity() {
         }
 
         setupTermsLinks()
+        observeViewModel()
+    }
+
+    private fun observeViewModel() {
+        viewModel.uiState.observe(this) { state ->
+            btnLogin.isEnabled = !state.isLoading
+            pbLoading.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+            if (state.errorMessage != null) {
+                showLoginError(state.errorMessage)
+            }
+        }
+        viewModel.loginSuccess.observe(this) { success ->
+            if (success != null) {
+                TokenManager.saveTokens(this, success.accessToken, success.refreshToken, success.userId)
+                if (BuildConfig.DEBUG) Log.d("Login", "저장 완료 — userId=${success.userId}")
+                // TODO: 백엔드 API 스펙(v4.2)상 로그인 성공 직후 Python 서버 POST /api/devices/{userId}로
+                //       기기 등록(device_id=ANDROID_ID, device_name=Build.MODEL)을 호출해야 하는데
+                //       현재 앱 어디에도 이 호출이 없음 — devices 컬렉션이 계속 비어있을 가능성이 있음.
+                //       의도적으로 보류 중 (2026-08-17 검토, 아직 미착수).
+                // 최초 로그인 시 튜토리얼 표시 (기기별 1회)
+                val next = if (!TutorialActivity.isTutorialShown(this)) {
+                    TutorialActivity.intentForLogin(this)
+                } else {
+                    Intent(this, ModeSelectActivity::class.java)
+                }
+                startActivity(next.apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                })
+                viewModel.onLoginHandled()
+            }
+        }
     }
 
     // 이용약관·개인정보 처리방침 텍스트를 파란 밑줄 링크로 표시

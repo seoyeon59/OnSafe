@@ -50,12 +50,23 @@ object TokenManager {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
+    // 실제 로그인 시에만 호출 — login_time을 현재 시각으로 찍어 30일 세션 만료 기준점을 갱신함
     fun saveTokens(context: Context, accessToken: String, refreshToken: String, userId: String) {
         prefs(context).edit()
             .putString(KEY_ACCESS,   accessToken)
             .putString(KEY_REFRESH,  refreshToken)
             .putString(KEY_USER_ID,  userId)
             .putLong(KEY_LOGIN_TIME, System.currentTimeMillis())
+            .apply()
+    }
+
+    // 조용한 토큰 자동 갱신(ApiClient의 401 재시도) 전용 — 실제 로그인이 아니므로 login_time은 건드리지 않음.
+    // 여기서 login_time까지 갱신해버리면, 사용자가 30일 안에 앱을 한 번만 열어도(API 호출로 자동 갱신 발생)
+    // 만료 기준 시점이 계속 뒤로 밀려 "마지막 로그인으로부터 30일" 재인증 정책이 사실상 발동하지 않게 됨
+    fun updateAccessToken(context: Context, accessToken: String, refreshToken: String) {
+        prefs(context).edit()
+            .putString(KEY_ACCESS,  accessToken)
+            .putString(KEY_REFRESH, refreshToken)
             .apply()
     }
 

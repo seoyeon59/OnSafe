@@ -11,26 +11,21 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.on_safe.R
-import com.example.on_safe.network.JusoApiClient
 import com.example.on_safe.network.dto.JusoItem
-import kotlinx.coroutines.launch
 
 class AddressSearchActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_ADDRESS = "address"
         const val EXTRA_ZIP     = "zipNo"
-        // ⚠️ 검색 API 전용 승인키 (팝업 키 아님!)
-        // TODO: [보안] 이 키가 소스코드에 평문으로 들어있고 공개 저장소에 커밋된 상태입니다.
-        //       local.properties + BuildConfig로 옮겨서 저장소에는 값이 노출되지 않도록 해야 합니다.
-        //       이미 git 히스토리에 노출된 값이므로, 옮기는 것과 별개로 juso.go.kr에서 키 재발급도 검토해주세요.
-        private const val CONFM_KEY = "devU01TX0FVVEgyMDI2MDYwMjAyMDEyODExODk3NTM="
     }
+
+    private val viewModel: AddressSearchViewModel by viewModels()
 
     private lateinit var etKeyword:  EditText
     private lateinit var btnSearch:  Button
@@ -63,8 +58,14 @@ class AddressSearchActivity : AppCompatActivity() {
             } else false
         }
 
-        // 초기 상태: 팁 카드 표시
-        showTip()
+        // 뷰모델 상태를 관찰해서 화면만 갱신 — 검색 로직/서버 통신은 전부 뷰모델 쪽으로 이동
+        viewModel.uiState.observe(this) { state ->
+            when (state) {
+                is AddressSearchUiState.Tip -> showTip()
+                is AddressSearchUiState.Results -> showResults(state.list)
+                is AddressSearchUiState.Empty -> showEmpty(state.message)
+            }
+        }
     }
 
     private fun search() {
@@ -73,30 +74,7 @@ class AddressSearchActivity : AppCompatActivity() {
             Toast.makeText(this, "검색어를 입력해주세요.", Toast.LENGTH_SHORT).show()
             return
         }
-
-        lifecycleScope.launch {
-            try {
-                val response = JusoApiClient.api.searchAddress(
-                    confmKey     = CONFM_KEY,
-                    currentPage  = 1,
-                    countPerPage = 20,
-                    keyword      = keyword
-                )
-                val results = response.body()?.results
-                if (response.isSuccessful && results?.common?.errorCode == "0") {
-                    val list = results.juso ?: emptyList()
-                    if (list.isEmpty()) {
-                        showEmpty("'$keyword' 검색 결과가 없습니다.\n도로명, 건물명, 지번으로 다시 검색해보세요.")
-                    } else {
-                        showResults(list)
-                    }
-                } else {
-                    showEmpty(results?.common?.errorMessage ?: "검색에 실패했습니다.")
-                }
-            } catch (e: Exception) {
-                showEmpty("네트워크 오류가 발생했습니다.\n연결 상태를 확인해주세요.")
-            }
-        }
+        viewModel.search(keyword)
     }
 
     private fun showResults(list: List<JusoItem>) {

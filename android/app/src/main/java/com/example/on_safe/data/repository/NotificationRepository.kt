@@ -3,5 +3,8 @@ package com.example.on_safe.data.repository
 import com.example.on_safe.ui.notification.NotificationItem
 
 interface NotificationRepository {
-    fun getNotifications(): MutableList<NotificationItem>
+    suspend fun getNotifications(userId: String): List<NotificationItem>
+
+    // 알림(=낙상 로그) 읽음 처리 — 서버에는 isConfirmed로 저장됨
+    suspend fun confirmNotification(userId: String, logId: String)
 }

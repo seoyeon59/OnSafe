@@ -102,7 +102,12 @@ class RegisterStep1Activity : AppCompatActivity() {
         btnViewAgree5.setOnClickListener { openTermsUrl(TERMS_URL_AGREE5) }
 
         btnNext.setOnClickListener {
-            startActivity(Intent(this, RegisterStep2Activity::class.java))
+            startActivity(
+                Intent(this, RegisterStep2Activity::class.java).apply {
+                    // 마케팅 정보 수신 동의(선택)는 필수 3개와 별개로, 체크한 그대로 Step2 → 서버까지 전달
+                    putExtra(RegisterStep2Activity.EXTRA_MARKETING_CONSENT, isCheck5)
+                }
+            )
             overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
     }

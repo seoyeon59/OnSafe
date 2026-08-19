@@ -82,6 +82,17 @@ interface ApiService {
         @Body request: NotificationSettingsRequest
     ): Response<ApiResponse<NotificationSettingsResponse>>
 
+    @GET("api/settings/marketing/{userId}")
+    suspend fun getMarketingConsent(
+        @Path("userId") userId: String
+    ): Response<ApiResponse<MarketingConsentResponse>>
+
+    @PUT("api/settings/marketing/{userId}")
+    suspend fun updateMarketingConsent(
+        @Path("userId") userId: String,
+        @Body request: MarketingConsentRequest
+    ): Response<ApiResponse<MarketingConsentResponse>>
+
     // ===== Camera (실시간 위험 지수) =====
 
     @GET("api/camera/score/{userId}")
@@ -124,4 +135,11 @@ interface ApiService {
         @Path("userId") userId: String,
         @Path("logId") logId: String
     ): Response<ApiResponse<FallLogResponse>>
+
+    // 낙상 로그 확인 처리 — 알림 목록의 읽음 처리에도 그대로 사용(isConfirmed == 읽음)
+    @PATCH("api/fall-logs/{userId}/{logId}/confirm")
+    suspend fun confirmFallLog(
+        @Path("userId") userId: String,
+        @Path("logId") logId: String
+    ): Response<ApiResponse<ConfirmFallLogResponse>>
 }

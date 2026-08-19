@@ -9,13 +9,17 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import com.example.on_safe.R
+import com.example.on_safe.network.dto.UserResponse
+import com.example.on_safe.util.TokenManager
 
 // 개인정보 수정 화면 — 진입 시 비밀번호 확인 후 폼 활성화
-// TODO: GET /user/profile + PUT /user/profile 연결
 class EditProfileActivity : AppCompatActivity() {
+
+    private val viewModel: EditProfileViewModel by viewModels()
 
     private lateinit var etName: EditText
     private lateinit var etPhone: EditText
@@ -28,6 +32,9 @@ class EditProfileActivity : AppCompatActivity() {
 
     // 인증 전에는 숨김 처리
     private lateinit var formContainer: View
+
+    // 서버에서 받아온 값으로 스위치를 프로그래밍적으로 세팅할 때 리스너 재발화(재-PUT) 방지
+    private var suppressMarketingListener = false
 
     private val settingsPrefs by lazy {
         getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
@@ -50,7 +57,57 @@ class EditProfileActivity : AppCompatActivity() {
         setContentView(R.layout.activity_edit_profile)
 
         initViews()
+        setupClickListeners()
+        observeViewModel()
         showVerifyDialog()
+    }
+
+    private fun observeViewModel() {
+        viewModel.verifyResult.observe(this) { result ->
+            if (result != null) {
+                if (result.success) {
+                    formContainer.visibility = View.VISIBLE
+                    btnSave.visibility = View.VISIBLE
+                    if (result.user != null) {
+                        fillForm(result.user)
+                    } else {
+                        Toast.makeText(this, "정보를 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
+                    }
+                    viewModel.loadMarketingConsent(TokenManager.getUserId(this))
+                } else {
+                    Toast.makeText(this, result.message ?: "비밀번호가 올바르지 않습니다.", Toast.LENGTH_SHORT).show()
+                    // 검증 실패 → 재입력할 수 있도록 확인 다이얼로그 다시 표시
+                    showVerifyDialog()
+                }
+                viewModel.onVerifyResultHandled()
+            }
+        }
+
+        viewModel.saveResult.observe(this) { result ->
+            if (result != null) {
+                Toast.makeText(this, result.message, Toast.LENGTH_SHORT).show()
+                if (result.success) finish()
+                viewModel.onSaveResultHandled()
+            }
+        }
+
+        // 서버 조회 성공 시에만 갱신 — null(미조회/실패)이면 로컬 캐시로 표시된 값을 그대로 둔다
+        viewModel.marketingConsent.observe(this) { consent ->
+            if (consent != null) {
+                suppressMarketingListener = true
+                switchMarketing.isChecked = consent
+                suppressMarketingListener = false
+                settingsPrefs.edit().putBoolean("marketing_enabled", consent).apply()
+            }
+        }
+    }
+
+    private fun fillForm(user: UserResponse) {
+        etName.setText(user.name)
+        etPhone.setText(user.phone)
+        etEmail.setText(user.mail)
+        etAddress1.setText(user.address.orEmpty())
+        etAddress2.setText(user.addressDetail.orEmpty())
     }
 
     private fun initViews() {
@@ -64,10 +121,12 @@ class EditProfileActivity : AppCompatActivity() {
         switchMarketing = findViewById(R.id.switchMarketing)
         formContainer   = findViewById(R.id.scrollContent)
 
-        // 저장된 마케팅 수신 동의 상태 복원
+        // 오프라인/서버 응답 전에도 최근 값을 바로 보여주기 위한 로컬 캐시 — 진실의 원천은 서버(GET/PUT /api/settings/marketing)
         switchMarketing.isChecked = settingsPrefs.getBoolean("marketing_enabled", false)
         switchMarketing.setOnCheckedChangeListener { _, isChecked ->
+            if (suppressMarketingListener) return@setOnCheckedChangeListener
             settingsPrefs.edit().putBoolean("marketing_enabled", isChecked).apply()
+            viewModel.updateMarketingConsent(TokenManager.getUserId(this), isChecked)
         }
 
         // 인증 전: 폼 숨김
@@ -75,23 +134,15 @@ class EditProfileActivity : AppCompatActivity() {
         btnSave.visibility = View.INVISIBLE
     }
 
-    // 진입 시 비밀번호 확인 — 취소: finish, 확인: 폼 표시 + 데이터 로드
+    // 진입 시 비밀번호 확인 — 취소: finish, 확인: 서버 검증 후 성공 시 폼 표시 + 데이터 로드
     private fun showVerifyDialog() {
         VerifyPasswordDialog(
             context = this,
-            onConfirm = { _ ->
-                // TODO: 서버에 비밀번호 검증 요청 후 성공 시 아래 실행
-                formContainer.visibility = View.VISIBLE
-                btnSave.visibility = View.VISIBLE
-                loadUserData()
-                setupClickListeners()
+            onConfirm = { password ->
+                viewModel.verifyPassword(TokenManager.getUserId(this), password)
             },
             onCancel = { finish() }
         ).show()
-    }
-
-    private fun loadUserData() {
-        // TODO: GET /user/profile → 각 필드에 채움
     }
 
     private fun setupClickListeners() {
@@ -128,9 +179,14 @@ class EditProfileActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // TODO: PUT /user/profile → 성공 시 finish()
-            Toast.makeText(this, "정보가 저장되었습니다.", Toast.LENGTH_SHORT).show()
-            finish()
+            viewModel.save(
+                userId = TokenManager.getUserId(this),
+                name = name,
+                phone = phone,
+                email = email,
+                address = address1,
+                addressDetail = address2
+            )
         }
     }
 

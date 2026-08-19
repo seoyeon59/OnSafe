@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.method.HideReturnsTransformationMethod
@@ -17,18 +16,14 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
+import com.example.on_safe.FieldValidation
 import com.example.on_safe.R
-import com.example.on_safe.network.ApiClient
-import com.example.on_safe.network.dto.CheckIdRequest
-import com.example.on_safe.network.dto.RegisterRequest
-import com.example.on_safe.network.dto.SendEmailCodeRequest
-import com.example.on_safe.network.dto.VerifyEmailCodeRequest
-import com.example.on_safe.util.PasswordValidator
-import kotlinx.coroutines.launch
 
 class RegisterStep2Activity : AppCompatActivity() {
+
+    private val viewModel: RegisterStep2ViewModel by viewModels()
 
     private lateinit var etId: EditText
     private lateinit var etPw: EditText
@@ -61,24 +56,17 @@ class RegisterStep2Activity : AppCompatActivity() {
 
     private var isPwVisible = false
     private var isPwConfirmVisible = false
-    private var isIdChecked = false
-    private var isEmailVerified = false
-
-    private var emailCountDownTimer: CountDownTimer? = null
-
-    // 유효성 상태
-    private var isPwValid = false
-    private var isPwConfirmValid = false
-    private var isPhoneValid = false
-    private var isEmailValid = false
-
-    private var dpScale = 0f
-    private var cornerPx = 0f
     private var isFormattingPhone = false
+
+    // Step1에서 넘어온 마케팅 정보 수신 동의 여부 (기본값 false — 값이 안 넘어온 경우 대비)
+    private var marketingConsent = false
 
     private val COLOR_RED = 0xFFEF4444.toInt()
     private val COLOR_GREEN = 0xFF22C55E.toInt()
     private val COLOR_NORMAL = 0xFFF4F7FB.toInt()
+
+    private var dpScale = 0f
+    private var cornerPx = 0f
 
     // 주소 검색 Activity에서 결과를 받아오는 런처
     private val addressLauncher = registerForActivityResult(
@@ -87,8 +75,9 @@ class RegisterStep2Activity : AppCompatActivity() {
         if (result.resultCode == Activity.RESULT_OK) {
             val address = result.data?.getStringExtra(AddressSearchActivity.EXTRA_ADDRESS) ?: ""
             val zipNo   = result.data?.getStringExtra(AddressSearchActivity.EXTRA_ZIP) ?: ""
-            etAddress.setText(if (zipNo.isNotEmpty()) "$address ($zipNo)" else address)
-            updateCompleteButton()
+            val displayed = if (zipNo.isNotEmpty()) "$address ($zipNo)" else address
+            etAddress.setText(displayed)
+            viewModel.onAddressChanged(displayed)
         }
     }
 
@@ -99,6 +88,8 @@ class RegisterStep2Activity : AppCompatActivity() {
 
         dpScale = resources.displayMetrics.density
         cornerPx = 48f * dpScale
+
+        marketingConsent = intent.getBooleanExtra(EXTRA_MARKETING_CONSENT, false)
 
         etId = findViewById(R.id.etId)
         etPw = findViewById(R.id.etPw)
@@ -147,15 +138,10 @@ class RegisterStep2Activity : AppCompatActivity() {
             btnTogglePwConfirm.setImageResource(if (isPwConfirmVisible) R.drawable.ic_eye_off else R.drawable.ic_eye)
         }
 
-        // 아이디 변경 시 중복확인 초기화
+        // 아이디 변경 시 중복확인 초기화 — 판단은 뷰모델, 표시만 여기서
         etId.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                isIdChecked = false
-                tvIdMessage.visibility = View.GONE
-                setInputBorderNormal(etId)
-                btnCheckId.alpha = 1.0f
-                btnCheckId.isEnabled = true
-                updateCompleteButton()
+                viewModel.onIdChanged(s.toString())
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -164,23 +150,7 @@ class RegisterStep2Activity : AppCompatActivity() {
         // 비밀번호 유효성
         etPw.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                val pw = s.toString()
-                if (pw.isEmpty()) {
-                    tvPwMessage.visibility = View.GONE
-                    setInputBorderNormal(etPw)
-                    isPwValid = false
-                } else {
-                    isPwValid = PasswordValidator.isValid(pw)
-                    if (isPwValid) {
-                        showMessage(tvPwMessage, PasswordValidator.SUCCESS_MSG, COLOR_GREEN)
-                        setInputBorderColor(etPw, COLOR_GREEN)
-                    } else {
-                        showMessage(tvPwMessage, PasswordValidator.ERROR_MSG, COLOR_RED)
-                        setInputBorderColor(etPw, COLOR_RED)
-                    }
-                }
-                validatePwConfirm(etPwConfirm.text.toString())
-                updateCompleteButton()
+                viewModel.onPwChanged(s.toString())
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -189,47 +159,27 @@ class RegisterStep2Activity : AppCompatActivity() {
         // 비밀번호 확인 유효성
         etPwConfirm.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                validatePwConfirm(s.toString())
-                updateCompleteButton()
+                viewModel.onPwConfirmChanged(s.toString())
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // 전화번호 유효성
+        // 전화번호 — 자동 하이픈 포맷은 View 조작이라 여기 그대로 두고, 유효성 판단만 뷰모델에 넘김
         etPhone.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                // 자동 하이픈 포헵 (재귀 방지 가드)
-                if (!isFormattingPhone){
+                // 자동 하이픈 포맷 (재귀 방지 가드)
+                if (!isFormattingPhone) {
                     isFormattingPhone = true
                     val digits = s.toString().filter { it.isDigit() }.take(11)
-                    val formatted = formatPhone(digits)   // 아래 헬퍼
+                    val formatted = formatPhone(digits)
                     if (formatted != s.toString()) {
                         etPhone.setText(formatted)
                         etPhone.setSelection(formatted.length) // 커서 맨 뒤로
                     }
                     isFormattingPhone = false
                 }
-
-                // 기존 유효성 검사 로직
-//                val phone = s.toString()
-                val phone = etPhone.text.toString()
-                if (phone.isEmpty()) {
-                    tvPhoneMessage.visibility = View.GONE
-                    setInputBorderNormal(etPhone)
-                    isPhoneValid = false
-                } else {
-                    val regex = Regex("^01[016789]-\\d{3,4}-\\d{4}$")
-                    isPhoneValid = regex.matches(phone)
-                    if (isPhoneValid) {
-                        showMessage(tvPhoneMessage, "✓ 올바른 전화번호입니다.", COLOR_GREEN)
-                        setInputBorderColor(etPhone, COLOR_GREEN)
-                    } else {
-                        showMessage(tvPhoneMessage, "010-0000-0000 형식으로 입력해주세요.", COLOR_RED)
-                        setInputBorderColor(etPhone, COLOR_RED)
-                    }
-                }
-                updateCompleteButton()
+                viewModel.onPhoneChanged(etPhone.text.toString())
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -238,94 +188,34 @@ class RegisterStep2Activity : AppCompatActivity() {
         // 이메일 유효성
         etEmail.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                val email = s.toString()
-                // 이메일 변경 시 인증 초기화
-                isEmailVerified = false
-                tvEmailVerified.visibility = View.GONE
-                layoutEmailCode.visibility = View.GONE
-                btnVerifyEmail.alpha = 1.0f
-                btnVerifyEmail.isEnabled = true
-
-                if (email.isEmpty()) {
-                    tvEmailMessage.visibility = View.GONE
-                    setInputBorderNormal(etEmail)
-                    isEmailValid = false
-                } else {
-                    val regex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
-                    isEmailValid = regex.matches(email)
-                    if (isEmailValid) {
-                        showMessage(tvEmailMessage, "✓ 올바른 이메일 형식입니다.", COLOR_GREEN)
-                        setInputBorderColor(etEmail, COLOR_GREEN)
-                    } else {
-                        showMessage(tvEmailMessage, "올바른 이메일 형식을 입력해주세요.", COLOR_RED)
-                        setInputBorderColor(etEmail, COLOR_RED)
-                    }
-                }
-                updateCompleteButton()
+                viewModel.onEmailChanged(s.toString())
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // 나머지 필드 (etAddressDetail은 선택 항목이므로 watcher 불필요)
-        etName.addTextChangedListener(simpleWatcher())
+        // 보호자 이름 (etAddressDetail은 선택 항목이므로 watcher 불필요)
+        etName.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                viewModel.onNameChanged(s.toString())
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
 
-        // 아이디 중복 확인
+        // 아이디 중복 확인 — 형식 검증은 뷰모델이 하고, 빈 값 체크만 여기서
         btnCheckId.setOnClickListener {
             val id = etId.text.toString().trim()
-            val idRegex = Regex("^[A-Za-z0-9]{6,12}$")
             if (id.isEmpty()) {
                 Toast.makeText(this, "아이디를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (!idRegex.matches(id)) {
-                showMessage(tvIdMessage, "영문/숫자 6~12자로 입력해주세요.", COLOR_RED)
-                setInputBorderColor(etId, COLOR_RED)
-                return@setOnClickListener
-            }
-            btnCheckId.isEnabled = false
-            lifecycleScope.launch {
-                try {
-                    val response = ApiClient.api.checkId(CheckIdRequest(userId = id))
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        isIdChecked = true
-                        showMessage(tvIdMessage, "✓ 사용 가능한 아이디입니다.", COLOR_GREEN)
-                        setInputBorderColor(etId, COLOR_GREEN)
-                        btnCheckId.alpha = 0.4f
-                    } else {
-                        showMessage(tvIdMessage, response.body()?.message ?: "이미 사용 중인 아이디입니다.", COLOR_RED)
-                        setInputBorderColor(etId, COLOR_RED)
-                        btnCheckId.isEnabled = true
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-                    btnCheckId.isEnabled = true
-                }
-                updateCompleteButton()
-            }
+            viewModel.checkId(id)
         }
 
         // 이메일 인증 요청
         btnVerifyEmail.setOnClickListener {
-            if (!isEmailValid) {
-                Toast.makeText(this, "올바른 이메일을 입력해주세요.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            btnVerifyEmail.isEnabled = false
-            lifecycleScope.launch {
-                try {
-                    val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        startEmailVerification()
-                    } else {
-                        Toast.makeText(this@RegisterStep2Activity, response.body()?.message ?: "인증 메일 발송에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                        btnVerifyEmail.isEnabled = true
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-                    btnVerifyEmail.isEnabled = true
-                }
-            }
+            viewModel.verifyEmail()
         }
 
         // 인증코드 확인
@@ -335,53 +225,13 @@ class RegisterStep2Activity : AppCompatActivity() {
                 Toast.makeText(this, "인증코드를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            btnConfirmCode.isEnabled = false
-            lifecycleScope.launch {
-                try {
-                    val response = ApiClient.api.verifyEmailCode(
-                        VerifyEmailCodeRequest(mail = etEmail.text.toString().trim(), code = code)
-                    )
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        emailCountDownTimer?.cancel()
-                        isEmailVerified = true
-                        layoutEmailCode.visibility = View.GONE
-                        tvEmailMessage.visibility = View.GONE
-                        tvEmailVerified.visibility = View.VISIBLE
-                    } else {
-                        Toast.makeText(this@RegisterStep2Activity, response.body()?.message ?: "인증코드가 올바르지 않습니다.", Toast.LENGTH_SHORT).show()
-                        btnConfirmCode.isEnabled = true
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-                    btnConfirmCode.isEnabled = true
-                }
-                updateCompleteButton()
-            }
+            viewModel.confirmEmailCode(code)
         }
 
         // 재전송 — 응답 오기 전 중복 탭 방지를 위해 즉시 숨기고, 실패 시에만 다시 보이게 복구
         tvEmailResend.setOnClickListener {
             etEmailCode.text.clear()
-            tvEmailResend.visibility = View.GONE
-            lifecycleScope.launch {
-                try {
-                    val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = etEmail.text.toString().trim()))
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        startEmailVerification()
-                        Toast.makeText(this@RegisterStep2Activity, "인증 메일을 재발송했습니다.", Toast.LENGTH_SHORT).show()
-                    } else {
-                        tvEmailResend.visibility = View.VISIBLE
-                        Toast.makeText(
-                            this@RegisterStep2Activity,
-                            response.body()?.message ?: "인증 메일 재발송에 실패했습니다.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                } catch (e: Exception) {
-                    tvEmailResend.visibility = View.VISIBLE
-                    Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-                }
-            }
+            viewModel.resendEmailCode()
         }
 
         // 도로명 주소 API 연결
@@ -391,95 +241,81 @@ class RegisterStep2Activity : AppCompatActivity() {
         }
 
         btnComplete.setOnClickListener {
-            btnComplete.isEnabled = false
-            pbLoading.visibility = View.VISIBLE
-            lifecycleScope.launch {
-                try {
-                    val response = ApiClient.api.register(
-                        RegisterRequest(
-                            userId = etId.text.toString().trim(),
-                            password = etPw.text.toString().trim(),
-                            name = etName.text.toString().trim(),
-                            mail = etEmail.text.toString().trim(),
-                            phone = etPhone.text.toString().trim(),
-                            address = etAddress.text.toString().trim().ifEmpty { null },
-                            addressDetail = etAddressDetail.text.toString().trim().ifEmpty { null }
-                        )
-                    )
-                    if (response.isSuccessful && response.body()?.success == true) {
-                        Toast.makeText(this@RegisterStep2Activity, "회원가입이 완료되었습니다. 로그인해주세요.", Toast.LENGTH_SHORT).show()
-                        startActivity(
-                            Intent(this@RegisterStep2Activity, LoginActivity::class.java).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            }
-                        )
-                    } else {
-                        Toast.makeText(this@RegisterStep2Activity, response.body()?.message ?: "회원가입에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                        btnComplete.isEnabled = true
-                        btnComplete.alpha = 1.0f
+            viewModel.register(
+                password = etPw.text.toString(),
+                phone = etPhone.text.toString(),
+                addressDetail = etAddressDetail.text.toString(),
+                marketingConsent = marketingConsent
+            )
+        }
+
+        observeViewModel()
+    }
+
+    private fun observeViewModel() {
+        viewModel.uiState.observe(this) { state ->
+            // 아이디
+            btnCheckId.isEnabled = state.isIdCheckEnabled
+            btnCheckId.alpha = if (state.isIdChecked) 0.4f else 1.0f
+            applyValidation(etId, tvIdMessage, state.idValidation)
+
+            // 비밀번호 / 비밀번호 확인
+            applyValidation(etPw, tvPwMessage, state.pwValidation)
+            applyValidation(etPwConfirm, tvPwConfirmMessage, state.pwConfirmValidation)
+
+            // 전화번호
+            applyValidation(etPhone, tvPhoneMessage, state.phoneValidation)
+
+            // 이메일
+            applyValidation(etEmail, tvEmailMessage, state.emailValidation)
+            btnVerifyEmail.isEnabled = state.isEmailVerifyEnabled
+            btnVerifyEmail.alpha = if (state.isEmailVerifyEnabled) 1.0f else 0.4f
+            layoutEmailCode.visibility = if (state.isEmailCodeLayoutVisible) View.VISIBLE else View.GONE
+            tvEmailTimer.text = state.emailTimerText
+            tvEmailResend.visibility = if (state.isEmailResendVisible) View.VISIBLE else View.GONE
+            tvEmailVerified.visibility = if (state.isEmailVerified) View.VISIBLE else View.GONE
+            btnConfirmCode.isEnabled = state.isConfirmCodeEnabled
+            btnConfirmCode.alpha = if (state.isConfirmCodeEnabled) 1.0f else 0.4f
+
+            // 최종 가입
+            pbLoading.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+            btnComplete.isEnabled = state.isCompleteEnabled && !state.isLoading
+            btnComplete.alpha = if (state.isCompleteEnabled) 1.0f else 0.4f
+        }
+
+        viewModel.toastMessage.observe(this) { message ->
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                viewModel.onToastShown()
+            }
+        }
+
+        viewModel.registerSuccess.observe(this) { success ->
+            if (success) {
+                viewModel.onRegisterHandled()
+                startActivity(
+                    Intent(this, LoginActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
-                } catch (e: Exception) {
-                    Toast.makeText(this@RegisterStep2Activity, "네트워크 오류가 발생했습니다.", Toast.LENGTH_SHORT).show()
-                    btnComplete.isEnabled = true
-                    btnComplete.alpha = 1.0f
-                } finally {
-                    pbLoading.visibility = View.GONE
-                }
+                )
             }
         }
     }
 
-    private fun startEmailVerification() {
-        btnVerifyEmail.isEnabled = false
-        btnVerifyEmail.alpha = 0.4f
-        layoutEmailCode.visibility = View.VISIBLE
-        tvEmailResend.visibility = View.VISIBLE
-        tvEmailTimer.visibility = View.VISIBLE
-        btnConfirmCode.isEnabled = true
-        btnConfirmCode.alpha = 1.0f
-        Toast.makeText(this, "인증 메일을 발송했습니다.", Toast.LENGTH_SHORT).show()
-        startEmailTimer()
-    }
-
-    private fun startEmailTimer() {
-        emailCountDownTimer?.cancel()
-        emailCountDownTimer = object : CountDownTimer(180_000L, 1000L) {
-            override fun onTick(millisUntilFinished: Long) {
-                val minutes = millisUntilFinished / 60000
-                val seconds = (millisUntilFinished % 60000) / 1000
-                tvEmailTimer.text = String.format("%d:%02d", minutes, seconds)
+    private fun applyValidation(et: EditText, tv: TextView, validation: FieldValidation) {
+        when (validation) {
+            is FieldValidation.Empty -> {
+                tv.visibility = View.GONE
+                setInputBorderNormal(et)
             }
-
-            override fun onFinish() {
-                tvEmailTimer.text = "0:00"
-                btnConfirmCode.isEnabled = false
-                btnConfirmCode.alpha = 0.4f
-                btnVerifyEmail.isEnabled = true
-                btnVerifyEmail.alpha = 1.0f
+            is FieldValidation.Valid -> {
+                showMessage(tv, validation.message, COLOR_GREEN)
+                setInputBorderColor(et, COLOR_GREEN)
             }
-        }.start()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        emailCountDownTimer?.cancel()
-    }
-
-    private fun validatePwConfirm(confirm: String) {
-        val pw = etPw.text.toString()
-        if (confirm.isEmpty()) {
-            tvPwConfirmMessage.visibility = View.GONE
-            setInputBorderNormal(etPwConfirm)
-            isPwConfirmValid = false
-            return
-        }
-        isPwConfirmValid = pw == confirm
-        if (isPwConfirmValid) {
-            showMessage(tvPwConfirmMessage, PasswordValidator.MATCH_MSG, COLOR_GREEN)
-            setInputBorderColor(etPwConfirm, COLOR_GREEN)
-        } else {
-            showMessage(tvPwConfirmMessage, PasswordValidator.MISMATCH_MSG, COLOR_RED)
-            setInputBorderColor(etPwConfirm, COLOR_RED)
+            is FieldValidation.Invalid -> {
+                showMessage(tv, validation.message, COLOR_RED)
+                setInputBorderColor(et, COLOR_RED)
+            }
         }
     }
 
@@ -501,11 +337,6 @@ class RegisterStep2Activity : AppCompatActivity() {
         et.setBackgroundResource(R.drawable.bg_input_rounded)
     }
 
-    private fun simpleWatcher() = object : TextWatcher {
-        override fun afterTextChanged(s: Editable?) { updateCompleteButton() }
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-    }
     // 010-1234-5678 형태로 하이픈 자동 삽입 (3-3(또는4)-4)
     private fun formatPhone(digits: String): String = when {
         digits.length <= 3  -> digits
@@ -513,25 +344,13 @@ class RegisterStep2Activity : AppCompatActivity() {
         else                -> "${digits.substring(0,3)}-${digits.substring(3, digits.length-4)}-${digits.substring(digits.length-4)}"
     }
 
-    private fun updateCompleteButton() {
-        // etAddressDetail은 RegisterRequest에서 nullable 선택 항목 → 필수 조건 제외
-        val allValid = etId.text.isNotEmpty()
-                && isIdChecked
-                && isPwValid
-                && isPwConfirmValid
-                && etName.text.isNotEmpty()
-                && isPhoneValid
-                && isEmailValid
-                && isEmailVerified
-                && etAddress.text.isNotEmpty()
-
-        btnComplete.isEnabled = allValid
-        btnComplete.alpha = if (allValid) 1.0f else 0.4f
-    }
-
     // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
     override fun finish() {
         super.finish()
         overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
+    }
+
+    companion object {
+        const val EXTRA_MARKETING_CONSENT = "extra_marketing_consent"
     }
 }

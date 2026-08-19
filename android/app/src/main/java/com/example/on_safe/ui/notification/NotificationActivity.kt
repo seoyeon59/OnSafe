@@ -6,26 +6,31 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.on_safe.R
 import com.example.on_safe.util.NotificationPermissionBanner
 import com.example.on_safe.util.RiskScoreCardBinder
+import com.example.on_safe.util.TokenManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import android.widget.TextView
-import com.example.on_safe.data.fake.FakeNotificationRepository
-import com.example.on_safe.data.repository.NotificationRepository
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class NotificationActivity : AppCompatActivity() {
 
-    private lateinit var adapter: NotificationAdapter
+    private val viewModel: NotificationViewModel by viewModels()
 
-    // TODO: API 연동 시 Real 구현체로 교체
-    private val notificationRepository: NotificationRepository = FakeNotificationRepository()
+    private lateinit var adapter: NotificationAdapter
+    private lateinit var rvNotifications: RecyclerView
+    private lateinit var layoutEmptyState: LinearLayout
+    private lateinit var tvEmpty: TextView
+    private lateinit var btnRetry: TextView
 
     private var alertDialog: BottomSheetDialog? = null
 
@@ -36,18 +41,51 @@ class NotificationActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
         NotificationPermissionBanner.setup(this)
 
-        val notifications = notificationRepository.getNotifications()
-        adapter = NotificationAdapter(notifications) { position, item ->
-            showFallAlertDialog(position, item)
-        }
+        rvNotifications = findViewById(R.id.rv_notifications)
+        layoutEmptyState = findViewById(R.id.layoutEmptyState)
+        tvEmpty = findViewById(R.id.tvEmpty)
+        btnRetry = findViewById(R.id.btnRetry)
 
-        findViewById<RecyclerView>(R.id.rv_notifications).apply {
+        adapter = NotificationAdapter(mutableListOf()) { item -> showFallAlertDialog(item) }
+        rvNotifications.apply {
             layoutManager = LinearLayoutManager(this@NotificationActivity)
-            this.adapter = this@NotificationActivity.adapter
+            adapter = this@NotificationActivity.adapter
         }
 
-        // WARNING은 화면 진입 시 일괄 읽음 처리
-        adapter.markAllWarningsAsRead()
+        val userId = TokenManager.getUserId(this)
+        btnRetry.setOnClickListener { viewModel.load(userId) }
+
+        observeViewModel()
+        viewModel.load(userId)
+    }
+
+    private fun observeViewModel() {
+        viewModel.uiState.observe(this) { state ->
+            adapter.updateItems(state.items)
+            updateEmptyState(state.items.isEmpty(), state.loadFailed)
+        }
+        viewModel.toastEvent.observe(this) { event ->
+            if (event != null) {
+                Toast.makeText(this, event.message, Toast.LENGTH_SHORT).show()
+                viewModel.onToastHandled()
+            }
+        }
+    }
+
+    // 조회 자체가 실패한 경우엔 오류 문구 + 재시도 버튼을, 진짜로 최근 7일간 알림이 없는
+    // 경우엔 안내 문구만 보여준다 (사고이력 화면과 동일 패턴 — 실패를 "알림 없음"으로 오해하지 않도록)
+    private fun updateEmptyState(isEmpty: Boolean, loadFailed: Boolean) {
+        layoutEmptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        rvNotifications.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        if (isEmpty) {
+            if (loadFailed) {
+                tvEmpty.text = "알림 내역을 불러오지 못했습니다."
+                btnRetry.visibility = View.VISIBLE
+            } else {
+                tvEmpty.text = "최근 7일간 감지된 알림이 없습니다."
+                btnRetry.visibility = View.GONE
+            }
+        }
     }
 
     override fun onResume() {
@@ -64,7 +102,7 @@ class NotificationActivity : AppCompatActivity() {
 
     // 화면 종료 시 미읽음 여부를 MainActivity로 전달
     override fun finish() {
-        val hasUnread = adapter.hasUnreadItems()
+        val hasUnread = viewModel.hasUnreadItems()
         setResult(Activity.RESULT_OK, Intent().putExtra(EXTRA_HAS_UNREAD, hasUnread))
         super.finish()
         // 뒤로가기·닫기 모두 이 finish()를 거치므로 여기 한 곳에서만 처리하면
@@ -78,7 +116,7 @@ class NotificationActivity : AppCompatActivity() {
 
     // FALL 항목 클릭 시 위험 감지 모달 표시
     // 모달에서 119 또는 확인했습니다를 눌러야 읽음 처리
-    private fun showFallAlertDialog(position: Int, item: NotificationItem) {
+    private fun showFallAlertDialog(item: NotificationItem) {
         val dialog = BottomSheetDialog(this)
         alertDialog = dialog
         val view = layoutInflater.inflate(R.layout.bottom_sheet_fall_alert, null)
@@ -90,13 +128,9 @@ class NotificationActivity : AppCompatActivity() {
         // 점수 카드 바인딩 (색상·배지·메시지·프로그레스·stroke 일괄 처리)
         RiskScoreCardBinder.bind(view.findViewById(R.id.alertRiskScoreCard), item.riskScore)
 
-        // 119 또는 확인했습니다 → 읽음 처리 후 dismiss
-        // TODO: 현재 position을 캡처하여 읽음 처리하므로, 실시간 알림 API 연동 후 목록이
-        //       동적으로 변경될 경우 position이 실제 항목과 어긋날 수 있습니다.
-        //       API 연동 시에는 position 대신 item.id(서버 고유 식별자)를 기준으로
-        //       읽음 처리하도록 adapter.markAsReadById(item.id) 형태로 수정해주세요.
+        // 119 또는 확인했습니다 → item.id(서버 logId) 기준으로 읽음 처리 후 dismiss
         val markReadAndDismiss = {
-            adapter.markAsRead(position)
+            viewModel.markFallItemRead(TokenManager.getUserId(this), item.id)
             dialog.dismiss()
         }
 

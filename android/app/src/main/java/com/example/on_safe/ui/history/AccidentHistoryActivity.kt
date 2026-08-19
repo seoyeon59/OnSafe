@@ -16,18 +16,17 @@ import android.provider.Settings
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.on_safe.R
-import com.example.on_safe.data.repository.AccidentHistoryRepository
-import com.example.on_safe.data.repository.RealAccidentHistoryRepository
-import com.example.on_safe.network.ApiClient
 import com.example.on_safe.util.TokenManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,15 +35,17 @@ import kotlinx.coroutines.withContext
 // 사고 이력 화면 (위험 이력만 표시 / 최신순·오래된순 정렬 / 영상 보기·다운로드·삭제)
 class AccidentHistoryActivity : AppCompatActivity() {
 
-    private lateinit var rvHistory:      RecyclerView
-    private lateinit var tvEmpty:        TextView
-    private lateinit var tvHistoryCount: TextView  // 건수 숫자 ("N건")
-    private lateinit var chipNewest:     TextView
-    private lateinit var chipOldest:     TextView
+    private lateinit var rvHistory:       RecyclerView
+    private lateinit var layoutEmptyState: LinearLayout
+    private lateinit var tvEmpty:         TextView
+    private lateinit var btnRetry:        TextView
+    private lateinit var tvHistoryCount:  TextView  // 건수 숫자 ("N건")
+    private lateinit var chipNewest:      TextView
+    private lateinit var chipOldest:      TextView
 
     private lateinit var adapter: AccidentHistoryAdapter
 
-    private var currentSort = SortOrder.NEWEST_FIRST
+    private val viewModel: AccidentHistoryViewModel by viewModels()
 
     // 권한 승인 후 재시도할 다운로드 항목
     private var pendingDownloadEntry: HistoryListItem.HistoryEntry? = null
@@ -75,10 +76,6 @@ class AccidentHistoryActivity : AppCompatActivity() {
         else
             Manifest.permission.READ_EXTERNAL_STORAGE
 
-    private val rawEntries: MutableList<HistoryListItem.HistoryEntry> = mutableListOf()
-
-    private val accidentHistoryRepository: AccidentHistoryRepository = RealAccidentHistoryRepository()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_accident_history)
@@ -87,36 +84,54 @@ class AccidentHistoryActivity : AppCompatActivity() {
         initRecyclerView()
         setupSortChips()
         setupNavListeners()
-        loadHistory()
+        observeViewModel()
+        viewModel.loadHistory(TokenManager.getUserId(this))
     }
 
-    // AccidentHistoryRepository 경유로 사고 이력 조회 후 현재 정렬 순서로 표시
-    private fun loadHistory() {
-        val userId = TokenManager.getUserId(this)
-        if (userId.isBlank()) {
-            applySort(currentSort)
-            return
-        }
-        lifecycleScope.launch {
-            try {
-                val entries = accidentHistoryRepository.getHistoryEntries(userId)
-                rawEntries.clear()
-                rawEntries.addAll(entries)
-            } catch (e: IllegalStateException) {
-                Toast.makeText(this@AccidentHistoryActivity, e.message ?: "사고 이력을 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Toast.makeText(this@AccidentHistoryActivity, "네트워크 오류로 사고 이력을 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
+    private fun observeViewModel() {
+        viewModel.uiState.observe(this) { state -> renderState(state) }
+        viewModel.toastEvent.observe(this) { event ->
+            if (event != null) {
+                Toast.makeText(this, event.message, Toast.LENGTH_SHORT).show()
+                viewModel.onToastHandled()
             }
-            applySort(currentSort)
         }
+        viewModel.videoUrlEvent.observe(this) { event ->
+            if (event != null) {
+                if (event.forDownload) {
+                    performDownload(event.url, event.entry.id)
+                } else {
+                    startActivity(Intent(this, VideoPlayerActivity::class.java).apply {
+                        putExtra(VideoPlayerActivity.EXTRA_VIDEO_URL, event.url)
+                    })
+                    overridePendingTransition(R.anim.fullscreen_enter, R.anim.fullscreen_exit)
+                }
+                viewModel.onVideoUrlHandled()
+            }
+        }
+    }
+
+    // 정렬/목록/실패 상태가 바뀔 때마다 화면 전체를 다시 그린다
+    private fun renderState(state: AccidentHistoryUiState) {
+        adapter.submitList(state.entries, state.sort)
+        updateSortChipUi(state.sort)
+        updateCountDisplay(state.entries)
+        updateEmptyState(state.lastLoadFailed)
+        // 정렬 변경 시 DiffUtil이 이전 스크롤 위치를 그대로 두는 경우가 있어 항상 맨 위로 리셋
+        // 순간이동 대신 부드럽게 스크롤해서 "위로 올라갔다"는 게 눈에 보이도록 함
+        rvHistory.smoothScrollToPosition(0)
     }
 
     private fun initViews() {
-        rvHistory      = findViewById(R.id.rvHistory)
-        tvEmpty        = findViewById(R.id.tvEmpty)
-        tvHistoryCount = findViewById(R.id.tvHistoryCount)
-        chipNewest     = findViewById(R.id.chipNewest)
-        chipOldest     = findViewById(R.id.chipOldest)
+        rvHistory        = findViewById(R.id.rvHistory)
+        layoutEmptyState = findViewById(R.id.layoutEmptyState)
+        tvEmpty          = findViewById(R.id.tvEmpty)
+        btnRetry         = findViewById(R.id.btnRetry)
+        tvHistoryCount   = findViewById(R.id.tvHistoryCount)
+        chipNewest       = findViewById(R.id.chipNewest)
+        chipOldest       = findViewById(R.id.chipOldest)
+
+        btnRetry.setOnClickListener { viewModel.loadHistory(TokenManager.getUserId(this)) }
 
         // btnBack은 레이아웃에서 제거됨 (바텀탭으로 이동하는 구조이므로 불필요)
         // findViewById<ImageButton>(R.id.btnBack)?.setOnClickListener { finish() }
@@ -136,8 +151,8 @@ class AccidentHistoryActivity : AppCompatActivity() {
     }
 
     private fun setupSortChips() {
-        chipNewest.setOnClickListener { applySort(SortOrder.NEWEST_FIRST) }
-        chipOldest.setOnClickListener { applySort(SortOrder.OLDEST_FIRST) }
+        chipNewest.setOnClickListener { viewModel.setSort(SortOrder.NEWEST_FIRST) }
+        chipOldest.setOnClickListener { viewModel.setSort(SortOrder.OLDEST_FIRST) }
     }
 
     private fun setupNavListeners() {
@@ -159,16 +174,21 @@ class AccidentHistoryActivity : AppCompatActivity() {
         }
     }
 
-    private fun applySort(sort: SortOrder) {
-        currentSort = sort
-        adapter.submitList(rawEntries, sort)
-        updateSortChipUi(sort)
-        updateCountDisplay()
-        tvEmpty.visibility    = if (adapter.isEmpty()) View.VISIBLE else View.GONE
-        rvHistory.visibility  = if (adapter.isEmpty()) View.GONE  else View.VISIBLE
-        // 정렬 변경 시 DiffUtil이 이전 스크롤 위치를 그대로 두는 경우가 있어 항상 맨 위로 리셋
-        // 순간이동 대신 부드럽게 스크롤해서 "위로 올라갔다"는 게 눈에 보이도록 함
-        rvHistory.smoothScrollToPosition(0)
+    // 목록이 비어있을 때: 진짜로 이력이 없는 경우엔 안내 문구만, 조회 자체가 실패한 경우엔
+    // 오류 문구 + 재시도 버튼을 함께 보여준다 (구분하지 않으면 조회 실패도 "이력 없음"으로 오해할 수 있음)
+    private fun updateEmptyState(lastLoadFailed: Boolean) {
+        val isEmpty = adapter.isEmpty()
+        layoutEmptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        rvHistory.visibility        = if (isEmpty) View.GONE else View.VISIBLE
+        if (isEmpty) {
+            if (lastLoadFailed) {
+                tvEmpty.text = "사고 이력을 불러오지 못했습니다."
+                btnRetry.visibility = View.VISIBLE
+            } else {
+                tvEmpty.text = "사고 이력이 없습니다."
+                btnRetry.visibility = View.GONE
+            }
+        }
     }
 
     // active 칩: 파란 pill + 흰 텍스트 / inactive: 회색 pill + ink_500 텍스트
@@ -192,8 +212,8 @@ class AccidentHistoryActivity : AppCompatActivity() {
         styleChip(chipOldest, active == SortOrder.OLDEST_FIRST)
     }
 
-    private fun updateCountDisplay() {
-        val count = rawEntries.count { it.type == HistoryType.FALL }
+    private fun updateCountDisplay(entries: List<HistoryListItem.HistoryEntry>) {
+        val count = entries.count { it.type == HistoryType.FALL }
         tvHistoryCount.text = "${count}건"
     }
 
@@ -206,12 +226,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
             Toast.makeText(this, "재생할 영상이 없습니다.", Toast.LENGTH_SHORT).show()
             return
         }
-        fetchVideoUrl(entry) { signedUrl ->
-            startActivity(Intent(this, VideoPlayerActivity::class.java).apply {
-                putExtra(VideoPlayerActivity.EXTRA_VIDEO_URL, signedUrl)
-            })
-            overridePendingTransition(R.anim.fullscreen_enter, R.anim.fullscreen_exit)
-        }
+        viewModel.fetchVideoUrl(TokenManager.getUserId(this), entry, forDownload = false)
     }
 
     private fun handleDownload(entry: HistoryListItem.HistoryEntry) {
@@ -226,29 +241,10 @@ class AccidentHistoryActivity : AppCompatActivity() {
             requestMediaPermission.launch(mediaPermission)
             return
         }
-        fetchVideoUrl(entry) { signedUrl -> performDownload(signedUrl, entry.id) }
+        viewModel.fetchVideoUrl(TokenManager.getUserId(this), entry, forDownload = true)
     }
 
-    // GET .../video 로 signed URL 발급 (1시간 TTL — 재생/다운로드 시점마다 새로 요청)
-    private fun fetchVideoUrl(entry: HistoryListItem.HistoryEntry, onSuccess: (String) -> Unit) {
-        val userId = TokenManager.getUserId(this)
-        lifecycleScope.launch {
-            try {
-                val response = ApiClient.api.getFallLogVideo(userId, entry.id)
-                val body = response.body()
-                val signedUrl = body?.data?.get("signed_url")
-                if (response.isSuccessful && body?.success == true && signedUrl != null) {
-                    onSuccess(signedUrl)
-                } else {
-                    val message = ApiClient.parseErrorMessage(response.errorBody(), "영상을 불러올 수 없습니다.")
-                    Toast.makeText(this@AccidentHistoryActivity, message, Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@AccidentHistoryActivity, "네트워크 오류로 영상을 불러올 수 없습니다.", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
+    // signed URL(1시간 TTL)을 받아 실제 파일을 갤러리에 저장 — ContentResolver가 필요해 Activity가 담당
     private fun performDownload(videoUrl: String, entryId: String) {
         lifecycleScope.launch {
             try {
@@ -282,32 +278,9 @@ class AccidentHistoryActivity : AppCompatActivity() {
         }
         dialog.findViewById<TextView>(R.id.btnDeleteConfirm).setOnClickListener {
             dialog.dismiss()
-            deleteEntry(entry)
+            viewModel.deleteEntry(TokenManager.getUserId(this), entry)
         }
         dialog.show()
-    }
-
-    private fun deleteEntry(entry: HistoryListItem.HistoryEntry) {
-        val userId = TokenManager.getUserId(this)
-        lifecycleScope.launch {
-            try {
-                val response = ApiClient.api.deleteFallLog(userId, entry.id)
-                val body = response.body()
-                if (response.isSuccessful && body?.success == true) {
-                    rawEntries.removeAll { it.id == entry.id }
-                    adapter.removeItem(entry.id)
-                    updateCountDisplay()
-                    tvEmpty.visibility = if (adapter.isEmpty()) View.VISIBLE else View.GONE
-                    rvHistory.visibility = if (adapter.isEmpty()) View.GONE else View.VISIBLE
-                    Toast.makeText(this@AccidentHistoryActivity, "이력이 삭제되었습니다.", Toast.LENGTH_SHORT).show()
-                } else {
-                    val message = ApiClient.parseErrorMessage(response.errorBody(), "삭제에 실패했습니다.")
-                    Toast.makeText(this@AccidentHistoryActivity, message, Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@AccidentHistoryActivity, "네트워크 오류로 삭제에 실패했습니다.", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 
     // 미디어 권한 팝업도 앱 내 공통 다이얼로그 스타일로 통일

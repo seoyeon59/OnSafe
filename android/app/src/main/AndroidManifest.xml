@@ -81,15 +81,16 @@
             android:name="com.example.on_safe.ResetPasswordActivity"
             android:screenOrientation="portrait" />
 
-        <!-- 카메라 -->
+        <!-- 카메라: 가로 양방향 지원 — 회전 시 Activity 재생성 없이 카메라 세션/WS 연결/버퍼를 그대로 유지 -->
         <activity
             android:name="com.example.on_safe.ui.camera.CameraModeActivity"
-            android:screenOrientation="landscape" />
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize" />
 
-        <!-- 전체화면 -->
+        <!-- 전체화면: 세션 상태가 없어 회전 시 재생성돼도 무방 → configChanges 불필요 -->
         <activity
             android:name="com.example.on_safe.ui.FullscreenActivity"
-            android:screenOrientation="landscape" />
+            android:screenOrientation="sensorLandscape" />
 
         <!-- 알림 내역 -->
         <activity
@@ -110,9 +111,10 @@
             android:name="com.example.on_safe.ui.history.AccidentHistoryActivity"
             android:screenOrientation="portrait" />
 
+        <!-- 영상 재생: 회전 시 재생 위치가 처음으로 리셋될 수 있으나 크래시/상태유실 위험은 없음 -->
         <activity
             android:name="com.example.on_safe.ui.history.VideoPlayerActivity"
-            android:screenOrientation="landscape" />
+            android:screenOrientation="sensorLandscape" />
 
         <!-- 튜토리얼 -->
         <activity
