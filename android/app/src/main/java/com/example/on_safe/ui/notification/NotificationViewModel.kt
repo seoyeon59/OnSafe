@@ -8,9 +8,7 @@ import com.example.on_safe.data.repository.NotificationRepository
 import com.example.on_safe.data.repository.RealNotificationRepository
 import kotlinx.coroutines.launch
 
-// items가 유일한 진실의 원천 — 어댑터는 이 상태를 그대로 받아 그리기만 하는 렌더러다.
-// loadFailed는 "조회 실패"와 "최근 7일간 알림 없음"을 구분해서 다른 빈 화면 문구를 보여주기 위함
-// (사고이력 화면과 동일 패턴).
+// loadFailed로 "조회 실패"와 "알림 없음"을 구분해 빈 화면 문구를 다르게 보여준다 (사고이력과 동일 패턴)
 //
 // TODO: 화면 문구는 "최근 7일간"인데 실제 컷오프 로직이 없다 (서버 보관 정책은 30일). 처리 방향 결정 필요
 data class NotificationUiState(

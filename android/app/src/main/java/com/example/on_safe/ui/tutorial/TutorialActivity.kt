@@ -18,10 +18,7 @@ import com.example.on_safe.R
 class TutorialActivity : AppCompatActivity() {
 
     // ──────────────────────────────────────────────
-    // 페이지 데이터 모델
-    // 이미지 리소스 준비 전에는 imageResId = null (회색 placeholder 표시)
-    // 타이틀/설명은 추후 추가 가능한 필드로 미리 선언
-    // ──────────────────────────────────────────────
+    // 페이지 데이터 모델 — imageResId = null 이면 회색 placeholder 표시
     private data class TutorialPage(
         val imageResId: Int? = null          // null → 회색 placeholder
         // 추후 확장: val titleResId: Int? = null,

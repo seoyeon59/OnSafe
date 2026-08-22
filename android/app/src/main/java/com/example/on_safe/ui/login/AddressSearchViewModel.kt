@@ -18,10 +18,8 @@ sealed class AddressSearchUiState {
 class AddressSearchViewModel : ViewModel() {
 
     companion object {
-        // ⚠️ 검색 API 전용 승인키 (팝업 키 아님!)
-        // TODO: [보안] 이 키가 소스코드에 평문으로 들어있고 공개 저장소에 커밋된 상태입니다.
-        //       local.properties + BuildConfig로 옮겨서 저장소에는 값이 노출되지 않도록 해야 합니다.
-        //       이미 git 히스토리에 노출된 값이므로, 옮기는 것과 별개로 juso.go.kr에서 키 재발급도 검토해주세요.
+        // 검색 API 전용 승인키 (팝업 키 아님)
+        // TODO: [보안] 평문 커밋 상태 — local.properties + BuildConfig로 분리 및 키 재발급 필요
         private const val CONFM_KEY = "devU01TX0FVVEgyMDI2MDYwMjAyMDEyODExODk3NTM="
     }
 

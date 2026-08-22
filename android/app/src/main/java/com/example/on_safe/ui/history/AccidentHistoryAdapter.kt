@@ -42,10 +42,7 @@ class AccidentHistoryAdapter(
         // 위험(FALL) 항목만 표시
         val filtered = rawEntries.filter { it.type == HistoryType.FALL }
         val newItems = buildSectionedList(filtered, sortOrder)
-        // 정렬 순서가 바뀌면 사실상 리스트 전체가 뒤집히는 수준이라, DiffUtil로 항목별
-        // 이동 애니메이션을 개별 적용하면 카드들이 제각각 움직여 뒤섞인 것처럼 보인다.
-        // 그래서 여기서는 통째로 다시 그려서 위에서부터 순서대로 자리 잡게 하고,
-        // 스크롤 이동만으로 "정렬이 바뀌었다"는 걸 보여준다.
+        // 정렬 변경은 리스트 전체가 뒤집히는 수준이라 통째로 다시 그린다 (클래스 주석 참고)
         replaceAllInstant(newItems)
     }
 

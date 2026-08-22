@@ -436,10 +436,7 @@ class CameraModeActivity : AppCompatActivity() {
     }
 
     private fun stopRecording() {
-        // 카메라가 프레임/녹화 이벤트를 더 이상 만들지 않도록 먼저 unbind한 뒤에
-        // helper/버퍼 매니저의 executor를 정리한다 (onDestroy()와 동일한 순서).
-        // 반대로 하면 unbind가 실제로 반영되기 전 CameraX가 이미 종료된 executor로
-        // 이벤트를 넘기려다 RejectedExecutionException을 던질 여지가 커진다.
+        // unbind를 먼저 해야 CameraX가 종료된 executor로 이벤트를 넘기다 터지는 걸 막는다
         unbindStreamingUseCases()
         poseLandmarkerHelper?.stop()
         poseLandmarkerHelper = null
@@ -535,9 +532,7 @@ class CameraModeActivity : AppCompatActivity() {
         }
 
     // ──────────────────────────────────────────────────────────
-    // 다이얼로그 — 원본에서 4개 메서드가 레이아웃/취소·확인 버튼 세팅 로직을 거의 동일하게
-    // 반복하고 있어서, 공통 뼈대만 showConfirmDialog()/showPermissionDialog()로 뽑아냈다.
-    // 각 다이얼로그가 실제로 무엇을 확인/거절하는지(비즈니스 로직)는 전혀 바꾸지 않았다.
+    // 다이얼로그 — 공통 뼈대는 showConfirmDialog()/showPermissionDialog()로 통합
     // ──────────────────────────────────────────────────────────
 
     private fun showStopRecordingDialog() {
@@ -580,9 +575,7 @@ class CameraModeActivity : AppCompatActivity() {
         }
     }
 
-    // 취소/확인 버튼 두 개짜리 단순 확인 다이얼로그 공통 뼈대
-    // (dialog_stop_recording, dialog_logout 레이아웃이 대상 — 둘 다 원본에서 이미 같은
-    // maxWidth 치수(logout_dialog_max_width)를 공유하고 있어 합쳐도 동작 차이가 없다)
+    // 취소/확인 버튼 두 개짜리 확인 다이얼로그 공통 뼈대
     private fun showConfirmDialog(
         @LayoutRes layoutRes: Int,
         @IdRes cancelId: Int,

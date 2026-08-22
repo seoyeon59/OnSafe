@@ -18,9 +18,7 @@ import com.example.on_safe.R
 
 /**
  * 개인정보 수정 진입 전 본인 확인 다이얼로그.
- * 비밀번호를 입력하면 확인 버튼이 활성화된다.
- * onConfirm: 입력된 비밀번호를 전달 (서버 검증은 호출 측 책임)
- * onCancel: 취소 시 호출
+ * onConfirm으로 입력값만 전달하고 서버 검증은 호출 측 책임.
  */
 class VerifyPasswordDialog(
     context: Context,

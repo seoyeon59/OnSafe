@@ -9,12 +9,9 @@ import androidx.core.content.ContextCompat
 import com.example.on_safe.R
 
 /**
- * 위험 지수 점수 카드 뷰 바인딩 유틸리티
- * MainActivity / NotificationActivity 에서 공통으로 사용
+ * 위험 지수 점수 카드 바인딩 (MainActivity / NotificationActivity 공용).
  *
- * @param cardRoot  tvRiskScore, tvRiskStatusBadge, tvRiskRange, tvRiskMessage,
- *                  progressFill 을 포함하는 카드 루트 뷰
- *                  (예: R.id.riskScoreCard 또는 R.id.alertRiskScoreCard)
+ * @param cardRoot include_risk_score_card 레이아웃을 포함하는 루트 뷰
  */
 object RiskScoreCardBinder {
 

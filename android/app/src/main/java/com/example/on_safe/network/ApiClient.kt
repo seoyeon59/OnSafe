@@ -69,10 +69,8 @@ object ApiClient {
     private val refreshLock = Any()
 
     private val tokenAuthenticator = Authenticator { _: Route?, response: Response ->
-        // 로그인 등 공개 엔드포인트는 애초에 인증 대상이 아니므로 여기서 바로 걸러야 함.
-        // 이 가드가 없으면: 예전에 캐시된(만료된) 액세스 토큰이 남아있는 상태에서 로그인 시도 시,
-        // 401 응답을 이 Authenticator가 가로채 그 캐시 토큰을 로그인 요청에 억지로 붙여 재시도하고,
-        // 그마저 401이면 다시 한번 처리되면서 로그인 요청이 두 번 나가는 것처럼 보임(루프처럼 느껴짐).
+        // 공개 엔드포인트는 인증 대상이 아니다 — 이 가드가 없으면 만료된 캐시 토큰을
+        // 로그인 요청에 붙여 재시도해 요청이 두 번 나가는 것처럼 보인다
         val path = response.request.url.encodedPath.trimStart('/')
         if (path in publicEndpoints) return@Authenticator null
 
@@ -160,7 +158,7 @@ object ApiClient {
         }
     }
 
-    // 서버 오류 메시지 중에는 사용자에게 보여주면 안 되는 개발자용 문구가 섞여 있다
+    // 서버 오류 메시지에 섞여 오는 개발자용 문구(영문 필드명, snake_case 안내 등)는 사용자에게 노출하지 않는다
     private fun isUserFacing(message: String): Boolean {
         if (Regex("^[A-Za-z_][A-Za-z0-9_]*:\\s").containsMatchIn(message)) return false
         val developerPhrases = listOf(
