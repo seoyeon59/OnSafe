@@ -518,7 +518,7 @@ class CameraModeActivity : AppCompatActivity() {
     private fun handleLogout() {
         lifecycleScope.launch {
             try {
-                ApiClient.api.logout()
+                ApiClient.api.logout(TokenManager.getRefreshToken(this@CameraModeActivity))
             } catch (_: Exception) {
                 // 무시하고 로컬 정리로 진행
             }

@@ -431,7 +431,7 @@ class SettingsActivity : AppCompatActivity() {
         }
         dialog.findViewById<TextView>(R.id.btnLogoutConfirm).setOnClickListener {
             dialog.dismiss()
-            viewModel.logout()
+            viewModel.logout(TokenManager.getRefreshToken(this))
         }
         dialog.show()
     }

@@ -1,6 +1,5 @@
 package com.example.on_safe.ui.login
 
-import android.os.CountDownTimer
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -9,6 +8,7 @@ import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.FindIdRequest
 import com.example.on_safe.network.dto.SendEmailCodeRequest
 import com.example.on_safe.network.dto.VerifyEmailCodeRequest
+import com.example.on_safe.util.VerificationCodeTimer
 import kotlinx.coroutines.launch
 
 // 아이디 찾기 화면 상태를 한 덩어리로 표현 — Activity는 이 값을 받아서 화면에 반영만 함
@@ -32,7 +32,19 @@ class FindIdViewModel : ViewModel() {
     private val _toastMessage = MutableLiveData<String?>()
     val toastMessage: LiveData<String?> = _toastMessage
 
-    private var countDownTimer: CountDownTimer? = null
+    private val timer = VerificationCodeTimer(
+        onTick = { text -> setState { copy(timerText = text) } },
+        onFinish = {
+            setState {
+                copy(
+                    timerText = "0:00",
+                    isConfirmEnabled = false,
+                    isResendVisible = true,
+                    isRequestCodeEnabled = true
+                )
+            }
+        }
+    )
 
     // 인증코드 발송 — name은 검증만 Activity에서 하고 이 요청 자체엔 필요 없어서 파라미터에서 제외
     fun requestCode(email: String) {
@@ -43,7 +55,7 @@ class FindIdViewModel : ViewModel() {
                 if (response.isSuccessful && response.body()?.success == true) {
                     startVerification()
                 } else {
-                    _toastMessage.value = response.body()?.message ?: "인증 메일 발송에 실패했습니다."
+                    _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "인증 메일 발송에 실패했습니다.")
                     setState { copy(isRequestCodeEnabled = true) }
                 }
             } catch (e: Exception) {
@@ -65,7 +77,7 @@ class FindIdViewModel : ViewModel() {
                     val findResponse = ApiClient.api.findId(FindIdRequest(name = name, mail = email))
                     val findBody = findResponse.body()
                     if (findResponse.isSuccessful && findBody?.success == true && findBody.data != null) {
-                        countDownTimer?.cancel()
+                        timer.cancel()
                         setState {
                             copy(
                                 isResultVisible = true,
@@ -75,11 +87,12 @@ class FindIdViewModel : ViewModel() {
                             )
                         }
                     } else {
-                        _toastMessage.value = findBody?.message ?: "아이디를 찾을 수 없습니다."
+                        _toastMessage.value = findBody?.message
+                            ?: ApiClient.parseErrorMessage(findResponse.errorBody(), "아이디를 찾을 수 없습니다.")
                         setState { copy(isConfirmEnabled = true) }
                     }
                 } else {
-                    _toastMessage.value = verifyResponse.body()?.message ?: "인증코드가 올바르지 않습니다."
+                    _toastMessage.value = verifyResponse.body()?.message ?: ApiClient.parseErrorMessage(verifyResponse.errorBody(), "인증코드가 올바르지 않습니다.")
                     setState { copy(isConfirmEnabled = true) }
                 }
             } catch (e: Exception) {
@@ -102,7 +115,7 @@ class FindIdViewModel : ViewModel() {
                     _toastMessage.value = "인증번호를 재발송했습니다."
                 } else {
                     setState { copy(isResendVisible = true) }
-                    _toastMessage.value = response.body()?.message ?: "인증번호 재발송에 실패했습니다."
+                    _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "인증번호 재발송에 실패했습니다.")
                 }
             } catch (e: Exception) {
                 setState { copy(isResendVisible = true) }
@@ -125,29 +138,7 @@ class FindIdViewModel : ViewModel() {
             )
         }
         _toastMessage.value = "인증번호를 발송했습니다."
-        startTimer()
-    }
-
-    private fun startTimer() {
-        countDownTimer?.cancel()
-        countDownTimer = object : CountDownTimer(180_000L, 1000L) {
-            override fun onTick(millisUntilFinished: Long) {
-                val minutes = millisUntilFinished / 60000
-                val seconds = (millisUntilFinished % 60000) / 1000
-                setState { copy(timerText = String.format("%d:%02d", minutes, seconds)) }
-            }
-
-            override fun onFinish() {
-                setState {
-                    copy(
-                        timerText = "0:00",
-                        isConfirmEnabled = false,
-                        isResendVisible = true,
-                        isRequestCodeEnabled = true
-                    )
-                }
-            }
-        }.start()
+        timer.start()
     }
 
     private inline fun setState(update: FindIdUiState.() -> FindIdUiState) {
@@ -157,6 +148,6 @@ class FindIdViewModel : ViewModel() {
     // 화면(뷰모델)이 완전히 사라질 때 타이머 정리 — Activity의 onDestroy에서 하던 것을 그대로 옮김
     override fun onCleared() {
         super.onCleared()
-        countDownTimer?.cancel()
+        timer.cancel()
     }
 }
