@@ -12,11 +12,7 @@ import kotlinx.coroutines.launch
 // loadFailed는 "조회 실패"와 "최근 7일간 알림 없음"을 구분해서 다른 빈 화면 문구를 보여주기 위함
 // (사고이력 화면과 동일 패턴).
 //
-// TODO: 알림 화면 안내 문구는 "최근 7일간"이지만, 현재 목록은 사고이력과 같은
-//       GET /api/fall-logs/{userId}를 그대로 재사용하고 있어 7일로 잘라내는 로직이 없다.
-//       (서버 보관 정책은 30일 고정 — API 스펙 GET /api/settings/retention 참고)
-//       → 7일 컷오프를 클라이언트에서 걸지, 안내 문구를 30일로 바꿀지, 알림 전용 API를
-//         따로 둘지 팀 확인 후 결정 필요.
+// TODO: 화면 문구는 "최근 7일간"인데 실제 컷오프 로직이 없다 (서버 보관 정책은 30일). 처리 방향 결정 필요
 data class NotificationUiState(
     val items: List<NotificationItem> = emptyList(),
     val loadFailed: Boolean = false

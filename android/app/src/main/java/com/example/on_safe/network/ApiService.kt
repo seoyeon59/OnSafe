@@ -43,9 +43,7 @@ interface ApiService {
     @POST("api/auth/reset-password")
     suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<ApiResponse<Unit>>
 
-    // 서버는 access token뿐 아니라 refresh token도 함께 블랙리스트에 올린다(AuthController.logout).
-    // Refresh-Token 헤더를 빠뜨리면 access token만 무효화되고 refresh token은 만료(7일)까지 살아있어
-    // 로그아웃이 반쪽만 처리된다.
+    // Refresh-Token까지 보내야 서버가 두 토큰 모두 블랙리스트 처리한다
     @POST("api/auth/logout")
     suspend fun logout(
         @Header("Refresh-Token") refreshToken: String? = null

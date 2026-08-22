@@ -3,10 +3,8 @@ package com.example.on_safe.util
 import android.os.CountDownTimer
 
 /**
- * 이메일 인증코드 화면들(아이디 찾기, 비밀번호 찾기, 회원가입 2단계)이 공통으로 쓰던
- * 3분 카운트다운 타이머를 하나로 뽑아낸 것. 화면마다 상태 클래스 필드명이 달라서
- * (isRequestCodeEnabled / isEmailVerifyEnabled 등) 상태 갱신 자체는 호출 측 콜백에 맡기고,
- * 이 클래스는 타이머 동작(틱마다 "m:ss" 텍스트 생성, 종료 시점 알림)만 담당한다.
+ * 이메일 인증코드 3분 카운트다운 (아이디/비밀번호 찾기, 회원가입 2단계 공용).
+ * 상태 갱신은 화면마다 필드명이 달라 호출 측 콜백에 맡긴다.
  */
 class VerificationCodeTimer(
     private val onTick: (timerText: String) -> Unit,

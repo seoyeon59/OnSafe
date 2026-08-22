@@ -128,7 +128,6 @@ class SettingsViewModel : ViewModel() {
     }
 
     // 서버 호출이 실패해도 로컬 로그아웃은 항상 진행 (사용자 관점에서 항상 성공해야 함)
-    // refreshToken은 서버가 함께 블랙리스트에 올리기 위해 필요 — 조회에 Context가 필요해 Activity가 넘겨준다
     fun logout(refreshToken: String?) {
         viewModelScope.launch {
             try {

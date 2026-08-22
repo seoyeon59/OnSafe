@@ -42,8 +42,7 @@ class ResetPasswordViewModel : ViewModel() {
 
     private var newPw = ""
     private var newPwConfirm = ""
-    // MODE_SETTINGS에서만 사용 — 입력 여부만이 아니라 실제 값이 필요하다(서버 본인확인에 전송).
-    private var currentPw = ""
+    private var currentPw = ""   // MODE_SETTINGS에서만 사용 — 서버 본인확인에 전송
 
     // Intent로 넘어온 모드/유저아이디를 Activity의 onCreate에서 한 번만 넘겨받음
     fun init(mode: String, userId: String) {
@@ -90,18 +89,7 @@ class ResetPasswordViewModel : ViewModel() {
         )
     }
 
-    // 진입 경로에 따라 서버 엔드포인트가 다르다.
-    //
-    // MODE_FIND_PW(비밀번호 찾기 → 이메일 코드 인증 완료 후 진입):
-    //   POST /api/auth/reset-password. 이 엔드포인트는 서버가 2단계(verify-reset-code) 완료 플래그
-    //   (Redis reset_verified:{userId}, TTL 10분)를 검증하므로, 코드 인증을 거친 이 경로에서만 성공한다.
-    //
-    // MODE_SETTINGS(설정 → 비밀번호 변경):
-    //   이메일 코드 인증을 거치지 않아 위 플래그가 없으므로 reset-password를 호출하면 400이 된다.
-    //   대신 PUT /api/users/{userId}를 쓴다. 이 엔드포인트는 password를 보내면 currentPassword를
-    //   함께 요구하고 서버가 직접 대조하므로(UserService.updateUser), 별도 본인확인 호출 없이
-    //   한 번의 요청으로 "현재 비밀번호 검증 + 새 비밀번호 반영"이 모두 처리된다.
-    //   불일치 시 INVALID_PASSWORD 에러가 내려온다.
+    // 진입 경로별로 엔드포인트가 다르다 — reset-password는 이메일 코드 인증을 거쳐야만 서버가 받아준다
     fun save() {
         _uiState.value = (_uiState.value ?: ResetPasswordUiState()).copy(isLoading = true)
         viewModelScope.launch {
@@ -119,8 +107,7 @@ class ResetPasswordViewModel : ViewModel() {
         }
     }
 
-    // 설정 경유 — currentPassword를 함께 보내야 서버가 본인확인 후 변경해준다.
-    // (currentPassword를 빠뜨리면 서버가 INVALID_PASSWORD로 거부한다)
+    // 설정 경유 — currentPassword를 함께 보내야 서버가 본인확인 후 변경해준다
     private suspend fun saveFromSettings() {
         val response = ApiClient.api.updateUser(
             userId,

@@ -11,9 +11,8 @@ import com.example.on_safe.R
 
 /**
  * 사고 이력 RecyclerView 어댑터.
- * - 위험(FALL) 항목만 표시 (주의 타입은 저장 안 함)
- * - submitList() 호출마다 전체를 다시 그림 (정렬 변경 시 항목별 이동 애니메이션이
- *   오히려 뒤섞여 보이는 문제가 있어 의도적으로 DiffUtil을 쓰지 않음)
+ * - 위험(FALL) 항목만 표시
+ * - 정렬 변경 시 이동 애니메이션이 뒤섞여 보여, DiffUtil 대신 매번 전체를 다시 그림
  * - 날짜 헤더 / 이력 아이템 두 가지 ViewType 사용
  */
 class AccidentHistoryAdapter(
@@ -160,8 +159,6 @@ class AccidentHistoryAdapter(
         }
     }
 
-    // 정렬 변경·삭제 등 모든 목록 갱신이 이 경로 하나로 통일되어 있어(submitList),
-    // 항목 단위 이동 애니메이션(DiffUtil)은 쓰지 않고 매번 새로 그린다.
     private fun replaceAllInstant(newItems: List<HistoryListItem>) {
         items.clear()
         items.addAll(newItems)
