@@ -160,7 +160,7 @@ object ApiClient {
         }
     }
 
-    // 서버 오류 메시지에 섞여 오는 개발자용 문구(영문 필드명, snake_case 안내 등)는 사용자에게 노출하지 않는다
+    // 서버 오류 메시지 중에는 사용자에게 보여주면 안 되는 개발자용 문구가 섞여 있다
     private fun isUserFacing(message: String): Boolean {
         if (Regex("^[A-Za-z_][A-Za-z0-9_]*:\\s").containsMatchIn(message)) return false
         val developerPhrases = listOf(
