@@ -161,10 +161,6 @@ object ApiClient {
     }
 
     // 서버 오류 메시지 중에는 사용자에게 보여주면 안 되는 개발자용 문구가 섞여 있다
-    // (백엔드 GlobalExceptionHandler 기준). 이런 메시지는 걸러내고 화면별 안내 문구를 쓴다.
-    //   · 입력 검증 실패 → "password: 비밀번호는 8자 이상..." 처럼 영문 필드명이 그대로 붙는다
-    //   · 역직렬화 실패 → snake_case 안내 등 디버깅용 문구
-    //   · 미처리 예외/메서드 오류 → 원인을 알 수 없는 일반 문구
     private fun isUserFacing(message: String): Boolean {
         if (Regex("^[A-Za-z_][A-Za-z0-9_]*:\\s").containsMatchIn(message)) return false
         val developerPhrases = listOf(
