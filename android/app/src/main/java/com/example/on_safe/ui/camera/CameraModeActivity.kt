@@ -381,6 +381,25 @@ class CameraModeActivity : AppCompatActivity() {
             }
         }
 
+    // 이 화면은 configChanges로 회전 시 재생성되지 않는다. CameraX use case는 만들어질 때의
+    // 화면 방향을 그대로 들고 있어서, 폰을 뒤집으면 화면만 돌고 카메라 영상은 그대로 남는다.
+    // 관절 인식도 이 방향을 기준으로 하므로 그냥 두면 뒤집힌 사람을 분석하게 된다.
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val rotation = currentRotation()
+        previewUseCase?.targetRotation = rotation
+        imageAnalysis?.targetRotation = rotation
+        videoCapture?.targetRotation = rotation
+    }
+
+    @Suppress("DEPRECATION")
+    private fun currentRotation(): Int =
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            display?.rotation ?: android.view.Surface.ROTATION_0
+        } else {
+            windowManager.defaultDisplay.rotation
+        }
+
     private fun startCamera() {
         // 카메라 provider 비동기로 가져오기
         val providerFuture = ProcessCameraProvider.getInstance(this)
@@ -389,9 +408,11 @@ class CameraModeActivity : AppCompatActivity() {
             cameraProvider = provider
 
             // 프리뷰를 만들어서 화면(previewView)에 연결
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
+            val preview = Preview.Builder()
+                .setTargetRotation(currentRotation())
+                .build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                }
             previewUseCase = preview
 
             try {
@@ -410,7 +431,8 @@ class CameraModeActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))  // 메인 스레드에서 실행
     }
 
-    // 촬영 시작: 이미 켜져 있는 previewUseCase 위에 ImageAnalysis + VideoCapture 추가 바인딩 (프리뷰 재생성 없음)
+    // 촬영 시작: 프리뷰 + ImageAnalysis + VideoCapture를 한 번에 바인딩.
+    // 종료 시 카메라를 놓으므로 여기서 프리뷰도 함께 다시 붙는다(Preview 객체는 재사용).
     private fun bindStreamingUseCases(helper: PoseLandmarkerHelper, bufferManager: RollingVideoBufferManager) {
         val provider = cameraProvider ?: return
         val preview = previewUseCase ?: return
@@ -418,11 +440,13 @@ class CameraModeActivity : AppCompatActivity() {
         val analysisUseCase = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+            .setTargetRotation(currentRotation())
             .build()
             .also { it.setAnalyzer(helper.executor, helper::analyze) }
         imageAnalysis = analysisUseCase
 
         val videoCaptureUseCase = bufferManager.videoCapture
+        videoCaptureUseCase.targetRotation = currentRotation()
         videoCapture = videoCaptureUseCase
 
         try {
@@ -439,18 +463,18 @@ class CameraModeActivity : AppCompatActivity() {
         }
     }
 
-    // 촬영 종료: ImageAnalysis/VideoCapture만 떼고 previewUseCase만 다시 바인딩 (프리뷰는 계속 유지)
+    // 촬영 종료: 카메라를 완전히 놓는다.
+    // 대기 화면이 프리뷰를 불투명하게 덮고 있어 열어둬도 보이는 것이 없는데,
+    // 카메라를 잡고 있으면 상단 카메라 사용 표시가 남아 아직 촬영 중인 것으로 오해하게 된다.
     private fun unbindStreamingUseCases() {
         val provider = cameraProvider ?: return
-        val preview = previewUseCase ?: return
         imageAnalysis = null
         videoCapture = null
 
         try {
             provider.unbindAll()
-            provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview)
         } catch (e: Exception) {
-            Log.w(TAG, "프리뷰 재바인딩 실패", e)
+            Log.w(TAG, "카메라 해제 실패", e)
         }
     }
 
