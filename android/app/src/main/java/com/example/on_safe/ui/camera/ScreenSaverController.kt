@@ -121,7 +121,7 @@ class ScreenSaverController(
 
     companion object {
         private const val INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000L
-        private const val BRIGHTNESS_RESTORE_MS = 10_000L  // 터치 후 밝기 유지 시간
+        private const val BRIGHTNESS_RESTORE_MS = 5_000L   // 터치 후 밝기 유지 시간
         private const val BRIGHTNESS_DIM = 0.01f
         private const val BRIGHTNESS_SYSTEM = -1f
         private const val PIXEL_SHIFT_INTERVAL_MS = 60_000L  // 번인 방지: 60초마다 위치 이동

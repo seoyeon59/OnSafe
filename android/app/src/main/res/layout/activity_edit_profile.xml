@@ -131,6 +131,15 @@
                         android:textColor="@color/ink_900"
                         android:textColorHint="@color/ink_500"
                         android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvNameMessage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginTop="6dp"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
                 </LinearLayout>
 
                 <!-- 전화번호 -->
@@ -161,6 +170,15 @@
                         android:textColor="@color/ink_900"
                         android:textColorHint="@color/ink_500"
                         android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvPhoneMessage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginTop="6dp"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
                 </LinearLayout>
 
                 <!-- 이메일 -->
@@ -191,6 +209,15 @@
                         android:textColor="@color/ink_900"
                         android:textColorHint="@color/ink_500"
                         android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvEmailMessage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_marginTop="6dp"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
                 </LinearLayout>
 
                 <!-- 주소 -->

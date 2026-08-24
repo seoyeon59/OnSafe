@@ -32,6 +32,7 @@ class AddressSearchActivity : AppCompatActivity() {
     private lateinit var btnBack:    ImageButton
     private lateinit var rvAddress:  RecyclerView
     private lateinit var tvEmpty:    TextView
+    private lateinit var layoutEmptyState: View
     private lateinit var tipCard:    LinearLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,6 +44,7 @@ class AddressSearchActivity : AppCompatActivity() {
         btnBack   = findViewById(R.id.btnBack)
         rvAddress = findViewById(R.id.rvAddress)
         tvEmpty   = findViewById(R.id.tvEmpty)
+        layoutEmptyState = findViewById(R.id.layoutEmptyState)
         tipCard   = findViewById(R.id.tipCard)
 
         rvAddress.layoutManager = LinearLayoutManager(this)
@@ -79,7 +81,7 @@ class AddressSearchActivity : AppCompatActivity() {
 
     private fun showResults(list: List<JusoItem>) {
         tipCard.visibility   = View.GONE
-        tvEmpty.visibility   = View.GONE
+        layoutEmptyState.visibility = View.GONE
         rvAddress.visibility = View.VISIBLE
         rvAddress.adapter = AddressAdapter(list) { item ->
             val result = Intent().apply {
@@ -94,14 +96,14 @@ class AddressSearchActivity : AppCompatActivity() {
     private fun showEmpty(msg: String) {
         tipCard.visibility   = View.GONE
         rvAddress.visibility = View.GONE
-        tvEmpty.visibility   = View.VISIBLE
+        layoutEmptyState.visibility = View.VISIBLE
         tvEmpty.text         = msg
     }
 
     private fun showTip() {
         tipCard.visibility   = View.VISIBLE
         rvAddress.visibility = View.GONE
-        tvEmpty.visibility   = View.GONE
+        layoutEmptyState.visibility = View.GONE
     }
 
     // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환

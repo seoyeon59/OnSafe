@@ -148,7 +148,8 @@ class RegisterStep2ViewModel : ViewModel() {
     fun onPhoneChanged(formattedPhone: String) {
         val validation = when {
             formattedPhone.isEmpty() -> FieldValidation.Empty
-            Regex("^01[016789]-\\d{3,4}-\\d{4}$").matches(formattedPhone) ->
+            // 010은 항상 11자리(가운데 4자리), 구번호(011/016~019)만 3~4자리를 허용한다
+            Regex("^(010-\\d{4}|01[16789]-\\d{3,4})-\\d{4}$").matches(formattedPhone) ->
                 FieldValidation.Valid("✓ 올바른 전화번호입니다.")
             else -> FieldValidation.Invalid("010-0000-0000 형식으로 입력해주세요.")
         }
@@ -302,6 +303,25 @@ class RegisterStep2ViewModel : ViewModel() {
                 setState { copy(isLoading = false) }
             }
         }
+    }
+
+    // 완료 버튼이 왜 안 눌리는지 알려준다 — 중복확인·이메일 인증은 화면에 표시가 남지 않아
+    // 사용자가 원인을 찾기 어렵다. 위에서부터 첫 번째 미충족 항목 하나만 안내한다.
+    fun showFirstMissingRequirement() {
+        val state = _uiState.value ?: RegisterStep2UiState()
+        val message = when {
+            idText.isEmpty() -> "아이디를 입력해주세요."
+            !state.isIdChecked -> "아이디 중복확인을 해주세요."
+            state.pwValidation !is FieldValidation.Valid -> "비밀번호 형식을 확인해주세요."
+            state.pwConfirmValidation !is FieldValidation.Valid -> "비밀번호가 일치하지 않습니다."
+            !state.isNameFilled -> "이름을 입력해주세요."
+            state.phoneValidation !is FieldValidation.Valid -> "전화번호 형식을 확인해주세요."
+            state.emailValidation !is FieldValidation.Valid -> "이메일 형식을 확인해주세요."
+            !state.isEmailVerified -> "이메일 인증을 완료해주세요."
+            !state.isAddressFilled -> "주소를 입력해주세요."
+            else -> null
+        }
+        if (message != null) _toastMessage.value = message
     }
 
     fun onToastShown() {

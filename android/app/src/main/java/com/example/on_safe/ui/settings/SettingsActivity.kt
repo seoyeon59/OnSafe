@@ -22,6 +22,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
@@ -74,6 +75,17 @@ class SettingsActivity : AppCompatActivity() {
         setupToggleDependency()
         setupClickListeners()
         observeViewModel()
+
+        // 탭 화면에서 뒤로가기 → 앱 종료가 아니라 홈으로 이동한다
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                startActivity(Intent(this@SettingsActivity, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                })
+                overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+                finish()
+            }
+        })
 
         val userId = TokenManager.getUserId(this)
         viewModel.loadUserName(userId)
@@ -132,6 +144,8 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // 개인정보 수정에서 이름을 바꾸고 돌아왔을 수 있어 복귀 시마다 다시 조회한다
+        viewModel.loadUserName(TokenManager.getUserId(this))
         // 시스템 설정에서 알림 권한이 취소된 경우 토글 강제 OFF 동기화
         // (프로그래밍 방식 변경이지만 리스너 발화가 필요 — 캐시·서버 모두 반영)
         if (!isNotificationPermissionGranted() && switchNotification.isChecked) {

@@ -74,6 +74,20 @@ class CameraModeActivity : AppCompatActivity() {
     // 화면보호기/번인방지/자동 dim — 카메라 로직과 독립적인 관심사라 별도 클래스로 분리
     private lateinit var screenSaverController: ScreenSaverController
 
+    // 촬영 경과 시간 — 무인으로 며칠 켜두는 용도라 "지금 돌고 있다"는 신호가 필요하다
+    private lateinit var tvRecordingTimer: TextView
+    private var recordingStartedAt = 0L
+    private val timerHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val timerRunnable = object : Runnable {
+        override fun run() {
+            val elapsed = (System.currentTimeMillis() - recordingStartedAt) / 1000
+            tvRecordingTimer.text = String.format(
+                "%02d:%02d:%02d", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60
+            )
+            timerHandler.postDelayed(this, 1000L)
+        }
+    }
+
     private var isPanelVisible = true
 
     private var landmarkStreamClient: LandmarkStreamClient? = null
@@ -152,14 +166,17 @@ class CameraModeActivity : AppCompatActivity() {
         setupClickListeners()
         screenSaverController.resetInactivityTimer()
 
-        // 패널이 닫혀 있으면 뒤로가기로 패널 복귀, 열려 있으면 기본 동작(finish)
+        // 패널이 닫혀 있으면 패널 복귀, 촬영 중이면 확인 모달(실수로 나가면 클립이 날아감)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (!isPanelVisible) {
-                    toggleFullscreen()
-                } else {
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
+                when {
+                    !isPanelVisible -> toggleFullscreen()
+                    currentState == CameraState.STREAMING ||
+                        currentState == CameraState.CONNECTING -> showExitWhileRecordingDialog()
+                    else -> {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                    }
                 }
             }
         })
@@ -179,6 +196,7 @@ class CameraModeActivity : AppCompatActivity() {
         super.onDestroy()
         cameraProvider?.unbindAll()     //화면 종료 시 카메라 해제
         screenSaverController.release()
+        timerHandler.removeCallbacks(timerRunnable)
         // 상태와 무관하게 항상 정리 — FAILED 상태(WS 끊김 등)에서도 리소스가 살아있을 수 있어
         // STREAMING/CONNECTING일 때만 정리하면 새는 경우가 있었음
         poseLandmarkerHelper?.stop()
@@ -198,6 +216,7 @@ class CameraModeActivity : AppCompatActivity() {
         previewView             = findViewById(R.id.previewView)
         layoutStandby           = findViewById(R.id.layoutStandby)
         layoutLiveBadge         = findViewById(R.id.layoutLiveBadge)
+        tvRecordingTimer        = findViewById(R.id.tvRecordingTimer)
         layoutStatusBadge       = findViewById(R.id.layoutStatusBadge)
         viewStatusDot           = findViewById(R.id.viewStatusDot)
         tvStatusText            = findViewById(R.id.tvStatusText)
@@ -452,6 +471,7 @@ class CameraModeActivity : AppCompatActivity() {
         currentState = state
         when (state) {
             CameraState.STANDBY -> {
+                stopRecordingTimer()
                 layoutStandby.visibility = View.VISIBLE
                 layoutStandbyContent.visibility = View.VISIBLE
                 layoutConnectingContent.visibility = View.GONE
@@ -472,6 +492,7 @@ class CameraModeActivity : AppCompatActivity() {
                 btnToggleRecording.alpha = 0.4f
             }
             CameraState.STREAMING -> {
+                startRecordingTimer()
                 layoutStandby.visibility = View.GONE
                 layoutStandbyContent.visibility = View.VISIBLE     // 다음 STANDBY 상태 대비 초기화
                 layoutConnectingContent.visibility = View.GONE
@@ -482,6 +503,7 @@ class CameraModeActivity : AppCompatActivity() {
                 btnToggleRecording.alpha = 1.0f
             }
             CameraState.FAILED -> {
+                stopRecordingTimer()
                 layoutStandby.visibility = View.VISIBLE
                 layoutStandbyContent.visibility = View.VISIBLE
                 layoutConnectingContent.visibility = View.GONE
@@ -492,6 +514,18 @@ class CameraModeActivity : AppCompatActivity() {
                 btnToggleRecording.alpha = 1.0f
             }
         }
+    }
+
+    private fun startRecordingTimer() {
+        if (recordingStartedAt != 0L) return   // 이미 동작 중이면 시각을 다시 잡지 않는다
+        recordingStartedAt = System.currentTimeMillis()
+        timerHandler.post(timerRunnable)
+    }
+
+    private fun stopRecordingTimer() {
+        timerHandler.removeCallbacks(timerRunnable)
+        recordingStartedAt = 0L
+        if (::tvRecordingTimer.isInitialized) tvRecordingTimer.text = "00:00:00"
     }
 
     // setColor()만으로 pill 모양 유지 (cornerRadius 덮어쓰지 않음)
@@ -542,6 +576,18 @@ class CameraModeActivity : AppCompatActivity() {
             confirmId = R.id.btnStopConfirm,
             onConfirm = ::stopRecording
         )
+    }
+
+    // 촬영 중 뒤로가기 — 나가면 촬영이 종료된다는 걸 알리고 확인받는다
+    private fun showExitWhileRecordingDialog() {
+        showConfirmDialog(
+            layoutRes = R.layout.dialog_stop_recording,
+            cancelId = R.id.btnStopCancel,
+            confirmId = R.id.btnStopConfirm
+        ) {
+            stopRecording()
+            finish()
+        }
     }
 
     private fun showLogoutDialog() {

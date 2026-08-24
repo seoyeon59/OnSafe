@@ -41,11 +41,15 @@ class FallVideoUploader {
                 .addHeader("Content-Type", "video/mp4")
                 .build()
 
-            val putSuccessful = withContext(Dispatchers.IO) {
-                plainHttpClient.newCall(putRequest).execute().use { it.isSuccessful }
+            // 실패 시 원인 파악이 가능하도록 상태 코드와 응답 본문을 함께 남긴다
+            // (404=버킷 없음, 403=서명/Content-Type 불일치 등)
+            val putResult = withContext(Dispatchers.IO) {
+                plainHttpClient.newCall(putRequest).execute().use { res ->
+                    Triple(res.isSuccessful, res.code, res.body?.string().orEmpty())
+                }
             }
-            if (!putSuccessful) {
-                Log.w(TAG, "GCS 업로드 실패 (logId=$logId)")
+            if (!putResult.first) {
+                Log.w(TAG, "GCS 업로드 실패 (logId=$logId) code=${putResult.second} body=${putResult.third.take(300)}")
                 clipFile.delete()
                 return
             }

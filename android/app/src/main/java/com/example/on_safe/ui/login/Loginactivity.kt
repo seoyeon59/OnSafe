@@ -30,6 +30,7 @@ import androidx.core.content.ContextCompat
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.R
 import com.example.on_safe.ui.tutorial.TutorialActivity
+import com.example.on_safe.util.DoubleBackToExit
 import com.example.on_safe.util.TokenManager
 
 class LoginActivity : AppCompatActivity() {
@@ -164,6 +165,9 @@ class LoginActivity : AppCompatActivity() {
 
         setupTermsLinks()
         observeViewModel()
+
+        // 로그인 화면은 앱의 시작점 — 여기서도 실수로 종료되지 않게 두 번 눌러야 나가도록 한다
+        DoubleBackToExit.attach(this)
     }
 
     private fun observeViewModel() {

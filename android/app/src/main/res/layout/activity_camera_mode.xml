@@ -163,6 +163,24 @@
                 android:text="LIVE"
                 android:textColor="#FEFEFE"
                 android:textSize="11sp" />
+
+            <!-- 구분선 — LIVE와 경과 시간을 시각적으로 분리 -->
+            <View
+                android:layout_width="1dp"
+                android:layout_height="10dp"
+                android:layout_marginHorizontal="6dp"
+                android:background="#66FEFEFE" />
+
+            <!-- 촬영 경과 시간 — 숫자 폭이 흔들리지 않도록 monospace 사용 -->
+            <TextView
+                android:id="@+id/tvRecordingTimer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.02"
+                android:text="00:00:00"
+                android:textColor="#FEFEFE"
+                android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
 
