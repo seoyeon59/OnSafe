@@ -44,10 +44,8 @@ class MainViewModel : ViewModel() {
     // DANGER 진입 시점에만 이벤트를 발생시키기 위해 직전 등급을 기억
     private var lastRiskLevel: RiskScoreCardBinder.RiskLevel? = null
 
-    // 촬영 종료 감지용 — 서버 점수는 촬영이 끝나도 그대로 남아있어서 값만 봐서는 구분이 안 된다.
-    // 대신 updated_at이 더 이상 바뀌지 않는지를 본다.
+    // 마지막으로 받은 갱신 시각 — 서버가 촬영 상태를 알려주게 되면 판정에 쓸 값
     private var lastUpdatedAt: String? = null
-    private var staleTicks = 0
 
     private val notificationRepository: NotificationRepository = RealNotificationRepository()
 
@@ -63,9 +61,7 @@ class MainViewModel : ViewModel() {
             return
         }
 
-        // 화면을 다시 열 때마다 처음부터 판단한다 — 이전 방문의 시각을 그대로 쓰면 오판한다
         lastUpdatedAt = null
-        staleTicks = 0
 
         refreshUnreadBadge(userId)
 
@@ -128,35 +124,18 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    // 서버의 realtime_data는 촬영이 끝나도 마지막 값이 그대로 남는다.
-    // 그래서 점수만 보면 촬영 중인지 알 수 없고, updated_at이 계속 바뀌는지로 판단한다.
-    // 서버·기기 시계를 비교하지 않는 이유: 서버가 타임존 없는 문자열을 내려줘 시차만큼 어긋난다.
+    // 촬영 종료 여부는 앱에서 판단할 수 없다.
+    //
+    // 서버 realtime_data는 촬영이 끝나도 마지막 값이 남고, updated_at은 "사람이 화면에
+    // 잡혔을 때"만 갱신된다. 카메라 폰은 사람이 없으면 아무것도 보내지 않기 때문이다.
+    // 무인 감시에서는 빈 방이 정상 상태이므로, updated_at이 멈춘 것을 촬영 종료로 보면
+    // 카메라가 멀쩡히 돌아가는데도 대기 중으로 표시된다.
+    //
+    // 따라서 데이터가 있으면 연결된 것으로 본다. 정확한 판정은 서버가 촬영 상태를
+    // 알려줘야 가능하다(devices 컬렉션의 status·last_seen 필드 활용 협의 중).
     private fun applyFreshness(score: Int, updatedAt: String?) {
-        // 서버가 updated_at을 주지 않으면 판단 근거가 없으므로 종전대로 동작시킨다
-        if (updatedAt == null) {
-            applyRiskScore(score)
-            return
-        }
-        when {
-            // 첫 응답만으로는 갱신 중인지 멈춰 있는지 알 수 없다 — 다음 응답과 비교해야 한다
-            lastUpdatedAt == null -> {
-                lastUpdatedAt = updatedAt
-                setState { copy(connectionState = ConnectionState.CONNECTING, riskScore = score) }
-            }
-            updatedAt != lastUpdatedAt -> {
-                lastUpdatedAt = updatedAt
-                staleTicks = 0
-                applyRiskScore(score)
-            }
-            else -> {
-                staleTicks++
-                if (staleTicks >= STALE_TICKS_LIMIT) {
-                    setState { copy(connectionState = ConnectionState.STANDBY, riskScore = score) }
-                    // 다음 촬영에서 다시 위험에 진입하면 알림을 띄워야 하므로 등급 기억을 비운다
-                    lastRiskLevel = null
-                }
-            }
-        }
+        lastUpdatedAt = updatedAt
+        applyRiskScore(score)
     }
 
     private fun applyRiskScore(score: Int) {
@@ -188,9 +167,6 @@ class MainViewModel : ViewModel() {
 
     companion object {
         private const val POLLING_INTERVAL_MS = 5_000L
-
-        // updated_at이 이만큼 연속으로 그대로면 촬영이 끝난 것으로 본다 (5초 × 3 = 15초)
-        private const val STALE_TICKS_LIMIT = 3
 
         // 읽음 처리가 서버에 반영되기를 기다려주는 시간
         private const val READ_SYNC_GRACE_MS = 3_000L
