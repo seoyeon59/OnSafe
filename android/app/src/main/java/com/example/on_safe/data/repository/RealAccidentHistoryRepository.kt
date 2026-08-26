@@ -26,7 +26,8 @@ class RealAccidentHistoryRepository : AccidentHistoryRepository {
             type = type,
             time = timestamp.substring(11, 16),
             date = timestamp.take(10).replace("-", "."),
-            hasVideo = hasVideo
+            hasVideo = hasVideo,
+            videoStatus = videoStatus
         )
     }
 }
