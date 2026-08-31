@@ -11,11 +11,9 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
 /**
- * 3-call 업로드 시퀀스: upload-url 발급 → GCS signed PUT URL 업로드 → video-complete 콜백.
- * signed URL은 우리 백엔드가 아닌 GCS로 직접 나가므로 인증 인터셉터 없는 별도 OkHttpClient를 쓴다.
- * 실패 시 재시도 없이 로그만 남김 (범위: 백엔드 reconciliation job이 안전망 역할).
- * 재시도가 없으므로 실패한 로컬 클립 파일을 남겨둬도 다시 쓸 곳이 없다 — 카메라 기기가
- * 장시간 켜져 있는 용도라 그대로 두면 cacheDir에 계속 쌓이므로, 실패가 확정되는 지점마다 정리한다.
+ * 업로드 3단계: upload-url 발급 → GCS signed PUT → video-complete 콜백.
+ * GCS로 직접 나가므로 인증 인터셉터 없는 별도 OkHttpClient를 쓴다.
+ * 재시도가 없어 실패가 확정되면 로컬 클립을 지운다 (안 지우면 cacheDir에 계속 쌓임).
  */
 class FallVideoUploader {
 
@@ -43,11 +41,15 @@ class FallVideoUploader {
                 .addHeader("Content-Type", "video/mp4")
                 .build()
 
-            val putSuccessful = withContext(Dispatchers.IO) {
-                plainHttpClient.newCall(putRequest).execute().use { it.isSuccessful }
+            // 실패 시 원인 파악이 가능하도록 상태 코드와 응답 본문을 함께 남긴다
+            // (404=버킷 없음, 403=서명/Content-Type 불일치 등)
+            val putResult = withContext(Dispatchers.IO) {
+                plainHttpClient.newCall(putRequest).execute().use { res ->
+                    Triple(res.isSuccessful, res.code, res.body?.string().orEmpty())
+                }
             }
-            if (!putSuccessful) {
-                Log.w(TAG, "GCS 업로드 실패 (logId=$logId)")
+            if (!putResult.first) {
+                Log.w(TAG, "GCS 업로드 실패 (logId=$logId) code=${putResult.second} body=${putResult.third.take(300)}")
                 clipFile.delete()
                 return
             }

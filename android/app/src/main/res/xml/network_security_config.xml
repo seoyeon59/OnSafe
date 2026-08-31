@@ -3,6 +3,9 @@
     <!-- 개발 환경: 에뮬레이터 및 로컬 서버 HTTP 허용 -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- 실기기 USB 테스트(adb reverse)용 — 기기의 localhost가 PC로 연결됨 -->
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
     </domain-config>
     <!-- 기본: cleartext 불허 (릴리즈 보안) -->
     <base-config cleartextTrafficPermitted="false" />

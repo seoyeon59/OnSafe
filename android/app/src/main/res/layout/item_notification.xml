@@ -63,7 +63,7 @@
                 android:layout_height="8dp"
                 android:layout_marginStart="8dp"
                 android:background="@drawable/bg_dot_neutral"
-                android:backgroundTint="@color/primary_blue"
+                android:backgroundTint="@color/status_danger"
                 android:visibility="visible" />
 
         </LinearLayout>

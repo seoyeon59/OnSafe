@@ -1,6 +1,5 @@
 package com.example.on_safe.ui.login
 
-import android.os.CountDownTimer
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -8,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.SendResetCodeRequest
 import com.example.on_safe.network.dto.VerifyResetCodeRequest
+import com.example.on_safe.util.VerificationCodeTimer
 import kotlinx.coroutines.launch
 
 // FindIdUiState와 구조는 같지만 이 화면엔 "결과 카드"가 없고 대신 다음 화면(비밀번호 재설정)으로 넘어감
@@ -33,7 +33,19 @@ class FindPwViewModel : ViewModel() {
     private val _navigateToReset = MutableLiveData(false)
     val navigateToReset: LiveData<Boolean> = _navigateToReset
 
-    private var countDownTimer: CountDownTimer? = null
+    private val timer = VerificationCodeTimer(
+        onTick = { text -> setState { copy(timerText = text) } },
+        onFinish = {
+            setState {
+                copy(
+                    timerText = "0:00",
+                    isConfirmEnabled = false,
+                    isResendVisible = true,
+                    isRequestCodeEnabled = true
+                )
+            }
+        }
+    )
 
     // 재설정 코드 발송
     fun requestCode(userId: String, email: String) {
@@ -44,7 +56,7 @@ class FindPwViewModel : ViewModel() {
                 if (response.isSuccessful && response.body()?.success == true) {
                     startVerification()
                 } else {
-                    _toastMessage.value = response.body()?.message ?: "코드 발송에 실패했습니다."
+                    _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "코드 발송에 실패했습니다.")
                     setState { copy(isRequestCodeEnabled = true) }
                 }
             } catch (e: Exception) {
@@ -63,10 +75,10 @@ class FindPwViewModel : ViewModel() {
             try {
                 val response = ApiClient.api.verifyResetCode(VerifyResetCodeRequest(userId = userId, code = code))
                 if (response.isSuccessful && response.body()?.success == true) {
-                    countDownTimer?.cancel()
+                    timer.cancel()
                     _navigateToReset.value = true
                 } else {
-                    _toastMessage.value = response.body()?.message ?: "코드가 올바르지 않습니다."
+                    _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "코드가 올바르지 않습니다.")
                     setState { copy(isConfirmEnabled = true) }
                 }
             } catch (e: Exception) {
@@ -89,7 +101,7 @@ class FindPwViewModel : ViewModel() {
                     _toastMessage.value = "재설정 코드를 재발송했습니다."
                 } else {
                     setState { copy(isResendVisible = true) }
-                    _toastMessage.value = response.body()?.message ?: "재설정 코드 재발송에 실패했습니다."
+                    _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "재설정 코드 재발송에 실패했습니다.")
                 }
             } catch (e: Exception) {
                 setState { copy(isResendVisible = true) }
@@ -116,29 +128,7 @@ class FindPwViewModel : ViewModel() {
             )
         }
         _toastMessage.value = "재설정 코드를 발송했습니다."
-        startTimer()
-    }
-
-    private fun startTimer() {
-        countDownTimer?.cancel()
-        countDownTimer = object : CountDownTimer(180_000L, 1000L) {
-            override fun onTick(millisUntilFinished: Long) {
-                val minutes = millisUntilFinished / 60000
-                val seconds = (millisUntilFinished % 60000) / 1000
-                setState { copy(timerText = String.format("%d:%02d", minutes, seconds)) }
-            }
-
-            override fun onFinish() {
-                setState {
-                    copy(
-                        timerText = "0:00",
-                        isConfirmEnabled = false,
-                        isResendVisible = true,
-                        isRequestCodeEnabled = true
-                    )
-                }
-            }
-        }.start()
+        timer.start()
     }
 
     private inline fun setState(update: FindPwUiState.() -> FindPwUiState) {
@@ -147,6 +137,6 @@ class FindPwViewModel : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
-        countDownTimer?.cancel()
+        timer.cancel()
     }
 }

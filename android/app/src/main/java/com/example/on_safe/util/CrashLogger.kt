@@ -9,10 +9,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// 잡히지 않은 예외로 앱이 죽기 직전에 스택트레이스를 파일로 남긴다.
-// 카메라 모드 연속 촬영 중 RejectedExecutionException 크래시처럼 재현이 뜸하고
-// adb를 그 순간에 연결해두기 어려운 경우, 다음에 기기를 연결했을 때 파일만 꺼내
-// 정확한 발생 지점(클래스·줄 번호·호출 스택)을 확인하기 위한 용도.
+// 앱이 죽기 직전 스택트레이스를 파일로 남긴다 — adb 미연결 상태에서 발생한 크래시를
+// 나중에 꺼내보기 위한 용도 (Android/data/<package>/files/crash_logs/)
 object CrashLogger {
 
     // 크래시가 반복돼도 저장공간을 계속 차지하지 않도록 최근 것만 유지

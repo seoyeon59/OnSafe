@@ -5,6 +5,12 @@
         <item name="colorPrimary">@color/primary_blue</item>
         <item name="colorPrimaryVariant">@color/primary_blue</item>
         <item name="colorOnPrimary">@color/white</item>
+        <!-- 커서·텍스트 선택 핸들·체크박스 등 입력 관련 강조색 — 미지정 시 시스템 기본(보라)이 나온다 -->
+        <item name="colorControlActivated">@color/primary_blue</item>
+        <item name="colorControlHighlight">#334D80FF</item>
+        <item name="android:textColorHighlight">#4D4D80FF</item>
+        <!-- 자동완성 강조 배경 — 기본 사각형이 둥근 입력칸을 벗어나는 문제 해결 -->
+        <item name="android:autofilledHighlight">@drawable/bg_autofill_highlight</item>
         <!-- 앱 전체 기본 폰트: Pretendard (400/500/600/700 자동 매핑) -->
         <item name="android:fontFamily">@font/pretendard</item>
         <!-- Android 15(API 35)에서 강제되는 edge-to-edge 모드 옵트아웃 -->

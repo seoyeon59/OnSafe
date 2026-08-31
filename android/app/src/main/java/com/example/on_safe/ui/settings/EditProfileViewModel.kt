@@ -60,6 +60,32 @@ class EditProfileViewModel : ViewModel() {
         }
     }
 
+    // 서버에서 받아온 원본 — 변경 여부 판단에 쓴다(바뀐 게 없으면 서버 호출 자체를 하지 않음)
+    private var original: UserResponse? = null
+
+    fun onUserLoaded(user: UserResponse) {
+        original = user
+    }
+
+    // 입력값이 원본과 하나라도 다른지
+    // 전화번호는 하이픈 유무가 서버 저장값과 다를 수 있어 숫자만 뽑아 비교한다
+    fun hasChanges(
+        name: String,
+        phone: String,
+        email: String,
+        address: String,
+        addressDetail: String
+    ): Boolean {
+        val o = original ?: return true   // 원본을 못 받았으면 그냥 저장 시도
+        return name != o.name ||
+                phone.digitsOnly() != o.phone.digitsOnly() ||
+                email != o.mail ||
+                address != o.address.orEmpty() ||
+                addressDetail != o.addressDetail.orEmpty()
+    }
+
+    private fun String.digitsOnly() = filter { it.isDigit() }
+
     fun save(
         userId: String,
         name: String,

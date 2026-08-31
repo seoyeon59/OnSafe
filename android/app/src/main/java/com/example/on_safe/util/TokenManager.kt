@@ -6,13 +6,8 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
 /**
- * 인증 토큰 및 사용자 정보 중앙 관리
- *
- * [보안] EncryptedSharedPreferences 사용 — 저장 데이터가 Android Keystore 키로 암호화됨.
- * 루팅 기기 또는 ADB 접근 시에도 토큰 원문이 노출되지 않음.
- *
- * [주의] 앱 업데이트로 이 클래스가 처음 적용되면, 기존 평문 "auth" 파일과 별개의
- * "auth_secure" 파일이 생성되므로 기존 세션은 만료 처리됩니다 (1회 로그아웃).
+ * 인증 토큰·사용자 정보 중앙 관리.
+ * EncryptedSharedPreferences로 암호화 저장 — 루팅/ADB 접근에도 원문이 노출되지 않는다.
  */
 object TokenManager {
 
@@ -24,9 +19,7 @@ object TokenManager {
     // 마지막 로그인으로부터 30일 이상 경과 시 재인증 요구
     private const val SESSION_DURATION_MS = 30L * 24 * 60 * 60 * 1000
 
-    // ── 싱글턴 캐싱 ──────────────────────────────────────────────────────────
-    // EncryptedSharedPreferences 초기화 비용(Keystore 접근)을 최소화하기 위해
-    // 첫 호출 시 한 번만 생성하고 이후에는 동일 인스턴스를 재사용함.
+    // EncryptedSharedPreferences 초기화(Keystore 접근) 비용 때문에 인스턴스를 캐싱한다
     @Volatile
     private var cachedPrefs: SharedPreferences? = null
 
@@ -60,9 +53,7 @@ object TokenManager {
             .apply()
     }
 
-    // 조용한 토큰 자동 갱신(ApiClient의 401 재시도) 전용 — 실제 로그인이 아니므로 login_time은 건드리지 않음.
-    // 여기서 login_time까지 갱신해버리면, 사용자가 30일 안에 앱을 한 번만 열어도(API 호출로 자동 갱신 발생)
-    // 만료 기준 시점이 계속 뒤로 밀려 "마지막 로그인으로부터 30일" 재인증 정책이 사실상 발동하지 않게 됨
+    // 401 자동 갱신 전용 — login_time을 갱신하면 "마지막 로그인 30일" 정책이 무력화되므로 건드리지 않는다
     fun updateAccessToken(context: Context, accessToken: String, refreshToken: String) {
         prefs(context).edit()
             .putString(KEY_ACCESS,  accessToken)

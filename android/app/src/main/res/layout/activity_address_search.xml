@@ -212,20 +212,39 @@
     </LinearLayout>
 
     <!-- ============ 빈 상태 / 안내 텍스트 ============ -->
-    <TextView
-        android:id="@+id/tvEmpty"
-        android:layout_width="wrap_content"
+    <!-- 사고이력·알림 화면과 동일한 구조(아이콘 + 문구)로 통일 -->
+    <LinearLayout
+        android:id="@+id/layoutEmptyState"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:paddingVertical="32dp"
-        android:text="검색어를 입력하세요"
-        android:textColor="@color/ink_500"
-        android:textSize="14sp"
+        android:orientation="vertical"
+        android:paddingTop="40dp"
+        android:paddingHorizontal="24dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tipCard" />
+        app:layout_constraintTop_toBottomOf="@id/tipCard">
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="안내 아이콘"
+            android:src="@drawable/ic_search"
+            app:tint="@color/ink_500" />
+
+        <TextView
+            android:id="@+id/tvEmpty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:fontFamily="@font/pretendard_medium"
+            android:gravity="center"
+            android:lineSpacingMultiplier="1.3"
+            android:text="검색어를 입력하세요"
+            android:textColor="@color/ink_500"
+            android:textSize="14sp" />
+    </LinearLayout>
 
     <!-- ============ 검색 결과 목록 ============ -->
     <androidx.recyclerview.widget.RecyclerView

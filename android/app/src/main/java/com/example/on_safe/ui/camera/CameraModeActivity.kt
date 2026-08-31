@@ -74,6 +74,20 @@ class CameraModeActivity : AppCompatActivity() {
     // 화면보호기/번인방지/자동 dim — 카메라 로직과 독립적인 관심사라 별도 클래스로 분리
     private lateinit var screenSaverController: ScreenSaverController
 
+    // 촬영 경과 시간 — 무인으로 며칠 켜두는 용도라 "지금 돌고 있다"는 신호가 필요하다
+    private lateinit var tvRecordingTimer: TextView
+    private var recordingStartedAt = 0L
+    private val timerHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val timerRunnable = object : Runnable {
+        override fun run() {
+            val elapsed = (System.currentTimeMillis() - recordingStartedAt) / 1000
+            tvRecordingTimer.text = String.format(
+                "%02d:%02d:%02d", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60
+            )
+            timerHandler.postDelayed(this, 1000L)
+        }
+    }
+
     private var isPanelVisible = true
 
     private var landmarkStreamClient: LandmarkStreamClient? = null
@@ -152,14 +166,17 @@ class CameraModeActivity : AppCompatActivity() {
         setupClickListeners()
         screenSaverController.resetInactivityTimer()
 
-        // 패널이 닫혀 있으면 뒤로가기로 패널 복귀, 열려 있으면 기본 동작(finish)
+        // 패널이 닫혀 있으면 패널 복귀, 촬영 중이면 확인 모달(실수로 나가면 클립이 날아감)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (!isPanelVisible) {
-                    toggleFullscreen()
-                } else {
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
+                when {
+                    !isPanelVisible -> toggleFullscreen()
+                    currentState == CameraState.STREAMING ||
+                        currentState == CameraState.CONNECTING -> showExitWhileRecordingDialog()
+                    else -> {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                    }
                 }
             }
         })
@@ -179,6 +196,7 @@ class CameraModeActivity : AppCompatActivity() {
         super.onDestroy()
         cameraProvider?.unbindAll()     //화면 종료 시 카메라 해제
         screenSaverController.release()
+        timerHandler.removeCallbacks(timerRunnable)
         // 상태와 무관하게 항상 정리 — FAILED 상태(WS 끊김 등)에서도 리소스가 살아있을 수 있어
         // STREAMING/CONNECTING일 때만 정리하면 새는 경우가 있었음
         poseLandmarkerHelper?.stop()
@@ -198,6 +216,7 @@ class CameraModeActivity : AppCompatActivity() {
         previewView             = findViewById(R.id.previewView)
         layoutStandby           = findViewById(R.id.layoutStandby)
         layoutLiveBadge         = findViewById(R.id.layoutLiveBadge)
+        tvRecordingTimer        = findViewById(R.id.tvRecordingTimer)
         layoutStatusBadge       = findViewById(R.id.layoutStatusBadge)
         viewStatusDot           = findViewById(R.id.viewStatusDot)
         tvStatusText            = findViewById(R.id.tvStatusText)
@@ -362,6 +381,25 @@ class CameraModeActivity : AppCompatActivity() {
             }
         }
 
+    // 이 화면은 configChanges로 회전 시 재생성되지 않는다. CameraX use case는 만들어질 때의
+    // 화면 방향을 그대로 들고 있어서, 폰을 뒤집으면 화면만 돌고 카메라 영상은 그대로 남는다.
+    // 관절 인식도 이 방향을 기준으로 하므로 그냥 두면 뒤집힌 사람을 분석하게 된다.
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val rotation = currentRotation()
+        previewUseCase?.targetRotation = rotation
+        imageAnalysis?.targetRotation = rotation
+        videoCapture?.targetRotation = rotation
+    }
+
+    @Suppress("DEPRECATION")
+    private fun currentRotation(): Int =
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            display?.rotation ?: android.view.Surface.ROTATION_0
+        } else {
+            windowManager.defaultDisplay.rotation
+        }
+
     private fun startCamera() {
         // 카메라 provider 비동기로 가져오기
         val providerFuture = ProcessCameraProvider.getInstance(this)
@@ -370,9 +408,11 @@ class CameraModeActivity : AppCompatActivity() {
             cameraProvider = provider
 
             // 프리뷰를 만들어서 화면(previewView)에 연결
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
+            val preview = Preview.Builder()
+                .setTargetRotation(currentRotation())
+                .build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                }
             previewUseCase = preview
 
             try {
@@ -391,7 +431,8 @@ class CameraModeActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))  // 메인 스레드에서 실행
     }
 
-    // 촬영 시작: 이미 켜져 있는 previewUseCase 위에 ImageAnalysis + VideoCapture 추가 바인딩 (프리뷰 재생성 없음)
+    // 촬영 시작: 프리뷰 + ImageAnalysis + VideoCapture를 한 번에 바인딩.
+    // 종료 시 카메라를 놓으므로 여기서 프리뷰도 함께 다시 붙는다(Preview 객체는 재사용).
     private fun bindStreamingUseCases(helper: PoseLandmarkerHelper, bufferManager: RollingVideoBufferManager) {
         val provider = cameraProvider ?: return
         val preview = previewUseCase ?: return
@@ -399,11 +440,13 @@ class CameraModeActivity : AppCompatActivity() {
         val analysisUseCase = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+            .setTargetRotation(currentRotation())
             .build()
             .also { it.setAnalyzer(helper.executor, helper::analyze) }
         imageAnalysis = analysisUseCase
 
         val videoCaptureUseCase = bufferManager.videoCapture
+        videoCaptureUseCase.targetRotation = currentRotation()
         videoCapture = videoCaptureUseCase
 
         try {
@@ -420,26 +463,23 @@ class CameraModeActivity : AppCompatActivity() {
         }
     }
 
-    // 촬영 종료: ImageAnalysis/VideoCapture만 떼고 previewUseCase만 다시 바인딩 (프리뷰는 계속 유지)
+    // 촬영 종료: 카메라를 완전히 놓는다.
+    // 대기 화면이 프리뷰를 불투명하게 덮고 있어 열어둬도 보이는 것이 없는데,
+    // 카메라를 잡고 있으면 상단 카메라 사용 표시가 남아 아직 촬영 중인 것으로 오해하게 된다.
     private fun unbindStreamingUseCases() {
         val provider = cameraProvider ?: return
-        val preview = previewUseCase ?: return
         imageAnalysis = null
         videoCapture = null
 
         try {
             provider.unbindAll()
-            provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, preview)
         } catch (e: Exception) {
-            Log.w(TAG, "프리뷰 재바인딩 실패", e)
+            Log.w(TAG, "카메라 해제 실패", e)
         }
     }
 
     private fun stopRecording() {
-        // 카메라가 프레임/녹화 이벤트를 더 이상 만들지 않도록 먼저 unbind한 뒤에
-        // helper/버퍼 매니저의 executor를 정리한다 (onDestroy()와 동일한 순서).
-        // 반대로 하면 unbind가 실제로 반영되기 전 CameraX가 이미 종료된 executor로
-        // 이벤트를 넘기려다 RejectedExecutionException을 던질 여지가 커진다.
+        // unbind를 먼저 해야 CameraX가 종료된 executor로 이벤트를 넘기다 터지는 걸 막는다
         unbindStreamingUseCases()
         poseLandmarkerHelper?.stop()
         poseLandmarkerHelper = null
@@ -455,6 +495,7 @@ class CameraModeActivity : AppCompatActivity() {
         currentState = state
         when (state) {
             CameraState.STANDBY -> {
+                stopRecordingTimer()
                 layoutStandby.visibility = View.VISIBLE
                 layoutStandbyContent.visibility = View.VISIBLE
                 layoutConnectingContent.visibility = View.GONE
@@ -475,6 +516,7 @@ class CameraModeActivity : AppCompatActivity() {
                 btnToggleRecording.alpha = 0.4f
             }
             CameraState.STREAMING -> {
+                startRecordingTimer()
                 layoutStandby.visibility = View.GONE
                 layoutStandbyContent.visibility = View.VISIBLE     // 다음 STANDBY 상태 대비 초기화
                 layoutConnectingContent.visibility = View.GONE
@@ -485,6 +527,7 @@ class CameraModeActivity : AppCompatActivity() {
                 btnToggleRecording.alpha = 1.0f
             }
             CameraState.FAILED -> {
+                stopRecordingTimer()
                 layoutStandby.visibility = View.VISIBLE
                 layoutStandbyContent.visibility = View.VISIBLE
                 layoutConnectingContent.visibility = View.GONE
@@ -495,6 +538,18 @@ class CameraModeActivity : AppCompatActivity() {
                 btnToggleRecording.alpha = 1.0f
             }
         }
+    }
+
+    private fun startRecordingTimer() {
+        if (recordingStartedAt != 0L) return   // 이미 동작 중이면 시각을 다시 잡지 않는다
+        recordingStartedAt = System.currentTimeMillis()
+        timerHandler.post(timerRunnable)
+    }
+
+    private fun stopRecordingTimer() {
+        timerHandler.removeCallbacks(timerRunnable)
+        recordingStartedAt = 0L
+        if (::tvRecordingTimer.isInitialized) tvRecordingTimer.text = "00:00:00"
     }
 
     // setColor()만으로 pill 모양 유지 (cornerRadius 덮어쓰지 않음)
@@ -518,7 +573,7 @@ class CameraModeActivity : AppCompatActivity() {
     private fun handleLogout() {
         lifecycleScope.launch {
             try {
-                ApiClient.api.logout()
+                ApiClient.api.logout(TokenManager.getRefreshToken(this@CameraModeActivity))
             } catch (_: Exception) {
                 // 무시하고 로컬 정리로 진행
             }
@@ -535,9 +590,7 @@ class CameraModeActivity : AppCompatActivity() {
         }
 
     // ──────────────────────────────────────────────────────────
-    // 다이얼로그 — 원본에서 4개 메서드가 레이아웃/취소·확인 버튼 세팅 로직을 거의 동일하게
-    // 반복하고 있어서, 공통 뼈대만 showConfirmDialog()/showPermissionDialog()로 뽑아냈다.
-    // 각 다이얼로그가 실제로 무엇을 확인/거절하는지(비즈니스 로직)는 전혀 바꾸지 않았다.
+    // 다이얼로그 — 공통 뼈대는 showConfirmDialog()/showPermissionDialog()로 통합
     // ──────────────────────────────────────────────────────────
 
     private fun showStopRecordingDialog() {
@@ -547,6 +600,18 @@ class CameraModeActivity : AppCompatActivity() {
             confirmId = R.id.btnStopConfirm,
             onConfirm = ::stopRecording
         )
+    }
+
+    // 촬영 중 뒤로가기 — 나가면 촬영이 종료된다는 걸 알리고 확인받는다
+    private fun showExitWhileRecordingDialog() {
+        showConfirmDialog(
+            layoutRes = R.layout.dialog_stop_recording,
+            cancelId = R.id.btnStopCancel,
+            confirmId = R.id.btnStopConfirm
+        ) {
+            stopRecording()
+            finish()
+        }
     }
 
     private fun showLogoutDialog() {
@@ -580,9 +645,7 @@ class CameraModeActivity : AppCompatActivity() {
         }
     }
 
-    // 취소/확인 버튼 두 개짜리 단순 확인 다이얼로그 공통 뼈대
-    // (dialog_stop_recording, dialog_logout 레이아웃이 대상 — 둘 다 원본에서 이미 같은
-    // maxWidth 치수(logout_dialog_max_width)를 공유하고 있어 합쳐도 동작 차이가 없다)
+    // 취소/확인 버튼 두 개짜리 확인 다이얼로그 공통 뼈대
     private fun showConfirmDialog(
         @LayoutRes layoutRes: Int,
         @IdRes cancelId: Int,

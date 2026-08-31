@@ -7,13 +7,12 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.on_safe.ui.notification.NotificationActivity
+import com.example.on_safe.util.DoubleBackToExit
 import com.example.on_safe.util.NotificationPermissionBanner
 import com.example.on_safe.util.RiskScoreCardBinder
 import com.example.on_safe.util.TokenManager
@@ -28,15 +27,15 @@ class MainActivity : AppCompatActivity() {
 
     private var alertDialog: BottomSheetDialog? = null
 
-    // 홈에서 뒤로가기 두 번 눌러야 종료 (실수로 바로 꺼지는 것 방지)
-    private var backPressedTime = 0L
 
-    // 알림 화면에서 돌아올 때 미읽음 여부에 따라 빨간 점 + 종 아이콘(울리는 모양) 갱신
+    // 알림 화면에서 돌아올 때 네트워크 왕복 없이 즉시 반영한다.
+    // (뒤이어 onResume의 refreshUnreadBadge가 서버 값으로 다시 맞춘다)
     private val notificationLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        val hasUnread = result.data?.getBooleanExtra(NotificationActivity.EXTRA_HAS_UNREAD, true) ?: true
-        updateNotificationBell(hasUnread)
+        // 결과를 못 받은 경우(취소 등)는 미읽음이 있다고 단정하지 않는다 — 빈 목록인데 빨간점이 뜨는 문제
+        val hasUnread = result.data?.getBooleanExtra(NotificationActivity.EXTRA_HAS_UNREAD, false) ?: false
+        viewModel.setUnreadBadge(hasUnread)
     }
 
     // 미읽음 알림 유무에 따라 종 아이콘과 빨간 점을 함께 갱신
@@ -57,17 +56,8 @@ class MainActivity : AppCompatActivity() {
         NotificationPermissionBanner.setup(this)
         setupClickListeners()
 
-        // 홈은 탭 이동의 종착점 — 뒤로가기를 두 번 눌러야 앱이 종료되도록 확인 단계를 둠
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (System.currentTimeMillis() - backPressedTime < 2000) {
-                    finish()
-                } else {
-                    backPressedTime = System.currentTimeMillis()
-                    Toast.makeText(this@MainActivity, "한 번 더 누르면 종료됩니다.", Toast.LENGTH_SHORT).show()
-                }
-            }
-        })
+        // 홈은 탭 이동의 종착점 — 뒤로가기를 두 번 눌러야 앱이 종료된다
+        DoubleBackToExit.attach(this)
 
         observeViewModel()
     }
@@ -86,6 +76,7 @@ class MainActivity : AppCompatActivity() {
     private fun observeViewModel() {
         viewModel.uiState.observe(this) { state ->
             applyConnectionState(state.connectionState)
+            updateNotificationBell(state.hasUnread)
             if (state.riskScore != null) {
                 RiskScoreCardBinder.bind(findViewById(R.id.riskScoreCard), state.riskScore)
             }

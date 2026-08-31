@@ -43,8 +43,11 @@ interface ApiService {
     @POST("api/auth/reset-password")
     suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<ApiResponse<Unit>>
 
+    // Refresh-Token까지 보내야 서버가 두 토큰 모두 블랙리스트 처리한다
     @POST("api/auth/logout")
-    suspend fun logout(): Response<ApiResponse<Unit>>
+    suspend fun logout(
+        @Header("Refresh-Token") refreshToken: String? = null
+    ): Response<ApiResponse<Unit>>
 
     @POST("api/auth/refresh")
     suspend fun refresh(@Header("Refresh-Token") refreshToken: String): Response<ApiResponse<TokenResponse>>

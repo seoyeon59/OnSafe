@@ -22,6 +22,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
@@ -32,11 +33,8 @@ import com.example.on_safe.util.TokenManager
 
 // 설정 화면 (알림 토글, 개인정보 수정, 비밀번호 변경, 로그아웃, 회원탈퇴)
 //
-// [알림 토글 저장 전략]
-// 서버(백엔드 DB)가 진실의 원천이며, SharedPreferences("settings")는 오프라인 캐시.
-// 진입 시 캐시를 즉시 보여주고 → 서버에서 최신 값을 받아 캐시·UI를 갱신한다.
-// 사용자 조작 시엔 캐시를 먼저 갱신(optimistic)하고 → 서버에 PUT.
-// PUT 실패 시엔 캐시를 그대로 두어 다음 서버 GET 성공 시점에 자동 재동기화.
+// 알림 토글은 서버가 진실의 원천, SharedPreferences("settings")는 오프라인 캐시.
+// 캐시를 먼저 보여주고 서버 값으로 덮어쓰며, PUT 실패 시 다음 GET 때 자동 재동기화된다.
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var switchNotification: SwitchCompat
@@ -77,6 +75,17 @@ class SettingsActivity : AppCompatActivity() {
         setupToggleDependency()
         setupClickListeners()
         observeViewModel()
+
+        // 탭 화면에서 뒤로가기 → 앱 종료가 아니라 홈으로 이동한다
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                startActivity(Intent(this@SettingsActivity, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                })
+                overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
+                finish()
+            }
+        })
 
         val userId = TokenManager.getUserId(this)
         viewModel.loadUserName(userId)
@@ -135,6 +144,8 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // 개인정보 수정에서 이름을 바꾸고 돌아왔을 수 있어 복귀 시마다 다시 조회한다
+        viewModel.loadUserName(TokenManager.getUserId(this))
         // 시스템 설정에서 알림 권한이 취소된 경우 토글 강제 OFF 동기화
         // (프로그래밍 방식 변경이지만 리스너 발화가 필요 — 캐시·서버 모두 반영)
         if (!isNotificationPermissionGranted() && switchNotification.isChecked) {
@@ -207,8 +218,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     // 알림 권한 (API 33+)
-    // 권한 허용 시 반드시 turnNotificationOn()을 거쳐야 소리/진동 활성화 + 서버 반영까지 완료됨
-    // (스위치의 isChecked만 true로 두면 겉보기엔 켜졌지만 실제로는 아무 것도 저장되지 않는 상태가 됨)
+    // 권한 허용 시 turnNotificationOn()을 거쳐야 소리/진동 활성화와 서버 반영까지 완료된다
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
@@ -335,9 +345,8 @@ class SettingsActivity : AppCompatActivity() {
             viewModel.updateNotificationSetting(TokenManager.getUserId(this), vibration = isChecked)
         }
 
-        // 알림이 꺼져있을 땐 소리/진동 스위치가 isEnabled=false라 탭해도 아무 반응이 없는데,
-        // 이유를 몰라 오작동처럼 보일 수 있어 비활성 상태에서 탭하면 안내 토스트를 띄운다.
-        // OnTouchListener는 dispatchTouchEvent 단계에서 먼저 소비되므로 isEnabled=false여도 호출됨.
+        // 비활성 스위치는 탭해도 반응이 없어 오작동처럼 보이므로 안내 토스트를 띄운다
+        // (OnTouchListener는 isEnabled=false여도 호출됨)
         val disabledSwitchHint = View.OnTouchListener { view, event ->
             if (!view.isEnabled && event.action == MotionEvent.ACTION_UP) {
                 Toast.makeText(this, "먼저 알림을 켜주세요.", Toast.LENGTH_SHORT).show()
@@ -431,7 +440,7 @@ class SettingsActivity : AppCompatActivity() {
         }
         dialog.findViewById<TextView>(R.id.btnLogoutConfirm).setOnClickListener {
             dialog.dismiss()
-            viewModel.logout()
+            viewModel.logout(TokenManager.getRefreshToken(this))
         }
         dialog.show()
     }

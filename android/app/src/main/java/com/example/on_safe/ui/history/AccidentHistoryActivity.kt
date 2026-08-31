@@ -21,11 +21,13 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.util.TokenManager
 import kotlinx.coroutines.Dispatchers
@@ -85,6 +87,17 @@ class AccidentHistoryActivity : AppCompatActivity() {
         setupSortChips()
         setupNavListeners()
         observeViewModel()
+
+        // 탭 화면에서 뒤로가기 → 앱 종료가 아니라 홈으로 이동한다
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                startActivity(Intent(this@AccidentHistoryActivity, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                })
+                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                finish()
+            }
+        })
         viewModel.loadHistory(TokenManager.getUserId(this))
     }
 

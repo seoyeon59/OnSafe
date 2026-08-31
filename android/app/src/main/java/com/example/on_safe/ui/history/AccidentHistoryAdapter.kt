@@ -6,14 +6,13 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.example.on_safe.R
 
 /**
  * 사고 이력 RecyclerView 어댑터.
- * - 위험(FALL) 항목만 표시 (주의 타입은 저장 안 함)
- * - DiffUtil로 최소 변경만 반영
+ * - 위험(FALL) 항목만 표시
+ * - 정렬 변경 시 이동 애니메이션이 뒤섞여 보여, DiffUtil 대신 매번 전체를 다시 그림
  * - 날짜 헤더 / 이력 아이템 두 가지 ViewType 사용
  */
 class AccidentHistoryAdapter(
@@ -43,19 +42,8 @@ class AccidentHistoryAdapter(
         // 위험(FALL) 항목만 표시
         val filtered = rawEntries.filter { it.type == HistoryType.FALL }
         val newItems = buildSectionedList(filtered, sortOrder)
-        // 정렬 순서가 바뀌면 사실상 리스트 전체가 뒤집히는 수준이라, DiffUtil로 항목별
-        // 이동 애니메이션을 개별 적용하면 카드들이 제각각 움직여 뒤섞인 것처럼 보인다.
-        // 그래서 여기서는 통째로 다시 그려서 위에서부터 순서대로 자리 잡게 하고,
-        // 스크롤 이동만으로 "정렬이 바뀌었다"는 걸 보여준다.
+        // 정렬 변경은 리스트 전체가 뒤집히는 수준이라 통째로 다시 그린다 (클래스 주석 참고)
         replaceAllInstant(newItems)
-    }
-
-    fun removeItem(id: String) {
-        val updated = items
-            .filterIsInstance<HistoryListItem.HistoryEntry>()
-            .filter { it.id != id }
-        val newItems = buildSectionedList(updated, currentSortOrder)
-        applyDiff(newItems)
     }
 
     fun isEmpty(): Boolean = items.isEmpty()
@@ -168,45 +156,9 @@ class AccidentHistoryAdapter(
         }
     }
 
-    private fun applyDiff(newItems: List<HistoryListItem>) {
-        val diffResult = DiffUtil.calculateDiff(HistoryDiffCallback(items, newItems))
-        items.clear()
-        items.addAll(newItems)
-        diffResult.dispatchUpdatesTo(this)
-    }
-
-    // 삭제(removeItem)처럼 항목 한두 개만 바뀌는 경우가 아니라 정렬 전체가 뒤바뀌는 경우 전용 —
-    // 개별 이동 애니메이션 없이 한 번에 새로 그린다
     private fun replaceAllInstant(newItems: List<HistoryListItem>) {
         items.clear()
         items.addAll(newItems)
         notifyDataSetChanged()
-    }
-
-    // ──────────────────────────────────────────────
-    // DiffUtil
-    // ──────────────────────────────────────────────
-
-    private class HistoryDiffCallback(
-        private val oldList: List<HistoryListItem>,
-        private val newList: List<HistoryListItem>
-    ) : DiffUtil.Callback() {
-
-        override fun getOldListSize() = oldList.size
-        override fun getNewListSize() = newList.size
-
-        override fun areItemsTheSame(oldPos: Int, newPos: Int): Boolean {
-            val old = oldList[oldPos]
-            val new = newList[newPos]
-            return when {
-                old is HistoryListItem.DateHeader      && new is HistoryListItem.DateHeader      -> old.date == new.date
-                old is HistoryListItem.HistoryEntry    && new is HistoryListItem.HistoryEntry    -> old.id == new.id
-                old is HistoryListItem.RetentionNotice && new is HistoryListItem.RetentionNotice  -> true
-                else -> false
-            }
-        }
-
-        override fun areContentsTheSame(oldPos: Int, newPos: Int) =
-            oldList[oldPos] == newList[newPos]
     }
 }

@@ -30,6 +30,7 @@ import androidx.core.content.ContextCompat
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.R
 import com.example.on_safe.ui.tutorial.TutorialActivity
+import com.example.on_safe.util.DoubleBackToExit
 import com.example.on_safe.util.TokenManager
 
 class LoginActivity : AppCompatActivity() {
@@ -164,6 +165,9 @@ class LoginActivity : AppCompatActivity() {
 
         setupTermsLinks()
         observeViewModel()
+
+        // 로그인 화면은 앱의 시작점 — 여기서도 실수로 종료되지 않게 두 번 눌러야 나가도록 한다
+        DoubleBackToExit.attach(this)
     }
 
     private fun observeViewModel() {
@@ -178,10 +182,7 @@ class LoginActivity : AppCompatActivity() {
             if (success != null) {
                 TokenManager.saveTokens(this, success.accessToken, success.refreshToken, success.userId)
                 if (BuildConfig.DEBUG) Log.d("Login", "저장 완료 — userId=${success.userId}")
-                // TODO: 백엔드 API 스펙(v4.2)상 로그인 성공 직후 Python 서버 POST /api/devices/{userId}로
-                //       기기 등록(device_id=ANDROID_ID, device_name=Build.MODEL)을 호출해야 하는데
-                //       현재 앱 어디에도 이 호출이 없음 — devices 컬렉션이 계속 비어있을 가능성이 있음.
-                //       의도적으로 보류 중 (2026-08-17 검토, 아직 미착수).
+                // TODO: 로그인 직후 Python 서버 POST /api/devices/{userId} 기기 등록 호출 필요 — 미착수
                 // 최초 로그인 시 튜토리얼 표시 (기기별 1회)
                 val next = if (!TutorialActivity.isTutorialShown(this)) {
                     TutorialActivity.intentForLogin(this)

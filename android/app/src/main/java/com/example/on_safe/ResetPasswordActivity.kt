@@ -134,10 +134,10 @@ class ResetPasswordActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
-        // MODE_SETTINGS: 현재 비밀번호 입력도 버튼 활성화 조건에 포함
+        // MODE_SETTINGS: 현재 비밀번호는 버튼 활성화 조건이자 서버 본인확인에 그대로 전송되는 값
         etCurrentPw.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
-                viewModel.onCurrentPasswordChanged(s.toString().isNotEmpty())
+                viewModel.onCurrentPasswordChanged(s.toString())
             }
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}

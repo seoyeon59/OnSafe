@@ -16,12 +16,8 @@ data class SettingsToastEvent(val message: String)
 // 로그아웃/회원탈퇴 결과 — Activity가 토큰 정리 + 화면 이동을 담당하므로 성공 여부와 메시지만 전달
 data class AuthResultEvent(val success: Boolean, val message: String)
 
-// SharedPreferences 캐시 읽기/쓰기와 스위치·아이콘 등 View 조작은 Context/View에 강하게 묶여 있어
-// 그대로 Activity에 남기고, 서버 통신과 그 결과(성공/실패) 판단만 이쪽으로 옮겼다.
-//
-// 생성자에 기본값 파라미터를 두지 않는다 — by viewModels()의 기본 팩토리는 리플렉션으로
-// "진짜 무인자 생성자"를 찾는데, Kotlin은 기본값 파라미터를 별도의 무인자 생성자로 노출하지
-// 않아 런타임에 NoSuchMethodException이 난다. 그래서 필드 초기값으로 대신 지정한다.
+// 생성자에 기본값 파라미터를 두면 by viewModels()가 무인자 생성자를 못 찾아 런타임에 터진다.
+// 의존성은 반드시 필드 초기값으로 지정할 것.
 class SettingsViewModel : ViewModel() {
 
     private val _userName = MutableLiveData<String>()
@@ -128,10 +124,10 @@ class SettingsViewModel : ViewModel() {
     }
 
     // 서버 호출이 실패해도 로컬 로그아웃은 항상 진행 (사용자 관점에서 항상 성공해야 함)
-    fun logout() {
+    fun logout(refreshToken: String?) {
         viewModelScope.launch {
             try {
-                ApiClient.api.logout()
+                ApiClient.api.logout(refreshToken)
             } catch (_: Exception) {
                 // 무시하고 로컬 정리로 진행
             }

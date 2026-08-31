@@ -1,6 +1,5 @@
 package com.example.on_safe.ui.login
 
-import android.os.CountDownTimer
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -12,6 +11,7 @@ import com.example.on_safe.network.dto.RegisterRequest
 import com.example.on_safe.network.dto.SendEmailCodeRequest
 import com.example.on_safe.network.dto.VerifyEmailCodeRequest
 import com.example.on_safe.util.PasswordValidator
+import com.example.on_safe.util.VerificationCodeTimer
 import kotlinx.coroutines.launch
 
 data class RegisterStep2UiState(
@@ -57,7 +57,18 @@ class RegisterStep2ViewModel : ViewModel() {
     private val _registerSuccess = MutableLiveData(false)
     val registerSuccess: LiveData<Boolean> = _registerSuccess
 
-    private var emailCountDownTimer: CountDownTimer? = null
+    private val emailTimer = VerificationCodeTimer(
+        onTick = { text -> setState { copy(emailTimerText = text) } },
+        onFinish = {
+            setState {
+                copy(
+                    emailTimerText = "0:00",
+                    isConfirmCodeEnabled = false,
+                    isEmailVerifyEnabled = true
+                )
+            }
+        }
+    )
 
     // 상호검증(비번↔비번확인)이나 최종 완료 버튼 판단에 필요해서 캐싱해두는 원본 텍스트
     private var idText = ""
@@ -93,7 +104,7 @@ class RegisterStep2ViewModel : ViewModel() {
                         )
                     }
                 } else {
-                    val msg = response.body()?.message ?: "이미 사용 중인 아이디입니다."
+                    val msg = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "이미 사용 중인 아이디입니다.")
                     setState { copy(idValidation = FieldValidation.Invalid(msg), isIdCheckEnabled = true) }
                 }
             } catch (e: Exception) {
@@ -137,7 +148,8 @@ class RegisterStep2ViewModel : ViewModel() {
     fun onPhoneChanged(formattedPhone: String) {
         val validation = when {
             formattedPhone.isEmpty() -> FieldValidation.Empty
-            Regex("^01[016789]-\\d{3,4}-\\d{4}$").matches(formattedPhone) ->
+            // 010은 항상 11자리(가운데 4자리), 구번호(011/016~019)만 3~4자리를 허용한다
+            Regex("^(010-\\d{4}|01[16789]-\\d{3,4})-\\d{4}$").matches(formattedPhone) ->
                 FieldValidation.Valid("✓ 올바른 전화번호입니다.")
             else -> FieldValidation.Invalid("010-0000-0000 형식으로 입력해주세요.")
         }
@@ -163,7 +175,7 @@ class RegisterStep2ViewModel : ViewModel() {
     fun onEmailChanged(newEmail: String) {
         email = newEmail
         // 이메일을 바꾸면 인증 상태·타이머 전부 초기화 — 켜져 있던 타이머가 뒤늦게 화면을 건드리지 않도록 취소
-        emailCountDownTimer?.cancel()
+        emailTimer.cancel()
         val validation = when {
             newEmail.isEmpty() -> FieldValidation.Empty
             Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$").matches(newEmail) ->
@@ -194,7 +206,7 @@ class RegisterStep2ViewModel : ViewModel() {
                 if (response.isSuccessful && response.body()?.success == true) {
                     startEmailVerification()
                 } else {
-                    _toastMessage.value = response.body()?.message ?: "인증 메일 발송에 실패했습니다."
+                    _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "인증 메일 발송에 실패했습니다.")
                     setState { copy(isEmailVerifyEnabled = true) }
                 }
             } catch (e: Exception) {
@@ -210,7 +222,7 @@ class RegisterStep2ViewModel : ViewModel() {
             try {
                 val response = ApiClient.api.verifyEmailCode(VerifyEmailCodeRequest(mail = email, code = code))
                 if (response.isSuccessful && response.body()?.success == true) {
-                    emailCountDownTimer?.cancel()
+                    emailTimer.cancel()
                     setState {
                         copy(
                             isEmailVerified = true,
@@ -218,7 +230,7 @@ class RegisterStep2ViewModel : ViewModel() {
                         )
                     }
                 } else {
-                    _toastMessage.value = response.body()?.message ?: "인증코드가 올바르지 않습니다."
+                    _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "인증코드가 올바르지 않습니다.")
                     setState { copy(isConfirmCodeEnabled = true) }
                 }
             } catch (e: Exception) {
@@ -239,7 +251,7 @@ class RegisterStep2ViewModel : ViewModel() {
                     _toastMessage.value = "인증 메일을 재발송했습니다."
                 } else {
                     setState { copy(isEmailResendVisible = true) }
-                    _toastMessage.value = response.body()?.message ?: "인증 메일 재발송에 실패했습니다."
+                    _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "인증 메일 재발송에 실패했습니다.")
                 }
             } catch (e: Exception) {
                 setState { copy(isEmailResendVisible = true) }
@@ -258,28 +270,7 @@ class RegisterStep2ViewModel : ViewModel() {
             )
         }
         _toastMessage.value = "인증 메일을 발송했습니다."
-        startEmailTimer()
-    }
-
-    private fun startEmailTimer() {
-        emailCountDownTimer?.cancel()
-        emailCountDownTimer = object : CountDownTimer(180_000L, 1000L) {
-            override fun onTick(millisUntilFinished: Long) {
-                val minutes = millisUntilFinished / 60000
-                val seconds = (millisUntilFinished % 60000) / 1000
-                setState { copy(emailTimerText = String.format("%d:%02d", minutes, seconds)) }
-            }
-
-            override fun onFinish() {
-                setState {
-                    copy(
-                        emailTimerText = "0:00",
-                        isConfirmCodeEnabled = false,
-                        isEmailVerifyEnabled = true
-                    )
-                }
-            }
-        }.start()
+        emailTimer.start()
     }
 
     // ── 최종 회원가입 ──
@@ -304,7 +295,7 @@ class RegisterStep2ViewModel : ViewModel() {
                     _toastMessage.value = "회원가입이 완료되었습니다. 로그인해주세요."
                     _registerSuccess.value = true
                 } else {
-                    _toastMessage.value = response.body()?.message ?: "회원가입에 실패했습니다."
+                    _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "회원가입에 실패했습니다.")
                 }
             } catch (e: Exception) {
                 _toastMessage.value = "네트워크 오류가 발생했습니다."
@@ -312,6 +303,25 @@ class RegisterStep2ViewModel : ViewModel() {
                 setState { copy(isLoading = false) }
             }
         }
+    }
+
+    // 완료 버튼이 왜 안 눌리는지 알려준다 — 중복확인·이메일 인증은 화면에 표시가 남지 않아
+    // 사용자가 원인을 찾기 어렵다. 위에서부터 첫 번째 미충족 항목 하나만 안내한다.
+    fun showFirstMissingRequirement() {
+        val state = _uiState.value ?: RegisterStep2UiState()
+        val message = when {
+            idText.isEmpty() -> "아이디를 입력해주세요."
+            !state.isIdChecked -> "아이디 중복확인을 해주세요."
+            state.pwValidation !is FieldValidation.Valid -> "비밀번호 형식을 확인해주세요."
+            state.pwConfirmValidation !is FieldValidation.Valid -> "비밀번호가 일치하지 않습니다."
+            !state.isNameFilled -> "이름을 입력해주세요."
+            state.phoneValidation !is FieldValidation.Valid -> "전화번호 형식을 확인해주세요."
+            state.emailValidation !is FieldValidation.Valid -> "이메일 형식을 확인해주세요."
+            !state.isEmailVerified -> "이메일 인증을 완료해주세요."
+            !state.isAddressFilled -> "주소를 입력해주세요."
+            else -> null
+        }
+        if (message != null) _toastMessage.value = message
     }
 
     fun onToastShown() {
@@ -343,6 +353,6 @@ class RegisterStep2ViewModel : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
-        emailCountDownTimer?.cancel()
+        emailTimer.cancel()
     }
 }

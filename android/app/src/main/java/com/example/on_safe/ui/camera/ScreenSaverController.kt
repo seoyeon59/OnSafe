@@ -10,15 +10,10 @@ import com.example.on_safe.R
 import kotlin.random.Random
 
 /**
- * 카메라 모드 화면의 화면보호기(무동작 시 자동 dim) + 번인 방지 로직 전담.
+ * 카메라 모드 화면보호기 — 무동작 시 자동 dim + 번인 방지(주기적 위치 이동).
  *
- * CameraModeActivity에서 분리한 이유: 카메라 바인딩/스트리밍과는 완전히 독립적인 관심사이고
- * (원본 파일에서도 서로 상태를 공유하지 않았음), 단독으로 테스트·이해하기 쉬운 단위이기 때문.
- * 타이머 취소 시점(onPause vs onDestroy)의 차이를 포함해 원본 CameraModeActivity의 동작을
- * 1:1로 그대로 옮겼다 — 로직 변경 없음.
- *
- * @param window 밝기 조절에 사용할 Activity의 Window
- * @param rootLayout 화면보호기 오버레이를 붙일 루트 뷰
+ * @param window 밝기 조절 대상
+ * @param rootLayout 오버레이를 붙일 루트 뷰
  */
 class ScreenSaverController(
     private val window: Window,
@@ -126,7 +121,7 @@ class ScreenSaverController(
 
     companion object {
         private const val INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000L
-        private const val BRIGHTNESS_RESTORE_MS = 10_000L  // 터치 후 밝기 유지 시간
+        private const val BRIGHTNESS_RESTORE_MS = 5_000L   // 터치 후 밝기 유지 시간
         private const val BRIGHTNESS_DIM = 0.01f
         private const val BRIGHTNESS_SYSTEM = -1f
         private const val PIXEL_SHIFT_INTERVAL_MS = 60_000L  // 번인 방지: 60초마다 위치 이동

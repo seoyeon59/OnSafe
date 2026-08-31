@@ -21,8 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * On-device MediaPipe Pose Landmarker(LIVE_STREAM) 래퍼.
- * 카메라 바인딩은 [CameraModeActivity]가 소유하므로(`startCamera()`), 이 클래스는
- * MediaPipe 처리와 [ImageAnalysis.Analyzer]로 넘길 [analyze] 콜백만 담당한다.
+ * 카메라 바인딩은 [CameraModeActivity]가 소유하고, 여기서는 추론과 [analyze] 콜백만 담당한다.
  */
 class PoseLandmarkerHelper(private val context: Context, private val listener: Listener) {
 
@@ -33,10 +32,7 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
 
     companion object {
         private const val MODEL_ASSET_PATH = "pose_landmarker_lite.task"
-        // stop() 호출 시점에도 CameraX가 이미 큐에 든 프레임을 이 executor로 계속 전달 중일 수
-        // 있다. unbind가 완전히 반영되기 전에 shutdown()하면 그 전달이 RejectedExecutionException을
-        // 던질 수 있어, 유예 시간을 두고 종료한다. (CameraModeActivity 쪽에서도 카메라 unbind를
-        // stop()보다 먼저 호출하도록 순서를 맞춰 실제로 겹칠 여지 자체를 줄여둔다.)
+        // unbind 반영 전에 shutdown()하면 남은 프레임 전달이 RejectedExecutionException을 내므로 유예를 둔다
         private const val SHUTDOWN_GRACE_MS = 1_000L
     }
 

@@ -58,6 +58,9 @@ class RegisterStep2Activity : AppCompatActivity() {
     private var isPwConfirmVisible = false
     private var isFormattingPhone = false
 
+    // 완료 조건 충족 여부 — 버튼 자체는 항상 활성이고, 미충족이면 안내 토스트를 띄운다
+    private var isCompleteReady = false
+
     // Step1에서 넘어온 마케팅 정보 수신 동의 여부 (기본값 false — 값이 안 넘어온 경우 대비)
     private var marketingConsent = false
 
@@ -241,6 +244,11 @@ class RegisterStep2Activity : AppCompatActivity() {
         }
 
         btnComplete.setOnClickListener {
+            // 조건 미충족 시 버튼을 막는 대신, 무엇이 빠졌는지 알려준다
+            if (!isCompleteReady) {
+                viewModel.showFirstMissingRequirement()
+                return@setOnClickListener
+            }
             viewModel.register(
                 password = etPw.text.toString(),
                 phone = etPhone.text.toString(),
@@ -277,9 +285,10 @@ class RegisterStep2Activity : AppCompatActivity() {
             btnConfirmCode.isEnabled = state.isConfirmCodeEnabled
             btnConfirmCode.alpha = if (state.isConfirmCodeEnabled) 1.0f else 0.4f
 
-            // 최종 가입
+            // 최종 가입 — 버튼은 항상 누를 수 있게 두고(안내를 띄우기 위해) 흐리게만 표시한다
             pbLoading.visibility = if (state.isLoading) View.VISIBLE else View.GONE
-            btnComplete.isEnabled = state.isCompleteEnabled && !state.isLoading
+            isCompleteReady = state.isCompleteEnabled
+            btnComplete.isEnabled = !state.isLoading
             btnComplete.alpha = if (state.isCompleteEnabled) 1.0f else 0.4f
         }
 

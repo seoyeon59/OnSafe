@@ -13,8 +13,7 @@ class FullscreenActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 가로 방향은 매니페스트의 sensorLandscape로 처리 — 여기서 고정 LANDSCAPE로 덮어쓰면
-        // 양방향 회전이 막혀버려 매니페스트 설정이 무효화된다.
+        // 가로 방향은 매니페스트의 sensorLandscape로 처리 (여기서 고정하면 양방향 회전이 막힘)
         setContentView(R.layout.activity_fullscreen)
 
         Toast.makeText(this, "나가려면 뒤로가기를 누르세요", Toast.LENGTH_SHORT).show()
@@ -24,9 +23,7 @@ class FullscreenActivity : AppCompatActivity() {
         }
     }
 
-    // 뒤로가기·닫기 버튼 모두 이 finish()를 거치므로 여기 한 곳에서만 처리하면 됨.
-    // 들어올 땐 회전하며 확대되지만(fullscreen_enter), 나갈 땐 회전으로 되감지 않고
-    // 다른 뒤로가기 화면들과 동일한 detail_pop 전환을 사용 — 회전 퇴장이 어색하다는 피드백 반영
+    // 뒤로가기·닫기 모두 이 finish()를 거친다 — 퇴장은 회전 대신 detail_pop 전환 사용
     override fun finish() {
         super.finish()
         overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)

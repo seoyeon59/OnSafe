@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 자동완성 강조 배경 — 기본값은 입력칸 모서리를 벗어나는 노란 사각형이라
+     입력칸(bg_input_rounded)과 같은 곡률로 맞춘다 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#1A4D80FF" />
+    <corners android:radius="48dp" />
+</shape>

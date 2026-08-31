@@ -27,9 +27,7 @@ data class VideoUrlEvent(
     val forDownload: Boolean
 )
 
-// 생성자에 기본값 파라미터를 두지 않는다 — by viewModels()의 기본 팩토리는 리플렉션으로
-// "진짜 무인자 생성자"를 찾는데, Kotlin은 기본값 파라미터를 별도의 무인자 생성자로 노출하지
-// 않아 런타임에 NoSuchMethodException이 난다. 그래서 필드 초기값으로 대신 지정한다.
+// 생성자에 기본값 파라미터를 두면 by viewModels()가 무인자 생성자를 못 찾아 런타임에 터진다.
 class AccidentHistoryViewModel : ViewModel() {
 
     private val repository: AccidentHistoryRepository = RealAccidentHistoryRepository()

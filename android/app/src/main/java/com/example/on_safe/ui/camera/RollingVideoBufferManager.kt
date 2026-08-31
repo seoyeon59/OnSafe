@@ -28,10 +28,7 @@ class RollingVideoBufferManager(private val context: Context) {
         private const val PRE_EVENT_SEGMENTS = 8       // 약 2분
         private const val POST_EVENT_SEGMENTS = 8      // 약 2분
         private const val TARGET_BITRATE = 1_500_000
-        // stop() 이후에도 CameraX가 진행 중이던 세그먼트의 VideoRecordEvent.Finalize를
-        // executor로 비동기 전달할 수 있다. 그 사이에 곧바로 shutdown()하면
-        // CameraX 내부의 executor.execute() 호출이 RejectedExecutionException을 던진다.
-        // Finalize 전달이 끝날 시간을 벌어주기 위한 유예 시간.
+        // stop() 직후 남은 Finalize 이벤트 전달이 끝날 시간을 벌기 위한 유예 (즉시 shutdown 시 예외)
         private const val SHUTDOWN_GRACE_MS = 1_000L
     }
 
@@ -84,10 +81,7 @@ class RollingVideoBufferManager(private val context: Context) {
             onClipReady = null
             onClipError = null
         }
-        // 촬영 시작/종료마다 새 인스턴스가 만들어지므로, 여기서 정리 안 하면 스레드가 계속 쌓임.
-        // 단, 바로 위 currentRecording?.stop()의 마지막 Finalize 이벤트가 CameraX 내부에서
-        // 비동기로 executor에 전달되는 도중일 수 있어, 곧바로 shutdown()하면 그 전달 자체가
-        // RejectedExecutionException을 던질 수 있다. 유예 시간을 두고 종료한다.
+        // 인스턴스마다 executor가 생기므로 반드시 정리하되, 남은 Finalize 전달을 위해 유예를 둔다
         mainHandler.postDelayed({ executor.shutdown() }, SHUTDOWN_GRACE_MS)
     }
 

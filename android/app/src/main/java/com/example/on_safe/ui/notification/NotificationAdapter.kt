@@ -27,9 +27,7 @@ data class NotificationItem(
 )
 
 // ─── 어댑터 ───────────────────────────────────────────────────
-// 목록 상태(읽음 처리 포함)는 NotificationViewModel이 갖고 있고, 어댑터는 그 상태를
-// updateItems()로 받아 그리기만 하는 순수 렌더러다.
-// onFallItemClick: FALL 아이템 클릭 시 호출
+// 목록 상태는 NotificationViewModel이 소유하고, 어댑터는 updateItems()로 받아 그리기만 한다
 class NotificationAdapter(
     private val items: MutableList<NotificationItem>,
     private val onFallItemClick: (item: NotificationItem) -> Unit

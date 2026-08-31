@@ -9,9 +9,8 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-// 알림 목록 전용 API가 따로 없어(백엔드 NotificationController 없음), 사고이력과 같은
-// GET /api/fall-logs/{userId}를 재사용한다. 읽음 상태는 fall-logs의 isConfirmed를 그대로 쓰고,
-// 읽음 처리는 PATCH .../confirm 호출로 반영한다.
+// 알림 전용 API가 없어 사고이력과 같은 GET /api/fall-logs/{userId}를 재사용한다.
+// 읽음 상태는 isConfirmed, 읽음 처리는 PATCH .../confirm.
 class RealNotificationRepository : NotificationRepository {
 
     override suspend fun getNotifications(userId: String): List<NotificationItem> {
