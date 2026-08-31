@@ -24,6 +24,8 @@ sealed class HistoryListItem {
         val time: String,
         val date: String,
         val hasVideo: Boolean = false,
+        // none(영상 미제공) / processing(준비 중) / ready(hasVideo와 동일 조건)
+        val videoStatus: String = "none",
         val videoUri: String? = null
     ) : HistoryListItem()
 
