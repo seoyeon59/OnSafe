@@ -234,9 +234,18 @@ class AccidentHistoryActivity : AppCompatActivity() {
     // 영상 보기 / 다운로드 / 삭제
     // ──────────────────────────────────────────────
 
+    // 위험 등급 낙상 직후엔 post-이벤트 녹화·업로드가 끝나기 전이라 정상적으로 영상이
+    // 없는 상태(processing)일 수 있다 — "영상 없음(none)"과 같은 문구를 쓰면 사용자가
+    // 버그로 오인하기 쉬워 videoStatus로 구분한다.
+    private fun videoUnavailableMessage(entry: HistoryListItem.HistoryEntry): String? = when {
+        entry.hasVideo -> null
+        entry.videoStatus == "processing" -> "영상 준비 중입니다. 잠시 후 다시 확인해 주세요."
+        else -> null
+    }
+
     private fun handleWatchVideo(entry: HistoryListItem.HistoryEntry) {
         if (!entry.hasVideo) {
-            Toast.makeText(this, "재생할 영상이 없습니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, videoUnavailableMessage(entry) ?: "재생할 영상이 없습니다.", Toast.LENGTH_SHORT).show()
             return
         }
         viewModel.fetchVideoUrl(TokenManager.getUserId(this), entry, forDownload = false)
@@ -244,7 +253,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
 
     private fun handleDownload(entry: HistoryListItem.HistoryEntry) {
         if (!entry.hasVideo) {
-            Toast.makeText(this, "저장 가능한 영상이 없습니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, videoUnavailableMessage(entry) ?: "저장 가능한 영상이 없습니다.", Toast.LENGTH_SHORT).show()
             return
         }
         val needsPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
