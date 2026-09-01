@@ -12,8 +12,8 @@ import com.example.on_safe.R
 /**
  * 사고 이력 RecyclerView 어댑터.
  * - 위험(FALL) 항목만 표시
- * - 정렬 변경 시 이동 애니메이션이 뒤섞여 보여, DiffUtil 대신 매번 전체를 다시 그림
- * - 날짜 헤더 / 이력 아이템 두 가지 ViewType 사용
+ * - DiffUtil 미사용 — 정렬 변경 시 이동 애니메이션이 뒤섞이는 문제로 매번 전체 재그리기
+ * - 날짜 헤더 / 이력 / 보관 안내 3가지 ViewType
  */
 class AccidentHistoryAdapter(
     private val onWatchVideo: (HistoryListItem.HistoryEntry) -> Unit,
@@ -42,7 +42,7 @@ class AccidentHistoryAdapter(
         // 위험(FALL) 항목만 표시
         val filtered = rawEntries.filter { it.type == HistoryType.FALL }
         val newItems = buildSectionedList(filtered, sortOrder)
-        // 정렬 변경은 리스트 전체가 뒤집히는 수준이라 통째로 다시 그린다 (클래스 주석 참고)
+        // 정렬 변경은 목록 전체가 뒤집히는 수준 — 통째로 재그리기 (클래스 주석 참고)
         replaceAllInstant(newItems)
     }
 
@@ -94,7 +94,7 @@ class AccidentHistoryAdapter(
         }
     }
 
-    // 보관 기간 안내 카드 — 고정 문구만 표시, 바인딩할 동적 데이터 없음
+    // 보관 기간 안내 — 고정 문구, 바인딩 불필요
     inner class NoticeViewHolder(view: View) : RecyclerView.ViewHolder(view)
 
     inner class ItemViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -104,9 +104,8 @@ class AccidentHistoryAdapter(
         private val btnDelete:     ImageButton  = view.findViewById(R.id.btnDelete)
 
         fun bind(entry: HistoryListItem.HistoryEntry) {
-            // 영상 길이로 오해되지 않도록 "감지 시각" 접두어 부여 (알림 상세 모달과 동일한 표현으로 통일)
+            // 영상 길이 오해 방지용 "감지 시각" 접두어 — 알림 상세 모달과 표현 통일
             tvTime.text = "감지 시각 · ${entry.time}"
-            // 모든 항목이 낙상(FALL)이므로 카드 좌측 상단에 고정 표시 (배지 제거)
 
             btnWatchVideo.setOnClickListener { onWatchVideo(entry) }
             btnDownload.setOnClickListener   { onDownload(entry) }
@@ -118,10 +117,7 @@ class AccidentHistoryAdapter(
     // Private helpers
     // ──────────────────────────────────────────────
 
-    /**
-     * 항목 리스트를 날짜별로 그룹화하여 DateHeader + HistoryEntry 형태로 변환.
-     * sortOrder에 따라 날짜 및 시간 정렬 방향이 달라진다.
-     */
+    // 날짜별 그룹화 → DateHeader + HistoryEntry 변환. 정렬 방향은 sortOrder 기준.
     private fun buildSectionedList(
         entries: List<HistoryListItem.HistoryEntry>,
         sortOrder: SortOrder
@@ -142,7 +138,7 @@ class AccidentHistoryAdapter(
         }
 
         return buildList {
-            // 오래된순: 가장 오래된 항목이 리스트 맨 위에 오므로, 안내 문구도 맨 위에 먼저 배치
+            // 오래된순: 가장 오래된 항목이 맨 위 → 안내도 맨 위
             if (sortOrder == SortOrder.OLDEST_FIRST) add(HistoryListItem.RetentionNotice)
 
             sorted.groupBy { it.date }
@@ -151,7 +147,7 @@ class AccidentHistoryAdapter(
                     addAll(group)
                 }
 
-            // 최신순: 가장 오래된 항목이 리스트 맨 아래에 오므로, 안내 문구도 맨 아래에 배치
+            // 최신순: 가장 오래된 항목이 맨 아래 → 안내도 맨 아래
             if (sortOrder == SortOrder.NEWEST_FIRST) add(HistoryListItem.RetentionNotice)
         }
     }

@@ -3,15 +3,20 @@ package com.example.on_safe.ui.camera
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.example.on_safe.BuildConfig
 import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.DeviceRegisterRequest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 // 사이드 패널 "연결 정보"에 표시할 값 — 카메라/보호자 모드가 같은 계정으로 로그인하는 구조라
-// 여기 표시되는 이름도 계정 소유자 본인 이름이다 (별도 "보호자 계정" 개념 없음)
+// 여기 표시되는 이름도 계정 소유자 본인 이름이다 (별도 "보호자 계정" 개념 없음).
+// 조회 전/실패 구분용 null 유지 — 문구 결정은 DisplayText 담당
 data class CameraModeUiState(
-    val guardianName: String = "",
-    val deviceId: String = ""
+    val guardianName: String? = null,
+    val deviceId: String? = null
 )
 
 class CameraModeViewModel : ViewModel() {
@@ -24,18 +29,40 @@ class CameraModeViewModel : ViewModel() {
         setState { copy(deviceId = deviceId) }
     }
 
+    // 실패 시에도 상태 갱신 — 레이아웃 예시 문구 잔존 방지
     fun loadGuardianName(userId: String) {
-        if (userId.isBlank()) return
+        if (userId.isBlank()) {
+            setState { copy(guardianName = "") }
+            return
+        }
         viewModelScope.launch {
-            try {
+            val name = try {
                 val response = ApiClient.api.getUser(userId)
                 val body = response.body()
-                if (response.isSuccessful && body?.success == true && body.data != null) {
-                    setState { copy(guardianName = body.data.name) }
-                }
-                // 실패 시 아무 것도 하지 않음 — 레이아웃 기본 텍스트가 계속 보임
+                if (response.isSuccessful && body?.success == true) body.data?.name else null
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
-                // 조회 실패 → 기본 텍스트 유지
+                null
+            }
+            setState { copy(guardianName = name.orEmpty()) }
+        }
+    }
+
+    // 보호자 홈 조회용 기기 등록 — 서버 upsert라 재진입 시 중복 없음
+    fun registerDevice(userId: String, deviceId: String, deviceName: String) {
+        if (userId.isBlank() || deviceId.isBlank()) return
+        viewModelScope.launch {
+            try {
+                ApiClient.aiApi.registerDevice(
+                    userId,
+                    DeviceRegisterRequest(deviceId = deviceId, deviceName = deviceName)
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // 등록 실패해도 촬영은 무관 — 보호자 홈 기기 ID만 공란
+                if (BuildConfig.DEBUG) Log.w("CameraMode", "기기 등록 실패", e)
             }
         }
     }

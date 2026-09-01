@@ -8,9 +8,10 @@ import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.ResetPasswordRequest
 import com.example.on_safe.network.dto.UserUpdateRequest
 import com.example.on_safe.util.PasswordValidator
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-// 입력칸 하나의 검증 결과 — 어떤 메시지/색을 보여줄지는 뷰모델이 판단하고, Activity는 그대로 표시만 함
+// 입력칸 검증 결과 — 메시지·색 판단은 뷰모델, Activity는 표시만
 sealed class FieldValidation {
     object Empty : FieldValidation()
     data class Valid(val message: String) : FieldValidation()
@@ -44,7 +45,7 @@ class ResetPasswordViewModel : ViewModel() {
     private var newPwConfirm = ""
     private var currentPw = ""   // MODE_SETTINGS에서만 사용 — 서버 본인확인에 전송
 
-    // Intent로 넘어온 모드/유저아이디를 Activity의 onCreate에서 한 번만 넘겨받음
+    // Intent의 모드·유저아이디를 onCreate에서 1회 전달받음
     fun init(mode: String, userId: String) {
         this.mode = mode
         this.userId = userId
@@ -78,20 +79,22 @@ class ResetPasswordViewModel : ViewModel() {
         }
         val isNewPwValid = newPwValidation is FieldValidation.Valid
         val isConfirmValid = confirmValidation is FieldValidation.Valid
-        // MODE_FIND_PW(비밀번호 찾기로 진입)에서는 현재 비밀번호 입력칸 자체가 없으므로 조건에서 제외
+        // MODE_FIND_PW는 현재 비밀번호 입력칸 부재 — 조건에서 제외
         val saveEnabled = isNewPwValid && isConfirmValid &&
                 (mode == ResetPasswordActivity.MODE_FIND_PW || currentPw.isNotEmpty())
 
-        _uiState.value = (_uiState.value ?: ResetPasswordUiState()).copy(
-            newPwValidation = newPwValidation,
-            confirmValidation = confirmValidation,
-            isSaveEnabled = saveEnabled
-        )
+        setState {
+            copy(
+                newPwValidation = newPwValidation,
+                confirmValidation = confirmValidation,
+                isSaveEnabled = saveEnabled
+            )
+        }
     }
 
-    // 진입 경로별로 엔드포인트가 다르다 — reset-password는 이메일 코드 인증을 거쳐야만 서버가 받아준다
+    // 진입 경로별 엔드포인트 상이 — reset-password는 이메일 코드 인증 선행 필수
     fun save() {
-        _uiState.value = (_uiState.value ?: ResetPasswordUiState()).copy(isLoading = true)
+        setState { copy(isLoading = true) }
         viewModelScope.launch {
             try {
                 if (mode == ResetPasswordActivity.MODE_SETTINGS) {
@@ -99,23 +102,24 @@ class ResetPasswordViewModel : ViewModel() {
                 } else {
                     saveAfterCodeVerification()
                 }
-            } catch (e: Exception) {
+            } catch (e: CancellationException) {
+                throw e   // 화면 종료로 인한 취소 — "네트워크 오류" 오표시 방지
+            } catch (_: Exception) {
                 _toastMessage.value = "네트워크 오류가 발생했습니다."
             } finally {
-                _uiState.value = (_uiState.value ?: ResetPasswordUiState()).copy(isLoading = false)
+                setState { copy(isLoading = false) }
             }
         }
     }
 
-    // 설정 경유 — currentPassword를 함께 보내야 서버가 본인확인 후 변경해준다
+    // 설정 경유 — 서버 본인확인용 currentPassword 동봉 필수
     private suspend fun saveFromSettings() {
         val response = ApiClient.api.updateUser(
             userId,
             UserUpdateRequest(currentPassword = currentPw, password = newPw)
         )
         if (response.isSuccessful && response.body()?.success == true) {
-            _toastMessage.value = "비밀번호가 변경되었습니다."
-            _saveSuccess.value = true
+            onSaveSucceeded()
         } else {
             _toastMessage.value = ApiClient.parseErrorMessage(
                 response.errorBody(), "현재 비밀번호가 올바르지 않습니다."
@@ -129,12 +133,17 @@ class ResetPasswordViewModel : ViewModel() {
             ResetPasswordRequest(userId = userId, newPassword = newPw)
         )
         if (response.isSuccessful && response.body()?.success == true) {
-            _toastMessage.value = "비밀번호가 변경되었습니다."
-            _saveSuccess.value = true
+            onSaveSucceeded()
         } else {
             _toastMessage.value = response.body()?.message
                 ?: ApiClient.parseErrorMessage(response.errorBody(), "비밀번호 변경에 실패했습니다.")
         }
+    }
+
+    // 두 경로 공통 성공 처리
+    private fun onSaveSucceeded() {
+        _toastMessage.value = "비밀번호가 변경되었습니다."
+        _saveSuccess.value = true
     }
 
     fun onToastShown() {
@@ -143,5 +152,9 @@ class ResetPasswordViewModel : ViewModel() {
 
     fun onSaveHandled() {
         _saveSuccess.value = false
+    }
+
+    private inline fun setState(update: ResetPasswordUiState.() -> ResetPasswordUiState) {
+        _uiState.value = (_uiState.value ?: ResetPasswordUiState()).update()
     }
 }

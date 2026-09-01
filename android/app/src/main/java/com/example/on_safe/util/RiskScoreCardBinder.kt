@@ -34,6 +34,33 @@ object RiskScoreCardBinder {
         }
     }
 
+    /**
+     * 점수 미수신 상태 표시.
+     * 레이아웃 기본값에 맡길 경우 데이터 없이 "정상"으로 보이는 오표시 발생.
+     */
+    fun bindUnknown(cardRoot: View, message: String) {
+        val color = ContextCompat.getColor(cardRoot.context, R.color.ink_500)
+
+        cardRoot.findViewById<TextView>(R.id.tvRiskScore).also {
+            it.text = DisplayText.NO_SCORE
+            it.setTextColor(color)
+        }
+        cardRoot.findViewById<TextView>(R.id.tvRiskStatusBadge).also {
+            it.text = DisplayText.UNKNOWN_LEVEL
+            it.backgroundTintList = ColorStateList.valueOf(color)
+        }
+        cardRoot.findViewById<TextView>(R.id.tvRiskRange).text = ""
+        cardRoot.findViewById<TextView>(R.id.tvRiskMessage).text = message
+
+        cardRoot.findViewById<View>(R.id.progressFill).also { fill ->
+            fill.layoutParams = fill.layoutParams.also { it.width = 0 }
+            fill.backgroundTintList = ColorStateList.valueOf(color)
+        }
+
+        // 이전 DANGER 테두리 잔존 방지용 해제
+        (cardRoot.background?.mutate() as? GradientDrawable)?.setStroke(0, 0)
+    }
+
     fun bind(cardRoot: View, score: Int) {
         val context = cardRoot.context
         val level   = RiskLevel.fromScore(score)

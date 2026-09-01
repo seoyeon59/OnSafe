@@ -20,6 +20,9 @@ object ApiClient {
     // BASE_URL을 BuildConfig로 뺐음 — build.gradle.kts에서 debug/release 자동 분기
     private val BASE_URL = BuildConfig.BASE_URL
 
+    // devices API 전용 — Kotlin 서버에 미존재, Python 서버 직접 호출
+    private val AI_BASE_URL = BuildConfig.AI_BASE_URL
+
     private lateinit var appContext: Context
 
     fun init(context: Context) {
@@ -146,6 +149,16 @@ object ApiClient {
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(ApiService::class.java)
+    }
+
+    // JWT 동일 — httpClient 공유, 주소·응답 형식만 상이
+    val aiApi: AiApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(AI_BASE_URL)
+            .client(httpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+            .create(AiApiService::class.java)
     }
 
     fun parseErrorMessage(errorBody: okhttp3.ResponseBody?, fallback: String): String {

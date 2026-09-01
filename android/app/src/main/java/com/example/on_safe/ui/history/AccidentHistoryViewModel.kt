@@ -7,27 +7,28 @@ import androidx.lifecycle.viewModelScope
 import com.example.on_safe.data.repository.AccidentHistoryRepository
 import com.example.on_safe.data.repository.RealAccidentHistoryRepository
 import com.example.on_safe.network.ApiClient
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-// 목록 + 정렬 상태 + 마지막 조회 실패 여부 (실패와 "진짜 빈 목록"을 구분하기 위해 별도 보관)
+// 목록 + 정렬 상태 + 조회 실패 여부 — 실패와 "진짜 빈 목록"의 구분용
 data class AccidentHistoryUiState(
     val entries: List<HistoryListItem.HistoryEntry> = emptyList(),
     val sort: SortOrder = SortOrder.NEWEST_FIRST,
     val lastLoadFailed: Boolean = false
 )
 
-// 1회성 토스트 메시지 — 조회/삭제/영상 URL 조회 실패, 삭제 성공 안내
+// 1회성 토스트 — 조회/삭제/영상 URL 실패, 삭제 성공 안내
 data class HistoryToastEvent(val message: String)
 
-// 영상 signed URL 조회 결과 — 시청(watch)/다운로드(download) 중 어느 요청이었는지 함께 전달
-// (다운로드는 갤러리 저장을 위해 ContentResolver가 필요해 Activity가 마저 처리한다)
+// 영상 signed URL 조회 결과 — 시청/다운로드 요청 구분 포함
+// 다운로드는 갤러리 저장에 ContentResolver가 필요해 Activity가 마저 처리
 data class VideoUrlEvent(
     val url: String,
     val entry: HistoryListItem.HistoryEntry,
     val forDownload: Boolean
 )
 
-// 생성자에 기본값 파라미터를 두면 by viewModels()가 무인자 생성자를 못 찾아 런타임에 터진다.
+// 생성자 기본값 파라미터 금지 — by viewModels()의 무인자 생성자 탐색 실패 원인
 class AccidentHistoryViewModel : ViewModel() {
 
     private val repository: AccidentHistoryRepository = RealAccidentHistoryRepository()
@@ -50,7 +51,10 @@ class AccidentHistoryViewModel : ViewModel() {
             try {
                 rawEntries = repository.getHistoryEntries(userId)
                 setState { copy(entries = rawEntries, lastLoadFailed = false) }
+            } catch (e: CancellationException) {
+                throw e   // 화면 이탈에 의한 취소 — 조회 실패 처리 대상 아님
             } catch (e: IllegalStateException) {
+                // 저장소가 서버 메시지를 담아 던지는 경로
                 setState { copy(lastLoadFailed = true) }
                 _toastEvent.value = HistoryToastEvent(e.message ?: "사고 이력을 불러오지 못했습니다.")
             } catch (e: Exception) {
@@ -77,6 +81,8 @@ class AccidentHistoryViewModel : ViewModel() {
                         ApiClient.parseErrorMessage(response.errorBody(), "영상을 불러올 수 없습니다.")
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _toastEvent.value = HistoryToastEvent("네트워크 오류로 영상을 불러올 수 없습니다.")
             }
@@ -89,6 +95,7 @@ class AccidentHistoryViewModel : ViewModel() {
                 val response = ApiClient.api.deleteFallLog(userId, entry.id)
                 val body = response.body()
                 if (response.isSuccessful && body?.success == true) {
+                    // 재조회 없이 로컬 목록에서만 제거 — 목록 깜빡임 방지
                     rawEntries = rawEntries.filter { it.id != entry.id }
                     setState { copy(entries = rawEntries, lastLoadFailed = false) }
                     _toastEvent.value = HistoryToastEvent("이력이 삭제되었습니다.")
@@ -97,6 +104,8 @@ class AccidentHistoryViewModel : ViewModel() {
                         ApiClient.parseErrorMessage(response.errorBody(), "삭제에 실패했습니다.")
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _toastEvent.value = HistoryToastEvent("네트워크 오류로 삭제에 실패했습니다.")
             }

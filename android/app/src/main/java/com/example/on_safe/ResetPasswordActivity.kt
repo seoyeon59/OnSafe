@@ -16,12 +16,11 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import com.example.on_safe.R
 
 class ResetPasswordActivity : AppCompatActivity() {
 
     companion object {
-        // 호출 측에서 Intent에 담아 보내는 모드값
+        // 호출부가 Intent에 담아 보내는 모드값
         const val MODE_FIND_PW = "find_pw"     // 비밀번호 찾기 후 진입 (현재 비번 칸 숨김)
         const val MODE_SETTINGS = "settings"   // 설정에서 진입 (현재 비번 칸 표시)
     }
@@ -41,10 +40,6 @@ class ResetPasswordActivity : AppCompatActivity() {
     private lateinit var pbLoading: ProgressBar
     private lateinit var tvNewPwMessage: TextView
     private lateinit var tvNewPwConfirmMessage: TextView
-
-    private var isCurrentPwVisible = false
-    private var isNewPwVisible = false
-    private var isNewPwConfirmVisible = false
 
     private val COLOR_RED = 0xFFEF4444.toInt()
     private val COLOR_GREEN = 0xFF22C55E.toInt()
@@ -83,65 +78,16 @@ class ResetPasswordActivity : AppCompatActivity() {
 
         btnBack.setOnClickListener { finish() }
 
-        btnToggleCurrentPw.setOnClickListener {
-            isCurrentPwVisible = !isCurrentPwVisible
-            etCurrentPw.transformationMethod = if (isCurrentPwVisible)
-                HideReturnsTransformationMethod.getInstance()
-            else PasswordTransformationMethod.getInstance()
-            etCurrentPw.setSelection(etCurrentPw.text.length)
-            btnToggleCurrentPw.setImageResource(
-                if (isCurrentPwVisible) R.drawable.ic_eye_off else R.drawable.ic_eye
-            )
-        }
+        // 눈 아이콘 3개 동작 동일 — 공통 헬퍼로 통합
+        setupPasswordToggle(etCurrentPw, btnToggleCurrentPw)
+        setupPasswordToggle(etNewPw, btnToggleNewPw)
+        setupPasswordToggle(etNewPwConfirm, btnToggleNewPwConfirm)
 
-        btnToggleNewPw.setOnClickListener {
-            isNewPwVisible = !isNewPwVisible
-            etNewPw.transformationMethod = if (isNewPwVisible)
-                HideReturnsTransformationMethod.getInstance()
-            else PasswordTransformationMethod.getInstance()
-            etNewPw.setSelection(etNewPw.text.length)
-            btnToggleNewPw.setImageResource(
-                if (isNewPwVisible) R.drawable.ic_eye_off else R.drawable.ic_eye
-            )
-        }
-
-        btnToggleNewPwConfirm.setOnClickListener {
-            isNewPwConfirmVisible = !isNewPwConfirmVisible
-            etNewPwConfirm.transformationMethod = if (isNewPwConfirmVisible)
-                HideReturnsTransformationMethod.getInstance()
-            else PasswordTransformationMethod.getInstance()
-            etNewPwConfirm.setSelection(etNewPwConfirm.text.length)
-            btnToggleNewPwConfirm.setImageResource(
-                if (isNewPwConfirmVisible) R.drawable.ic_eye_off else R.drawable.ic_eye
-            )
-        }
-
-        // 새 비밀번호 유효성 — 판단은 뷰모델이 하고, Activity는 결과를 화면에 표시만 함
-        etNewPw.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                viewModel.onNewPasswordChanged(s.toString())
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-
-        // 비밀번호 확인 유효성
-        etNewPwConfirm.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                viewModel.onConfirmChanged(s.toString())
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-
-        // MODE_SETTINGS: 현재 비밀번호는 버튼 활성화 조건이자 서버 본인확인에 그대로 전송되는 값
-        etCurrentPw.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                viewModel.onCurrentPasswordChanged(s.toString())
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
+        // 유효성 판단은 뷰모델 담당 — Activity는 입력 전달·결과 표시만
+        etNewPw.onTextChanged(viewModel::onNewPasswordChanged)
+        etNewPwConfirm.onTextChanged(viewModel::onConfirmChanged)
+        // MODE_SETTINGS: 현재 비밀번호는 버튼 활성화 조건이자 서버 본인확인 전송값
+        etCurrentPw.onTextChanged(viewModel::onCurrentPasswordChanged)
 
         btnSave.setOnClickListener {
             viewModel.save()
@@ -153,8 +99,10 @@ class ResetPasswordActivity : AppCompatActivity() {
     private fun observeViewModel() {
         viewModel.uiState.observe(this) { state ->
             pbLoading.visibility = if (state.isLoading) View.VISIBLE else View.GONE
-            btnSave.isEnabled = state.isSaveEnabled && !state.isLoading
-            btnSave.alpha = if (state.isSaveEnabled) 1.0f else 0.4f
+            // 저장 중 활성처럼 보이던 문제 — isEnabled와 알파 조건 일치
+            val saveEnabled = state.isSaveEnabled && !state.isLoading
+            btnSave.isEnabled = saveEnabled
+            btnSave.alpha = if (saveEnabled) 1.0f else 0.4f
 
             applyValidation(etNewPw, tvNewPwMessage, state.newPwValidation)
             applyValidation(etNewPwConfirm, tvNewPwConfirmMessage, state.confirmValidation)
@@ -173,6 +121,28 @@ class ResetPasswordActivity : AppCompatActivity() {
                 finish()
             }
         }
+    }
+
+    // 표시/숨김 전환 + 커서 끝 유지 + 아이콘 교체
+    private fun setupPasswordToggle(et: EditText, btn: ImageButton) {
+        var visible = false
+        btn.setOnClickListener {
+            visible = !visible
+            et.transformationMethod = if (visible)
+                HideReturnsTransformationMethod.getInstance()
+            else PasswordTransformationMethod.getInstance()
+            et.setSelection(et.text.length)
+            btn.setImageResource(if (visible) R.drawable.ic_eye_off else R.drawable.ic_eye)
+        }
+    }
+
+    // TextWatcher 빈 오버라이드 3중 중복 제거용 확장
+    private fun EditText.onTextChanged(action: (String) -> Unit) {
+        addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) = action(s.toString())
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
     }
 
     private fun applyValidation(et: EditText, tv: TextView, validation: FieldValidation) {
@@ -210,7 +180,7 @@ class ResetPasswordActivity : AppCompatActivity() {
         et.setBackgroundResource(R.drawable.bg_input_rounded)
     }
 
-    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    // 좌상단 뒤로가기 화면 공통 전환 — 알림 화면과 동일
     override fun finish() {
         super.finish()
         overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)

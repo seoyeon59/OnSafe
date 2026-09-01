@@ -8,12 +8,13 @@ import com.example.on_safe.data.repository.NotificationRepository
 import com.example.on_safe.data.repository.RealNotificationRepository
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.util.RiskScoreCardBinder
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-// 홈 화면 연결 상태 — colorRes는 리소스 id 값만 들고 있어 Context 없이도 참조 가능
+// 홈 연결 상태 — colorRes는 리소스 id라 Context 없이 참조 가능
 enum class ConnectionState(val label: String, val colorRes: Int) {
     CONNECTED("기기 연결됨", R.color.status_normal),
     CONNECTING("연결 확인 중...", R.color.status_warning),
@@ -22,10 +23,12 @@ enum class ConnectionState(val label: String, val colorRes: Int) {
 }
 
 // 홈 화면 상태 — 연결 상태 + 최신 위험 점수(폴링 전이라 아직 없으면 null) + 미읽음 알림 유무
+//                + 카메라 기기 ID(조회 전·미등록이면 null)
 data class MainUiState(
     val connectionState: ConnectionState = ConnectionState.CONNECTING,
     val riskScore: Int? = null,
-    val hasUnread: Boolean = false
+    val hasUnread: Boolean = false,
+    val deviceId: String? = null
 )
 
 // 위험(DANGER) 진입 1회성 이벤트 — 감지 시점 점수/시각 스냅샷, Activity가 모달로 소비
@@ -41,10 +44,10 @@ class MainViewModel : ViewModel() {
 
     private var pollingJob: Job? = null
 
-    // DANGER 진입 시점에만 이벤트를 발생시키기 위해 직전 등급을 기억
+    // DANGER 신규 진입 판별용 직전 등급
     private var lastRiskLevel: RiskScoreCardBinder.RiskLevel? = null
 
-    // 마지막으로 받은 갱신 시각 — 서버가 촬영 상태를 알려주게 되면 판정에 쓸 값
+    // 마지막 갱신 시각 — 서버의 촬영 상태 제공 시 판정에 쓸 값
     private var lastUpdatedAt: String? = null
 
     private val notificationRepository: NotificationRepository = RealNotificationRepository()
@@ -52,7 +55,7 @@ class MainViewModel : ViewModel() {
     // 알림 화면에서 "모두 읽음" 상태로 돌아온 시각 — 서버 반영 지연 중 빨간 점 재점등 방지
     private var allReadAtMillis = 0L
 
-    // userId 조회(TokenManager)는 Context가 필요해 Activity가 넘겨준다
+    // userId 조회는 Context 필요 — Activity가 전달
     fun startPolling(userId: String) {
         stopPolling()
 
@@ -63,7 +66,11 @@ class MainViewModel : ViewModel() {
 
         lastUpdatedAt = null
 
+        // 첫 응답 전 직전 FAILED 잔상 제거
+        setState { copy(connectionState = ConnectionState.CONNECTING) }
+
         refreshUnreadBadge(userId)
+        refreshDeviceId(userId)
 
         pollingJob = viewModelScope.launch {
             while (isActive) {
@@ -73,23 +80,39 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    // 알림 화면에 들어갔다 나와야만 뱃지가 갱신되던 문제 — 홈에 올라올 때마다 직접 확인한다
+    // 알림 화면 진입해야만 뱃지가 갱신되던 문제 — 홈 복귀 시마다 직접 확인
     fun refreshUnreadBadge(userId: String) {
         if (userId.isBlank()) return
         viewModelScope.launch {
             val unread = try {
                 notificationRepository.getNotifications(userId).any { it.isUnread }
+            } catch (e: CancellationException) {
+                throw e         // 코루틴 취소는 실패 아님 — 전파
             } catch (_: Exception) {
                 return@launch   // 조회 실패 시 기존 표시를 유지한다
             }
-            // 방금 "모두 읽음"으로 표시했는데 서버의 읽음 처리가 아직 반영되지 않았을 수 있다.
-            // 이때 서버 값을 그대로 쓰면 껐던 빨간 점이 다시 켜졌다가 꺼진다.
+            // "모두 읽음" 직후 서버 반영 지연 — 서버 값을 그대로 쓰면 빨간 점 재점등
             if (unread && System.currentTimeMillis() - allReadAtMillis < READ_SYNC_GRACE_MS) return@launch
             setState { copy(hasUnread = unread) }
         }
     }
 
-    // 알림 화면에서 돌아온 직후 네트워크 왕복 없이 즉시 반영하기 위한 경로
+    // 계정당 카메라 1대 전제로 첫 항목만 사용.
+    // devices의 status·last_seen은 서버 미갱신이라 미사용 — 연결 표시는 위험 지수 폴링 담당
+    private fun refreshDeviceId(userId: String) {
+        viewModelScope.launch {
+            val deviceId = try {
+                ApiClient.aiApi.getDevices(userId).body()?.devices?.firstOrNull()?.deviceId
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                return@launch   // 조회 실패 시 기존 표시를 유지한다
+            }
+            setState { copy(deviceId = deviceId) }
+        }
+    }
+
+    // 알림 화면 복귀 직후 네트워크 왕복 없는 즉시 반영 경로
     fun setUnreadBadge(hasUnread: Boolean) {
         if (!hasUnread) allReadAtMillis = System.currentTimeMillis()
         setState { copy(hasUnread = hasUnread) }
@@ -100,9 +123,9 @@ class MainViewModel : ViewModel() {
         pollingJob = null
     }
 
-    // 상태를 4가지로 구분한다 — 전부 "연결 실패"로 뭉치면 사용자가 원인을 알 수 없다.
-    //   404(데이터 없음) = 카메라 기기가 아직 촬영을 시작하지 않은 것 → STANDBY
-    //   그 외 실패/네트워크 오류 = 서버에 닿지 못한 것 → FAILED
+    // 상태 4분류 — 전부 "연결 실패"로 뭉치면 원인 파악 불가
+    //   404(데이터 없음) = 카메라가 아직 촬영 미시작 → STANDBY
+    //   그 외 실패·네트워크 오류 = 서버 미도달 → FAILED
     private suspend fun fetchRiskScoreOnce(userId: String) {
         try {
             val response = ApiClient.api.getRiskScore(userId)
@@ -119,20 +142,19 @@ class MainViewModel : ViewModel() {
                     setState { copy(connectionState = ConnectionState.FAILED) }
                 }
             }
+        } catch (e: CancellationException) {
+            // 화면 이탈 취소를 FAILED로 뭉칠 때의 "기기 연결 실패" 잔상 방지
+            throw e
         } catch (_: Exception) {
             setState { copy(connectionState = ConnectionState.FAILED) }
         }
     }
 
-    // 촬영 종료 여부는 앱에서 판단할 수 없다.
-    //
-    // 서버 realtime_data는 촬영이 끝나도 마지막 값이 남고, updated_at은 "사람이 화면에
-    // 잡혔을 때"만 갱신된다. 카메라 폰은 사람이 없으면 아무것도 보내지 않기 때문이다.
-    // 무인 감시에서는 빈 방이 정상 상태이므로, updated_at이 멈춘 것을 촬영 종료로 보면
-    // 카메라가 멀쩡히 돌아가는데도 대기 중으로 표시된다.
-    //
-    // 따라서 데이터가 있으면 연결된 것으로 본다. 정확한 판정은 서버가 촬영 상태를
-    // 알려줘야 가능하다(devices 컬렉션의 status·last_seen 필드 활용 협의 중).
+    // 촬영 종료 여부는 앱에서 판단 불가.
+    // realtime_data는 종료 후에도 마지막 값이 남고 updated_at은 사람이 잡혔을 때만 갱신 —
+    // 무인 감시의 빈 방이 정상 상태라 updated_at 정지를 종료로 보면 오판.
+    // 따라서 데이터 존재 = 연결로 간주. 정확한 판정은 서버의 촬영 상태 제공 필요
+    // (devices 컬렉션 status·last_seen 협의 중).
     private fun applyFreshness(score: Int, updatedAt: String?) {
         lastUpdatedAt = updatedAt
         applyRiskScore(score)
@@ -142,7 +164,7 @@ class MainViewModel : ViewModel() {
         setState { copy(connectionState = ConnectionState.CONNECTED, riskScore = score) }
 
         val currentLevel = RiskScoreCardBinder.RiskLevel.fromScore(score)
-        // 이전 등급이 DANGER 미만이었다가 DANGER로 진입한 경우에만 이벤트 발생
+        // DANGER 신규 진입 시에만 이벤트 발생
         if (currentLevel == RiskScoreCardBinder.RiskLevel.DANGER &&
             lastRiskLevel != RiskScoreCardBinder.RiskLevel.DANGER
         ) {
@@ -151,7 +173,7 @@ class MainViewModel : ViewModel() {
         lastRiskLevel = currentLevel
     }
 
-    // 모달을 띄운 뒤 Activity가 호출 — 재구독(화면 회전 등) 시 모달 재표시 방지
+    // 모달 표시 후 Activity가 호출 — 재구독(화면 회전 등) 시 재표시 방지
     fun onFallAlertHandled() {
         _fallAlertEvent.value = null
     }
@@ -168,7 +190,7 @@ class MainViewModel : ViewModel() {
     companion object {
         private const val POLLING_INTERVAL_MS = 5_000L
 
-        // 읽음 처리가 서버에 반영되기를 기다려주는 시간
+        // 서버의 읽음 처리 반영 대기 시간
         private const val READ_SYNC_GRACE_MS = 3_000L
     }
 }

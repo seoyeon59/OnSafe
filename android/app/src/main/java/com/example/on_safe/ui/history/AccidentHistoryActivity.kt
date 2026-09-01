@@ -29,6 +29,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
+import com.example.on_safe.ui.settings.SettingsActivity
 import com.example.on_safe.util.TokenManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -49,10 +50,13 @@ class AccidentHistoryActivity : AppCompatActivity() {
 
     private val viewModel: AccidentHistoryViewModel by viewModels()
 
+    // 스크롤 리셋 판단용 — 직전에 그린 정렬
+    private var lastRenderedSort: SortOrder? = null
+
     // 권한 승인 후 재시도할 다운로드 항목
     private var pendingDownloadEntry: HistoryListItem.HistoryEntry? = null
 
-    // 미디어 권한 요청 → 승인 시 handleDownload 재시도(signed URL 새로 발급), 거부 시 안내
+    // 권한 승인 시 handleDownload 재시도(signed URL 재발급), 거부 시 안내
     private val requestMediaPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             val entry = pendingDownloadEntry ?: return@registerForActivityResult
@@ -88,7 +92,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
         setupNavListeners()
         observeViewModel()
 
-        // 탭 화면에서 뒤로가기 → 앱 종료가 아니라 홈으로 이동한다
+        // 탭 화면 뒤로가기 → 앱 종료 대신 홈 이동
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 startActivity(Intent(this@AccidentHistoryActivity, MainActivity::class.java).apply {
@@ -124,15 +128,17 @@ class AccidentHistoryActivity : AppCompatActivity() {
         }
     }
 
-    // 정렬/목록/실패 상태가 바뀔 때마다 화면 전체를 다시 그린다
+    // 정렬·목록·실패 상태 변경 시 화면 재구성
     private fun renderState(state: AccidentHistoryUiState) {
         adapter.submitList(state.entries, state.sort)
         updateSortChipUi(state.sort)
         updateCountDisplay(state.entries)
         updateEmptyState(state.lastLoadFailed)
-        // 정렬 변경 시 DiffUtil이 이전 스크롤 위치를 그대로 두는 경우가 있어 항상 맨 위로 리셋
-        // 순간이동 대신 부드럽게 스크롤해서 "위로 올라갔다"는 게 눈에 보이도록 함
-        rvHistory.smoothScrollToPosition(0)
+        // 정렬이 실제로 바뀔 때만 맨 위로 — 삭제 등 다른 갱신에서 스크롤되면 보던 위치 소실
+        if (lastRenderedSort != null && lastRenderedSort != state.sort) {
+            rvHistory.smoothScrollToPosition(0)
+        }
+        lastRenderedSort = state.sort
     }
 
     private fun initViews() {
@@ -145,9 +151,6 @@ class AccidentHistoryActivity : AppCompatActivity() {
         chipOldest       = findViewById(R.id.chipOldest)
 
         btnRetry.setOnClickListener { viewModel.loadHistory(TokenManager.getUserId(this)) }
-
-        // btnBack은 레이아웃에서 제거됨 (바텀탭으로 이동하는 구조이므로 불필요)
-        // findViewById<ImageButton>(R.id.btnBack)?.setOnClickListener { finish() }
     }
 
     private fun initRecyclerView() {
@@ -169,26 +172,25 @@ class AccidentHistoryActivity : AppCompatActivity() {
     }
 
     private fun setupNavListeners() {
-        // 홈: 사고이력은 왼쪽 탭 → 홈으로 돌아갈 때 오른쪽으로 슬라이드 아웃
-        // 탭 화면끼리는 항상 finish()로 이전 탭을 정리 → 뒤로가기 눌러도 다른 탭이 쌓여있지 않음
+        // 홈: 사고이력은 왼쪽 탭 → 오른쪽으로 슬라이드 아웃
+        // 탭 간 이동은 finish()로 이전 탭 정리 — 뒤로가기 시 탭 누적 방지
         findViewById<View>(R.id.tabHome).setOnClickListener {
-            val intent = Intent(this, com.example.on_safe.MainActivity::class.java).apply {
+            val intent = Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
             startActivity(intent)
             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
             finish()
         }
-        // 설정: 홈을 건너뛰고 이동하므로 더 빠른 전환으로 "스쳐 지나가는" 느낌을 줌
+        // 설정: 홈을 건너뛰는 이동이라 더 빠른 전환
         findViewById<View>(R.id.tabSettings).setOnClickListener {
-            startActivity(Intent(this, com.example.on_safe.ui.settings.SettingsActivity::class.java))
+            startActivity(Intent(this, SettingsActivity::class.java))
             overridePendingTransition(R.anim.slide_in_right_fast, R.anim.slide_out_left_fast)
             finish()
         }
     }
 
-    // 목록이 비어있을 때: 진짜로 이력이 없는 경우엔 안내 문구만, 조회 자체가 실패한 경우엔
-    // 오류 문구 + 재시도 버튼을 함께 보여준다 (구분하지 않으면 조회 실패도 "이력 없음"으로 오해할 수 있음)
+    // 빈 목록일 때 조회 실패와 "이력 없음"의 구분 — 미구분 시 실패를 이력 없음으로 오해
     private fun updateEmptyState(lastLoadFailed: Boolean) {
         val isEmpty = adapter.isEmpty()
         layoutEmptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
@@ -234,18 +236,14 @@ class AccidentHistoryActivity : AppCompatActivity() {
     // 영상 보기 / 다운로드 / 삭제
     // ──────────────────────────────────────────────
 
-    // 위험 등급 낙상 직후엔 post-이벤트 녹화·업로드가 끝나기 전이라 정상적으로 영상이
-    // 없는 상태(processing)일 수 있다 — "영상 없음(none)"과 같은 문구를 쓰면 사용자가
-    // 버그로 오인하기 쉬워 videoStatus로 구분한다.
-    private fun videoUnavailableMessage(entry: HistoryListItem.HistoryEntry): String? = when {
-        entry.hasVideo -> null
-        entry.videoStatus == "processing" -> "영상 준비 중입니다. 잠시 후 다시 확인해 주세요."
-        else -> null
-    }
+    // 낙상 직후엔 후처리 업로드 전이라 정상적으로 영상이 없는 상태(processing)
+    // — "영상 없음"과 같은 문구 사용 시 버그로 오인하기 쉬워 구분
+    private fun videoUnavailableMessage(entry: HistoryListItem.HistoryEntry, fallback: String): String =
+        if (entry.videoStatus == "processing") "영상 준비 중입니다. 잠시 후 다시 확인해 주세요." else fallback
 
     private fun handleWatchVideo(entry: HistoryListItem.HistoryEntry) {
         if (!entry.hasVideo) {
-            Toast.makeText(this, videoUnavailableMessage(entry) ?: "재생할 영상이 없습니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, videoUnavailableMessage(entry, "재생할 영상이 없습니다."), Toast.LENGTH_SHORT).show()
             return
         }
         viewModel.fetchVideoUrl(TokenManager.getUserId(this), entry, forDownload = false)
@@ -253,9 +251,11 @@ class AccidentHistoryActivity : AppCompatActivity() {
 
     private fun handleDownload(entry: HistoryListItem.HistoryEntry) {
         if (!entry.hasVideo) {
-            Toast.makeText(this, videoUnavailableMessage(entry) ?: "저장 가능한 영상이 없습니다.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, videoUnavailableMessage(entry, "저장 가능한 영상이 없습니다."), Toast.LENGTH_SHORT).show()
             return
         }
+        // API 29 미만만 권한 필요 — 이후는 MediaStore 자체 경로라 불필요.
+        // READ 요청으로 STORAGE 권한 그룹이 함께 승인되어 WRITE(매니페스트 maxSdk 28)까지 커버됨.
         val needsPermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
                 ContextCompat.checkSelfPermission(this, mediaPermission) != PackageManager.PERMISSION_GRANTED
         if (needsPermission) {
@@ -336,9 +336,13 @@ class AccidentHistoryActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    // sourceUrl은 GCS signed URL(https)이므로 ContentResolver가 아닌 직접 네트워크 스트림으로 복사한다.
-    // 호출부(performDownload)에서 Dispatchers.IO 위에서 실행됨.
+    // sourceUrl은 GCS signed URL(https) — ContentResolver가 아닌 네트워크 스트림으로 직접 복사.
+    // 호출부(performDownload)에서 Dispatchers.IO 위에 실행됨.
     private fun saveVideoToGallery(sourceUrl: String, entryId: String) {
+        val url = java.net.URL(sourceUrl)
+        // 서버 응답을 그대로 여는 경로 — file: 등으로 로컬 파일이 갤러리에 복사되지 않도록 스킬 제한
+        require(url.protocol.equals("https", ignoreCase = true)) { "지원하지 않는 영상 URL" }
+
         val fileName = "neulbom_${entryId}_${System.currentTimeMillis()}.mp4"
         val values = ContentValues().apply {
             put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
@@ -352,14 +356,29 @@ class AccidentHistoryActivity : AppCompatActivity() {
         val destUri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
             ?: throw IllegalStateException("MediaStore URI 생성 실패")
 
-        resolver.openOutputStream(destUri)?.use { out ->
-            java.net.URL(sourceUrl).openStream().use { it.copyTo(out) }
-        }
+        try {
+            // 타임아웃 미설정 시 응답 없는 연결에 IO 스레드가 무한 점유됨
+            val connection = url.openConnection().apply {
+                connectTimeout = DOWNLOAD_TIMEOUT_MS
+                readTimeout = DOWNLOAD_TIMEOUT_MS
+            }
+            val out = resolver.openOutputStream(destUri)
+                ?: throw IllegalStateException("저장 스트림 생성 실패")
+            out.use { sink -> connection.getInputStream().use { it.copyTo(sink) } }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            values.clear()
-            values.put(MediaStore.Video.Media.IS_PENDING, 0)
-            resolver.update(destUri, values, null, null)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                values.clear()
+                values.put(MediaStore.Video.Media.IS_PENDING, 0)
+                resolver.update(destUri, values, null, null)
+            }
+        } catch (e: Exception) {
+            // 중단 시 IS_PENDING 항목·부분 파일이 갤러리에 잔존 → 정리 후 재전파
+            resolver.delete(destUri, null, null)
+            throw e
         }
+    }
+
+    private companion object {
+        const val DOWNLOAD_TIMEOUT_MS = 30_000
     }
 }

@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.NotificationSettingsRequest
 import com.example.on_safe.network.dto.NotificationSettingsResponse
+import com.example.on_safe.util.DisplayText
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -43,24 +45,25 @@ class SettingsViewModel : ViewModel() {
     private var soundUpdateJob: Job? = null
     private var vibrationUpdateJob: Job? = null
 
+    // 이름 누락 시 "보호자님" 호칭만 남는 문제 — DisplayText가 문장 단위 대체
     fun loadUserName(userId: String) {
         if (userId.isBlank()) {
             // 로그인 정보가 없을 때(사실상 도달하지 않는 방어 경로)의 기본 표시값
-            _userName.value = "${DEFAULT_GUARDIAN_LABEL}님"
+            _userName.value = DisplayText.guardianTitle(null)
             return
         }
+        _userName.value = DisplayText.LOADING
         viewModelScope.launch {
-            try {
+            val name = try {
                 val response = ApiClient.api.getUser(userId)
                 val body = response.body()
-                _userName.value = if (response.isSuccessful && body?.success == true && body.data != null) {
-                    "${body.data.name} 보호자님"
-                } else {
-                    "보호자님"
-                }
+                if (response.isSuccessful && body?.success == true) body.data?.name else null
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
-                _userName.value = "보호자님"
+                null
             }
+            _userName.value = DisplayText.guardianTitle(name)
         }
     }
 
@@ -167,9 +170,5 @@ class SettingsViewModel : ViewModel() {
 
     fun onWithdrawHandled() {
         _withdrawResult.value = null
-    }
-
-    companion object {
-        private const val DEFAULT_GUARDIAN_LABEL = "보호자"
     }
 }

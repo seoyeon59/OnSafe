@@ -1,17 +1,13 @@
 package com.example.on_safe.ui.history
 
-/**
- * 사고 이력 유형
- */
+// 사고 이력 유형
 enum class HistoryType {
     FALL,    // 위험 (낙상 감지)
     WARNING  // 주의
 }
 
-/**
- * RecyclerView에 표시되는 아이템 타입 (날짜 헤더 / 이력 항목)
- * DiffUtil에 사용하기 위해 equals/hashCode 기반의 data class 사용
- */
+// RecyclerView 아이템 타입 (날짜 헤더 / 이력 항목 / 보관 안내)
+// DiffUtil의 equals·hashCode 활용 목적의 data class
 sealed class HistoryListItem {
 
     data class DateHeader(
@@ -25,12 +21,11 @@ sealed class HistoryListItem {
         val date: String,
         val hasVideo: Boolean = false,
         // none(영상 미제공) / processing(준비 중) / ready(hasVideo와 동일 조건)
-        val videoStatus: String = "none",
-        val videoUri: String? = null
+        val videoStatus: String = "none"
     ) : HistoryListItem()
 
-    // 보관 기간 안내 — 리스트의 "가장 오래된 데이터" 쪽 끝에 붙는 카드형 안내 문구.
-    // 최신순: 리스트 맨 아래(가장 오래된 항목 다음) / 오래된순: 리스트 맨 위(가장 오래된 항목 앞)
+    // 보관 기간 안내 — 목록의 "가장 오래된 데이터" 쪽 끝에 붙는 카드
+    // 최신순: 맨 아래 / 오래된순: 맨 위
     object RetentionNotice : HistoryListItem()
 }
 

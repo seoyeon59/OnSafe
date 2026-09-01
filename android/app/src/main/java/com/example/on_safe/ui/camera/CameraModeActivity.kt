@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
@@ -38,6 +39,7 @@ import com.example.on_safe.R
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.LandmarkPoint
 import com.example.on_safe.ui.login.LoginActivity
+import com.example.on_safe.util.DisplayText
 import com.example.on_safe.util.TokenManager
 import kotlinx.coroutines.launch
 
@@ -154,7 +156,10 @@ class CameraModeActivity : AppCompatActivity() {
         setState(CameraState.STANDBY)
         observeViewModel()
         viewModel.setDeviceId(deviceId)
-        viewModel.loadGuardianName(TokenManager.getUserId(this))
+        val userId = TokenManager.getUserId(this)
+        viewModel.loadGuardianName(userId)
+        // 이 폰이 곧 감시 카메라 — 보호자 홈 조회용 등록
+        viewModel.registerDevice(userId, deviceId, Build.MODEL)
 
         // 권한이 있으면 바로 카메라 켜고, 없으면 권한 요청
         if (areCameraPermissionsGranted()) {
@@ -238,8 +243,9 @@ class CameraModeActivity : AppCompatActivity() {
 
     private fun observeViewModel() {
         viewModel.uiState.observe(this) { state ->
-            if (state.guardianName.isNotBlank()) tvGuardianName.text = state.guardianName
-            if (state.deviceId.isNotBlank()) tvDeviceId.text = state.deviceId
+            // 레이아웃 예시 문구 잔존 방지용 무조건 대입
+            tvGuardianName.text = DisplayText.loadingOrNone(state.guardianName)
+            tvDeviceId.text = DisplayText.loadingOrNone(state.deviceId)
         }
     }
 
