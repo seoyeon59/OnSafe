@@ -2,8 +2,9 @@ package com.example.on_safe.network
 
 import android.content.Context
 import android.util.Log
-import com.example.on_safe.util.TokenManager
 import com.example.on_safe.BuildConfig
+import com.example.on_safe.network.dto.ApiResponse
+import com.example.on_safe.util.TokenManager
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.runBlocking
@@ -11,6 +12,7 @@ import okhttp3.Authenticator
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
+import okhttp3.ResponseBody
 import okhttp3.Route
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -49,7 +51,9 @@ object ApiClient {
         "api/auth/refresh"
     )
 
-    // 인증이 필요한 요청에만 자동으로 Bearer 토큰 첨부
+    // 인증이 필요한 요청에만 자동으로 Bearer 토큰 첨부.
+    // 판정 기준이 호스트가 아니라 경로 — 이 클라이언트로 외부 도메인을 호출하면 사용자 JWT가
+    // 그대로 실려 나간다. 외부 API는 반드시 별도 클라이언트를 쓸 것 (JusoApiClient 참고).
     private val authInterceptor = Interceptor { chain ->
         val original = chain.request()
         val path = original.url.encodedPath.trimStart('/')
@@ -119,21 +123,18 @@ object ApiClient {
         }
     }
 
-    private fun responseCount(response: Response): Int {
-        var count = 1
-        var prior: Response? = response.priorResponse
-        while (prior != null) {
-            count++
-            prior = prior.priorResponse
-        }
-        return count
-    }
+    // 자기 자신 + priorResponse 체인 길이 — 재시도 횟수 판정용
+    private fun responseCount(response: Response): Int =
+        generateSequence(response) { it.priorResponse }.count()
 
-    // 로깅은 디버그 빌드에서만 — 릴리즈 logcat에 토큰 등 민감 정보 노출 방지
+    // 로깅은 디버그 빌드에서만 — 릴리즈 logcat에 토큰 등 민감 정보 노출 방지.
+    // 디버그에서도 인증 헤더는 가린다 (본문은 요청 확인에 필요해 그대로 둠).
     private fun OkHttpClient.Builder.withDebugLogging() = apply {
         if (BuildConfig.DEBUG) {
             addInterceptor(HttpLoggingInterceptor { message -> Log.d("OkHttp", message) }.apply {
                 level = HttpLoggingInterceptor.Level.BODY
+                redactHeader("Authorization")
+                redactHeader("Refresh-Token")
             })
         }
     }
@@ -171,26 +172,34 @@ object ApiClient {
             .create(AiApiService::class.java)
     }
 
-    fun parseErrorMessage(errorBody: okhttp3.ResponseBody?, fallback: String): String {
+    /**
+     * 실패 응답 본문에서 사용자 노출용 문구 추출.
+     * errorBody는 1회만 읽을 수 있으므로 응답당 한 번만 호출할 것.
+     */
+    fun parseErrorMessage(errorBody: ResponseBody?, fallback: String): String {
         return try {
             val json = errorBody?.string() ?: return fallback
-            val message = gson.fromJson(json, com.example.on_safe.network.dto.ApiResponse::class.java)?.message
+            val message = gson.fromJson(json, ApiResponse::class.java)?.message
             if (message.isNullOrBlank() || !isUserFacing(message)) fallback else message
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             fallback
         }
     }
 
+    // "fieldName: ..." 형태의 서버 검증 오류 접두사
+    private val fieldPrefixRegex = Regex("^[A-Za-z_][A-Za-z0-9_]*:\\s")
+
+    private val developerPhrases = listOf(
+        "snake_case",
+        "필드 타입이 올바르지 않습니다",
+        "요청 형식이 올바르지 않습니다",
+        "지원하지 않는 HTTP 메서드",
+        "서버 내부 오류"
+    )
+
     // 서버 오류 메시지에 섞여 오는 개발자용 문구(영문 필드명, snake_case 안내 등)는 사용자에게 노출하지 않는다
     private fun isUserFacing(message: String): Boolean {
-        if (Regex("^[A-Za-z_][A-Za-z0-9_]*:\\s").containsMatchIn(message)) return false
-        val developerPhrases = listOf(
-            "snake_case",
-            "필드 타입이 올바르지 않습니다",
-            "요청 형식이 올바르지 않습니다",
-            "지원하지 않는 HTTP 메서드",
-            "서버 내부 오류"
-        )
+        if (fieldPrefixRegex.containsMatchIn(message)) return false
         return developerPhrases.none { message.contains(it) }
     }
 }

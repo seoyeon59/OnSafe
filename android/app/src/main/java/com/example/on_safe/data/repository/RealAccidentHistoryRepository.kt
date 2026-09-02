@@ -21,7 +21,8 @@ class RealAccidentHistoryRepository : AccidentHistoryRepository {
             time = if (timePart.length == 5) timePart else DisplayText.NO_TIME,
             date = if (datePart.length == 10) datePart.replace("-", ".") else DisplayText.NO_DATE,
             hasVideo = hasVideo,
-            videoStatus = videoStatus
+            // 서버가 video_status를 생략하면 Gson이 null을 넣으므로 여기서 기본값 확정
+            videoStatus = videoStatus ?: "none"
         )
     }
 }

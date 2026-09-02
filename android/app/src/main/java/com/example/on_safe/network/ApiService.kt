@@ -12,6 +12,10 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+/**
+ * Kotlin 백엔드 REST 계약.
+ * 경로·메서드·DTO가 서버 스펙과 1:1 대응 — 변경 시 서버와 함께 맞출 것.
+ */
 interface ApiService {
 
     // ===== Auth =====
@@ -119,13 +123,15 @@ interface ApiService {
     ): Response<ApiResponse<Unit>>
 
     // 1시간 유효한 signed URL — 재생/다운로드 시점마다 새로 발급받아 사용
+    // 응답 data 키: signed_url
     @GET("api/fall-logs/{userId}/{logId}/video")
     suspend fun getFallLogVideo(
         @Path("userId") userId: String,
         @Path("logId") logId: String
     ): Response<ApiResponse<Map<String, String>>>
 
-    // 10분 유효한 업로드용 signed PUT URL 발급 (upload_url, content_type 키)
+    // 10분 유효한 업로드용 signed PUT URL 발급
+    // 응답 data 키: upload_url, content_type
     @POST("api/fall-logs/{userId}/{logId}/upload-url")
     suspend fun getUploadUrl(
         @Path("userId") userId: String,

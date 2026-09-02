@@ -1,5 +1,7 @@
 package com.example.on_safe.network.dto
 
+// 프로퍼티명 = 통신 규약 (ResponseDtos.kt 상단 주석 참고)
+
 data class LoginRequest(
     val userId: String,
     val password: String,
@@ -14,8 +16,8 @@ data class RegisterRequest(
     val phone: String,
     val address: String? = null,
     val addressDetail: String? = null,
-    // 서버(users.marketing_consent)와 동의 시점/철회 시점을 함께 기록하기 위한 신호.
-    // 회원가입 UI에 체크박스가 붙기 전까지는 기본값 false로 전송.
+    // 서버(users.marketing_consent)가 동의·철회 시점을 함께 기록하기 위한 신호.
+    // Step1 동의 화면의 선택 항목 체크값이 Step2를 거쳐 그대로 전달된다.
     val marketingConsent: Boolean = false
 )
 
