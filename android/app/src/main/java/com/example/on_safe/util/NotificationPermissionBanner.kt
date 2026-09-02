@@ -11,6 +11,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import com.example.on_safe.R
 
 // 알림 권한 미동의 시 배너 표시/숨김 처리
@@ -18,23 +19,15 @@ object NotificationPermissionBanner {
 
     fun setup(activity: AppCompatActivity) {
         val banner = activity.findViewById<View>(R.id.bannerNotificationPermission) ?: return
-        val btnAllow = banner.findViewById<TextView>(R.id.btnAllowNotification)
-
-        updateVisibility(activity, banner)
-
-        btnAllow.setOnClickListener {
-            requestOrOpenSettings(activity)
-        }
+        banner.isVisible = needsBanner(activity)
+        banner.findViewById<TextView>(R.id.btnAllowNotification)
+            .setOnClickListener { requestOrOpenSettings(activity) }
     }
 
-    // onResume에서 호출 — 권한 상태가 바뀌었을 때 배너 가시성 갱신
+    // onResume에서 호출 — 권한 상태 변경 시 배너 가시성 갱신
     fun refresh(activity: AppCompatActivity) {
         val banner = activity.findViewById<View>(R.id.bannerNotificationPermission) ?: return
-        updateVisibility(activity, banner)
-    }
-
-    private fun updateVisibility(activity: AppCompatActivity, banner: View) {
-        banner.visibility = if (needsBanner(activity)) View.VISIBLE else View.GONE
+        banner.isVisible = needsBanner(activity)
     }
 
     private fun needsBanner(activity: AppCompatActivity): Boolean {

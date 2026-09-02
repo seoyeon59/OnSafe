@@ -1,6 +1,5 @@
 package com.example.on_safe.util
 
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 
@@ -23,7 +22,7 @@ object DoubleBackToExit {
                         activity.finishAffinity()
                     } else {
                         lastPressed = now
-                        Toast.makeText(activity, "한 번 더 누르면 종료됩니다.", Toast.LENGTH_SHORT).show()
+                        activity.toast("한 번 더 누르면 종료됩니다.")
                     }
                 }
             }

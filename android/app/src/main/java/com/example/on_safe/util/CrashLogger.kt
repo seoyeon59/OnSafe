@@ -3,8 +3,6 @@ package com.example.on_safe.util
 import android.content.Context
 import android.os.Build
 import java.io.File
-import java.io.PrintWriter
-import java.io.StringWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -32,21 +30,19 @@ object CrashLogger {
     }
 
     private fun writeLog(context: Context, thread: Thread, throwable: Throwable) {
-        val dir = File(context.getExternalFilesDir(null), "crash_logs").apply { mkdirs() }
+        // 외부 저장소 미탑재 시 내부 저장소로 — 상대 경로로 떨어져 쓰기 실패하는 것 방지
+        val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
+        val dir = File(baseDir, "crash_logs").apply { mkdirs() }
 
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.KOREA).format(Date())
-        val file = File(dir, "crash_$timestamp.txt")
 
-        val stackTraceWriter = StringWriter()
-        throwable.printStackTrace(PrintWriter(stackTraceWriter))
-
-        file.writeText(
+        File(dir, "crash_$timestamp.txt").writeText(
             buildString {
                 appendLine("시각: $timestamp")
                 appendLine("스레드: ${thread.name}")
                 appendLine("기기: ${Build.MANUFACTURER} ${Build.MODEL} (SDK ${Build.VERSION.SDK_INT})")
                 appendLine()
-                append(stackTraceWriter.toString())
+                append(throwable.stackTraceToString())
             }
         )
 
