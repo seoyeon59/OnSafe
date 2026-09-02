@@ -74,7 +74,9 @@ class NotificationAdapter(
         holder.ivArrow.isVisible = type.clickable
         if (type.clickable) {
             holder.itemView.setOnClickListener {
-                val pos = holder.bindingAdapterPosition
+                // bindingAdapterPosition은 RecyclerView 1.2.0+ — 현재 해석 버전 1.1.0.
+                // 중첩·concat 어댑터가 없어 adapterPosition과 동작 동일.
+                val pos = holder.adapterPosition
                 if (pos != RecyclerView.NO_POSITION) onFallItemClick(getItem(pos))
             }
         } else {
