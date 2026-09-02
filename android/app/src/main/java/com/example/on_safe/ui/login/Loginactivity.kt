@@ -141,8 +141,7 @@ class LoginActivity : AppCompatActivity() {
         btnDebugLogin.setOnClickListener {
             TokenManager.saveTokens(this, "debug_token", "debug_refresh", "debug_user")
             // 튜토리얼 표시 여부 초기화 — 항상 온보딩 첫 화면부터 시작
-            getSharedPreferences("app_prefs", MODE_PRIVATE)
-                .edit().remove(TutorialActivity.KEY_TUTORIAL_SHOWN).apply()
+            TutorialActivity.resetShownFlag(this)
             startActivity(
                 TutorialActivity.intentForLogin(this).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
