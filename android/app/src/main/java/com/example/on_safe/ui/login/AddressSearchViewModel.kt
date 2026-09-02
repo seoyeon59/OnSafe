@@ -20,7 +20,8 @@ class AddressSearchViewModel : ViewModel() {
 
     companion object {
         // 검색 API 전용 승인키 (팝업 키 아님)
-        // TODO: [보안] 평문 커밋 상태 — 실배포 전 local.properties + BuildConfig로 분리 및 키 재발급 필요.
+        // TODO: [만료] 이 키는 이미 만료됨 — 주소 검색이 동작하지 않는다. 재발급 필요.
+        // TODO: [보안] 평문 커밋 상태 — 재발급한 키는 local.properties + BuildConfig로 분리할 것.
         //       팀 공용 키가 없어 지금 분리하면 다른 개발자 빌드에서 주소 검색이 막히므로 상수 유지.
         private const val CONFM_KEY = "devU01TX0FVVEgyMDI2MDYwMjAyMDEyODExODk3NTM="
     }
