@@ -8,7 +8,7 @@
     android:orientation="vertical"
     android:paddingBottom="24dp">
 
-    <!-- ① 빨강 헤더 -->
+    <!-- 빨강 헤더 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -50,7 +50,7 @@
             android:textSize="14sp" />
     </LinearLayout>
 
-    <!-- ② 흰 배경 본문 -->
+    <!-- 흰 배경 본문 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -91,7 +91,8 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- 점수 카드 -->
+        <!-- 점수 카드 — 하위 id가 include_risk_score_card.xml과 같아야 RiskScoreCardBinder가 동작 -->
+        <!-- TODO: include_risk_score_card.xml로 통합 검토 — 현재 같은 구조가 두 벌 -->
         <LinearLayout
             android:id="@+id/alertRiskScoreCard"
             android:layout_width="match_parent"

@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@color/surface_bg">
 
-    <!-- ============ 헤더 ============ -->
+    <!-- 헤더 -->
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="0dp"
@@ -33,7 +33,7 @@
 
     </LinearLayout>
 
-    <!-- ============ 건수 + 정렬 행 ============ -->
+    <!-- 건수 + 정렬 행 -->
     <LinearLayout
         android:id="@+id/filterRow"
         android:layout_width="0dp"
@@ -106,7 +106,7 @@
     <!-- 보관 기간 안내는 리스트 안 카드(item_history_notice)로 이동 —
          정렬 순서에 따라 가장 오래된 데이터 쪽 끝(최신순: 맨 아래 / 오래된순: 맨 위)에 표시 -->
 
-    <!-- ============ 리스트 ============ -->
+    <!-- 리스트 -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvHistory"
         android:layout_width="0dp"
@@ -170,7 +170,7 @@
 
     </LinearLayout>
 
-    <!-- ============ 하단 네비게이션 ============ -->
+    <!-- 하단 네비게이션 -->
     <LinearLayout
         android:id="@+id/bottomNav"
         android:layout_width="0dp"

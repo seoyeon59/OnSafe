@@ -1,13 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older that API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    API 30 이하 자동 백업 규칙 (API 31+는 data_extraction_rules.xml)
+    https://developer.android.com/guide/topics/data/autobackup
 -->
 <full-backup-content>
     <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+        auth_secure = TokenManager의 EncryptedSharedPreferences.
+        Keystore 마스터 키는 백업 대상이 아니라 복원해도 복호화가 불가능하고,
+        복원된 파일 때문에 EncryptedSharedPreferences.create()가 실패한다.
+    -->
+    <exclude domain="sharedpref" path="auth_secure.xml"/>
 </full-backup-content>

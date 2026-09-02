@@ -1,11 +1,17 @@
 package com.example.on_safe.network.dto
 
+/*
+ * 도로명주소 API 응답 — JusoApiClient는 기본 Gson(camelCase 그대로)을 쓰므로
+ * 프로퍼티명이 API 응답 키와 정확히 일치해야 한다. ApiClient의 snake_case 정책이 적용되지 않는다.
+ */
+
 data class JusoResponse(
     val results: JusoResults
 )
 
 data class JusoResults(
     val common: JusoCommon,
+    // 검색 결과 없음이면 juso 키 자체가 없음
     val juso: List<JusoItem>?
 )
 

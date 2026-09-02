@@ -2,11 +2,12 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/surface_bg">
 
-    <!-- ============ 헤더 ============ -->
+    <!-- 헤더 -->
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="0dp"
@@ -48,7 +49,7 @@
             app:tint="@color/ink_500" />
     </LinearLayout>
 
-    <!-- ============ 스크롤 콘텐츠 ============ -->
+    <!-- 스크롤 콘텐츠 -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -67,7 +68,7 @@
             android:paddingTop="16dp"
             android:paddingBottom="20dp">
 
-            <!-- ── 프로필 카드 ── -->
+            <!-- 프로필 카드 -->
             <LinearLayout
                 android:id="@+id/cardProfile"
                 android:layout_width="match_parent"
@@ -97,13 +98,13 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="보호자님"
+                    tools:text="홍길동 보호자님"
                     android:textColor="#6B7280"
                     android:textSize="15sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- ── 알림 설정 ── -->
+            <!-- 알림 설정 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -312,7 +313,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- ── 개인정보 및 보안 ── -->
+            <!-- 개인정보 및 보안 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -472,7 +473,7 @@
 
             </LinearLayout>
 
-            <!-- ── 고객지원 ── -->
+            <!-- 고객지원 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -535,7 +536,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- ── 계정 관리 ── -->
+            <!-- 계정 관리 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -634,7 +635,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- ── 버전 정보 ── -->
+            <!-- 버전 정보 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -650,7 +651,7 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- ============ 바텀 네비 ============ -->
+    <!-- 바텀 네비 -->
     <LinearLayout
         android:id="@+id/bottomNav"
         android:layout_width="0dp"

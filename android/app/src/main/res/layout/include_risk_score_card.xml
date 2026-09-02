@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 위험 지수 점수 카드 — RiskScoreCardBinder가 코드로 바인딩 -->
+<!-- 같은 하위 id 구성이 bottom_sheet_fall_alert.xml에도 복제돼 있음 — id 변경 시 함께 맞출 것 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/riskScoreCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -21,7 +24,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="32"
+            tools:text="32"
             android:textColor="@color/status_normal"
             android:textSize="40sp"
             android:textStyle="bold" />
@@ -48,7 +51,7 @@
                 android:backgroundTint="@color/status_normal"
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="2dp"
-                android:text="정상"
+                tools:text="정상"
                 android:textColor="@color/surface_white"
                 android:textSize="14sp"
                 android:textStyle="bold" />
@@ -62,7 +65,7 @@
                 android:id="@+id/tvRiskRange"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="정상 구간 0~50"
+                tools:text="정상 구간 0~50"
                 android:textColor="@color/ink_500"
                 android:textSize="13sp" />
         </LinearLayout>
@@ -86,7 +89,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="안정적인 상태입니다."
+            tools:text="안정적인 상태입니다."
             android:textColor="@color/ink_900"
             android:textSize="13sp" />
     </LinearLayout>

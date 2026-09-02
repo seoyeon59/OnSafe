@@ -2,11 +2,12 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#0D0F11">
 
-    <!-- ============ 좌측: 카메라 프리뷰 ============ -->
+    <!-- 좌측: 카메라 프리뷰 -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="0dp"
@@ -96,7 +97,7 @@
 
     </LinearLayout>
 
-    <!-- ============ 상단 로고 (항상 표시) ============ -->
+    <!-- 상단 로고 (항상 표시) -->
     <LinearLayout
         android:id="@+id/layoutLogo"
         android:layout_width="wrap_content"
@@ -184,7 +185,7 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- ============ 2e: 우하단 전체화면 버튼 ============ -->
+    <!-- 우하단 전체화면 버튼 -->
     <FrameLayout
         android:id="@+id/btnFullscreen"
         android:layout_width="40dp"
@@ -206,7 +207,7 @@
             app:tint="@color/surface_white" />
     </FrameLayout>
 
-    <!-- ============ 2e: 전체화면 복원 햄버거 버튼 (전체화면 모드에서만 표시) ============ -->
+    <!-- 전체화면 복원 햄버거 버튼 (전체화면 모드에서만 표시) -->
     <ImageButton
         android:id="@+id/btnHamburger"
         android:layout_width="40dp"
@@ -221,7 +222,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/surface_white" />
 
-    <!-- ============ 우측 사이드 패널 ============ -->
+    <!-- 우측 사이드 패널 -->
     <LinearLayout
         android:id="@+id/sidePanel"
         android:layout_width="240dp"
@@ -306,7 +307,7 @@
                     android:textColor="#4DFFFFFF"
                     android:textSize="12sp" />
 
-                <!-- 2c: 상태 뱃지 — cornerRadius=48 pill 유지 -->
+                <!-- 상태 뱃지 — cornerRadius=48 pill 유지 -->
                 <LinearLayout
                     android:id="@+id/layoutStatusBadge"
                     android:layout_width="match_parent"
@@ -392,7 +393,7 @@
                         android:layout_marginStart="14dp"
                         android:layout_marginTop="2dp"
                         android:fontFamily="@font/pretendard_semibold"
-                        android:text="박지영"
+                        tools:text="박지영"
                         android:textColor="#BFFFFFFF"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -435,7 +436,7 @@
                         android:layout_marginStart="14dp"
                         android:layout_marginTop="2dp"
                         android:fontFamily="@font/pretendard_semibold"
-                        android:text="ONS-2026-0417"
+                        tools:text="a1b2c3d4e5f6a7b8"
                         android:textColor="#BFFFFFFF"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -447,7 +448,7 @@
                 android:layout_height="0dp"
                 android:layout_weight="1" />
 
-            <!-- ============ 버튼 영역 ============ -->
+            <!-- 버튼 영역 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -455,7 +456,7 @@
                 android:paddingEnd="12dp"
                 android:paddingStart="12dp">
 
-                <!-- 2c/2d: 촬영 시작/종료 버튼 — pill shape + icon -->
+                <!-- 촬영 시작/종료 버튼 — pill shape + icon -->
                 <LinearLayout
                     android:id="@+id/btnToggleRecording"
                     android:layout_width="match_parent"
@@ -486,7 +487,7 @@
                         android:textSize="14sp" />
                 </LinearLayout>
 
-                <!-- 2c/2d: 로그아웃 버튼 — pill outline + icon -->
+                <!-- 로그아웃 버튼 — pill outline + icon -->
                 <LinearLayout
                     android:id="@+id/btnLogout"
                     android:layout_width="match_parent"

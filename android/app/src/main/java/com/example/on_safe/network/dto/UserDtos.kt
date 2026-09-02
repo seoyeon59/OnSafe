@@ -10,6 +10,10 @@ data class UserResponse(
     val createdAt: String
 )
 
+/**
+ * 부분 수정 요청 — Gson이 null 필드를 직렬화에서 제외.
+ * 미변경 항목은 null 유지. 빈 문자열은 "값 삭제"로 전송되므로 주의.
+ */
 data class UserUpdateRequest(
     val name: String? = null,
     val currentPassword: String? = null,

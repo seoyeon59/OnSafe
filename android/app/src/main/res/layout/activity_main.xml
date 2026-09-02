@@ -7,7 +7,7 @@
     android:background="@color/surface_bg"
     tools:context=".MainActivity">
 
-    <!-- ============ 상단 헤더 ============ -->
+    <!-- 상단 헤더 -->
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="0dp"
@@ -94,7 +94,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/header" />
 
-    <!-- ============ 콘텐츠 영역 ============ -->
+    <!-- 콘텐츠 영역 -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -113,7 +113,7 @@
             android:paddingTop="16dp"
             android:paddingBottom="20dp">
 
-            <!-- 1. 사용자 카드 -->
+            <!-- 1. 기기 카드 — 연결 상태(상단) + 기기 ID(하단) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -134,50 +134,53 @@
                         android:layout_height="24dp"
                         android:layout_gravity="center"
                         android:contentDescription="@null"
-                        android:src="@drawable/ic_person"
+                        android:src="@drawable/ic_devices"
                         app:tint="@color/primary_blue" />
                 </FrameLayout>
 
-                <TextView
-                    android:id="@+id/tvCareRecipientName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="김순자 님"
-                    android:textColor="@color/ink_900"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvDeviceId"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:text="기기 ID: ONS-2024-0831"
-                    android:textColor="@color/ink_500"
-                    android:textSize="12sp" />
-
-                <View
+                <!-- 가변 길이 대응 — 세로 배치로 잘림 방지 -->
+                <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <View
-                    android:id="@+id/connectionDot"
-                    android:layout_width="5dp"
-                    android:layout_height="5dp"
-                    android:background="@drawable/bg_circle"
-                    android:backgroundTint="@color/status_normal" />
-
-                <TextView
-                    android:id="@+id/tvConnectionStatus"
-                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:text="기기 연결됨"
-                    android:textColor="@color/status_normal"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:id="@+id/connectionDot"
+                            android:layout_width="5dp"
+                            android:layout_height="5dp"
+                            android:background="@drawable/bg_circle"
+                            android:backgroundTint="@color/status_normal" />
+
+                        <TextView
+                            android:id="@+id/tvConnectionStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:textColor="@color/status_normal"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            tools:text="기기 연결됨" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvDeviceId"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textColor="@color/ink_500"
+                        android:textSize="12sp"
+                        tools:text="기기 ID · a1b2c3d4e5f6a7b8" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- 2. 라이브 영역 (플레이스홀더) -->
@@ -307,7 +310,7 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- ============ 바텀 네비 ============ -->
+    <!-- 바텀 네비 -->
     <LinearLayout
         android:id="@+id/bottomNav"
         android:layout_width="0dp"

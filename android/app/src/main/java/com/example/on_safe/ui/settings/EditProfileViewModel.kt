@@ -9,9 +9,10 @@ import com.example.on_safe.network.dto.MarketingConsentRequest
 import com.example.on_safe.network.dto.UserResponse
 import com.example.on_safe.network.dto.UserUpdateRequest
 import com.example.on_safe.network.dto.VerifyPasswordRequest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-// 비밀번호 확인 결과 — 성공 시 폼을 바로 채울 수 있도록 최신 사용자 정보를 함께 담아 보낸다
+// 비밀번호 확인 결과 — 성공 시 폼을 바로 채우도록 최신 사용자 정보 동봉
 data class VerifyResult(
     val success: Boolean,
     val message: String? = null,
@@ -28,7 +29,7 @@ class EditProfileViewModel : ViewModel() {
     private val _saveResult = MutableLiveData<SaveResult?>()
     val saveResult: LiveData<SaveResult?> = _saveResult
 
-    // 서버에서 조회한 마케팅 동의 현재값 — 실패 시 null로 남겨 Activity가 로컬 캐시 값을 그대로 유지하게 한다
+    // 서버의 마케팅 동의 현재값 — 실패 시 null 유지로 Activity의 로컬 캐시 값 보존
     private val _marketingConsent = MutableLiveData<Boolean?>()
     val marketingConsent: LiveData<Boolean?> = _marketingConsent
 
@@ -45,30 +46,31 @@ class EditProfileViewModel : ViewModel() {
                     return@launch
                 }
 
-                // 검증 성공 → 곧바로 최신 사용자 정보를 받아와 폼에 채울 수 있게 함께 전달
+                // 검증 성공 → 최신 사용자 정보를 받아 폼 채우기용으로 동봉
                 val userResponse = ApiClient.api.getUser(userId)
                 val userBody = userResponse.body()
                 if (userResponse.isSuccessful && userBody?.success == true && userBody.data != null) {
                     _verifyResult.value = VerifyResult(success = true, user = userBody.data)
                 } else {
-                    // 비밀번호 검증은 통과했지만 정보 조회만 실패한 경우 — 폼은 비운 채로라도 열어준다
+                    // 검증은 통과했으나 정보 조회만 실패 — 폼은 비운 채로 개방
                     _verifyResult.value = VerifyResult(success = true, user = null)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _verifyResult.value = VerifyResult(success = false, message = "네트워크 오류가 발생했습니다.")
             }
         }
     }
 
-    // 서버에서 받아온 원본 — 변경 여부 판단에 쓴다(바뀐 게 없으면 서버 호출 자체를 하지 않음)
+    // 서버 원본 — 변경 여부 판단용 (미변경 시 서버 호출 생략)
     private var original: UserResponse? = null
 
     fun onUserLoaded(user: UserResponse) {
         original = user
     }
 
-    // 입력값이 원본과 하나라도 다른지
-    // 전화번호는 하이픈 유무가 서버 저장값과 다를 수 있어 숫자만 뽑아 비교한다
+    // 입력값과 원본의 차이 여부 — 전화번호는 하이픈 유무 차이를 무시하고 숫자만 비교
     fun hasChanges(
         name: String,
         phone: String,
@@ -76,7 +78,7 @@ class EditProfileViewModel : ViewModel() {
         address: String,
         addressDetail: String
     ): Boolean {
-        val o = original ?: return true   // 원본을 못 받았으면 그냥 저장 시도
+        val o = original ?: return true   // 원본 미수신 시 저장 시도
         return name != o.name ||
                 phone.digitsOnly() != o.phone.digitsOnly() ||
                 email != o.mail ||
@@ -114,13 +116,15 @@ class EditProfileViewModel : ViewModel() {
                         ApiClient.parseErrorMessage(response.errorBody(), "저장에 실패했습니다.")
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _saveResult.value = SaveResult(false, "네트워크 오류로 저장에 실패했습니다.")
             }
         }
     }
 
-    // 비밀번호 확인 성공 직후 호출 — 서버의 최신 마케팅 동의 상태로 스위치를 맞춘다
+    // 비밀번호 확인 직후 호출 — 서버의 최신 마케팅 동의 상태로 스위치 동기화
     fun loadMarketingConsent(userId: String) {
         viewModelScope.launch {
             try {
@@ -129,20 +133,24 @@ class EditProfileViewModel : ViewModel() {
                 if (response.isSuccessful && body?.success == true && body.data != null) {
                     _marketingConsent.value = body.data.consent
                 }
-                // 실패 시 아무 것도 내보내지 않음 — Activity가 로컬 캐시로 표시한 값을 그대로 유지
+                // 실패 시 미방출 — Activity의 로컬 캐시 표시 유지
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
                 // 조회 실패 → 캐시 값 유지
             }
         }
     }
 
-    // 스위치 조작 시 서버에 반영 (실패해도 로컬 표시는 유지 — 다음 조회 때 서버 값으로 재동기화)
+    // 스위치 조작 시 서버 반영 — 실패해도 로컬 표시 유지, 다음 조회 때 재동기화
     fun updateMarketingConsent(userId: String, consent: Boolean) {
         viewModelScope.launch {
             try {
                 ApiClient.api.updateMarketingConsent(userId, MarketingConsentRequest(consent))
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
-                // 무시 — 다음 조회 때 서버 값으로 재동기화
+                // 무시 — 다음 조회 때 재동기화
             }
         }
     }

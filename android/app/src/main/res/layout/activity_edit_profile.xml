@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@color/surface_bg">
 
-    <!-- ============ 헤더 ============ -->
+    <!-- 헤더 -->
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="0dp"
@@ -45,7 +45,7 @@
             android:layout_height="40dp" />
     </LinearLayout>
 
-    <!-- ============ 스크롤 콘텐츠 ============ -->
+    <!-- 스크롤 콘텐츠 -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollContent"
         android:layout_width="0dp"
@@ -340,7 +340,7 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- ============ 저장 버튼 ============ -->
+    <!-- 저장 버튼 -->
     <Button
         android:id="@+id/btnSave"
         android:layout_width="0dp"

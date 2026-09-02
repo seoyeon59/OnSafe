@@ -13,7 +13,7 @@ class AddressAdapter(
     private val onClick: (JusoItem) -> Unit
 ) : RecyclerView.Adapter<AddressAdapter.VH>() {
 
-    inner class VH(view: View) : RecyclerView.ViewHolder(view) {
+    class VH(view: View) : RecyclerView.ViewHolder(view) {
         val tvRoadAddr: TextView = view.findViewById(R.id.tvRoadAddr)
         val tvJibunAddr: TextView = view.findViewById(R.id.tvJibunAddr)
         val tvZipNo: TextView = view.findViewById(R.id.tvZipNo)

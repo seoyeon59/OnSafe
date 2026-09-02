@@ -19,11 +19,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.on_safe.R
 
-// 온보딩 권한 요청 화면 (TutorialActivity → 이 화면 → ModeSelectActivity)
-// 플로우: 로그인 → 튜토리얼 → 권한 요청 → 모드 선택 → MainActivity or CameraModeActivity
+// 온보딩 권한 요청 화면
+// 플로우: 로그인 → 튜토리얼 → 권한 요청 → 모드 선택 → 메인 or 카메라
 class PermissionActivity : AppCompatActivity() {
 
-    // 권한 요청 순서: 카메라 → 사진/영상 → 마이크 → 알림 (UI 목록 순서와 일치)
+    // 권한 요청 순서: 카메라 → 사진/영상 → 마이크 → 알림 (UI 목록과 동일 순서)
     private val requiredPermissions: Array<String> by lazy {
         buildList {
             add(Manifest.permission.CAMERA)
@@ -66,13 +66,13 @@ class PermissionActivity : AppCompatActivity() {
     }
 
     private fun handlePermissionResults(results: Map<String, Boolean>) {
-        val denied = results.filter { !it.value }.keys
+        val denied = results.filterValues { !it }.keys
         if (denied.isEmpty()) { goToModeSelect(); return }
 
-        // 영구 거부된 항목이 하나라도 있으면 설정 화면으로 유도
+        // 영구 거부 항목이 하나라도 있으면 설정 화면으로 유도
         val permanentlyDenied = denied.any { !shouldShowRequestPermissionRationale(it) }
         if (permanentlyDenied) showGoToSettingsDialog()
-        // else: 일시 거부 → 화면 유지, 사용자가 버튼 재클릭으로 재시도 가능
+        // else: 일시 거부 → 화면 유지, 버튼 재클릭으로 재시도 가능
     }
 
     private fun areAllPermissionsGranted(): Boolean =
@@ -110,8 +110,7 @@ class PermissionActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    // 권한 요청 완료(허용·거부·건너뛰기 모두) → 모드 선택 화면으로 이동
-    // 온보딩 백스택(Login → Tutorial → Permission) 전부 종료
+    // 권한 요청 완료(허용·거부·건너뛰기) → 모드 선택 이동, 온보딩 백스택 전부 종료
     private fun goToModeSelect() {
         startActivity(
             Intent(this, ModeSelectActivity::class.java).apply {

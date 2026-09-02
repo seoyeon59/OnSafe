@@ -1,6 +1,7 @@
 package com.example.on_safe.util
 
 import android.os.CountDownTimer
+import java.util.Locale
 
 /**
  * 이메일 인증코드 3분 카운트다운 (아이디/비밀번호 찾기, 회원가입 2단계 공용).
@@ -13,12 +14,12 @@ class VerificationCodeTimer(
     private var timer: CountDownTimer? = null
 
     fun start(durationMs: Long = DEFAULT_DURATION_MS) {
-        timer?.cancel()
-        timer = object : CountDownTimer(durationMs, 1_000L) {
+        cancel()
+        timer = object : CountDownTimer(durationMs, TICK_INTERVAL_MS) {
             override fun onTick(millisUntilFinished: Long) {
-                val minutes = millisUntilFinished / 60_000
-                val seconds = (millisUntilFinished % 60_000) / 1_000
-                onTick(String.format("%d:%02d", minutes, seconds))
+                val totalSeconds = millisUntilFinished / 1_000
+                // 로케일 미지정 시 일부 언어에서 아라비아 숫자가 아닌 자형으로 출력됨
+                onTick(String.format(Locale.KOREA, "%d:%02d", totalSeconds / 60, totalSeconds % 60))
             }
 
             override fun onFinish() {
@@ -29,9 +30,11 @@ class VerificationCodeTimer(
 
     fun cancel() {
         timer?.cancel()
+        timer = null
     }
 
     companion object {
         const val DEFAULT_DURATION_MS = 180_000L
+        private const val TICK_INTERVAL_MS = 1_000L
     }
 }

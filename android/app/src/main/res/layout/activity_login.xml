@@ -209,7 +209,7 @@
                 android:indeterminateTint="@color/primary_blue"
                 android:visibility="gone" />
 
-            <!-- !! DEBUG ONLY — 릴리즈 빌드에서는 코드로 gone 유지됨 !! -->
+            <!-- 디버그 전용 테스트 로그인 — 릴리즈에서는 BuildConfig.DEBUG 분기가 제거되어 gone 유지 -->
             <Button
                 android:id="@+id/btnDebugLogin"
                 android:layout_width="match_parent"

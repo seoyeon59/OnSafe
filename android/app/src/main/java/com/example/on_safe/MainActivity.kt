@@ -11,7 +11,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.example.on_safe.ui.FullscreenActivity
+import com.example.on_safe.ui.history.AccidentHistoryActivity
 import com.example.on_safe.ui.notification.NotificationActivity
+import com.example.on_safe.ui.settings.SettingsActivity
+import com.example.on_safe.util.DisplayText
 import com.example.on_safe.util.DoubleBackToExit
 import com.example.on_safe.util.NotificationPermissionBanner
 import com.example.on_safe.util.RiskScoreCardBinder
@@ -28,12 +32,12 @@ class MainActivity : AppCompatActivity() {
     private var alertDialog: BottomSheetDialog? = null
 
 
-    // 알림 화면에서 돌아올 때 네트워크 왕복 없이 즉시 반영한다.
-    // (뒤이어 onResume의 refreshUnreadBadge가 서버 값으로 다시 맞춘다)
+    // 알림 화면 복귀 시 네트워크 왕복 없는 즉시 반영
+    // (뒤이어 onResume의 refreshUnreadBadge가 서버 값으로 재동기화)
     private val notificationLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        // 결과를 못 받은 경우(취소 등)는 미읽음이 있다고 단정하지 않는다 — 빈 목록인데 빨간점이 뜨는 문제
+        // 결과 미수신(취소 등)을 미읽음으로 단정 금지 — 빈 목록에 빨간점 표시 문제
         val hasUnread = result.data?.getBooleanExtra(NotificationActivity.EXTRA_HAS_UNREAD, false) ?: false
         viewModel.setUnreadBadge(hasUnread)
     }
@@ -56,7 +60,7 @@ class MainActivity : AppCompatActivity() {
         NotificationPermissionBanner.setup(this)
         setupClickListeners()
 
-        // 홈은 탭 이동의 종착점 — 뒤로가기를 두 번 눌러야 앱이 종료된다
+        // 홈은 탭 이동의 종착점 — 뒤로가기 2회로 종료
         DoubleBackToExit.attach(this)
 
         observeViewModel()
@@ -76,9 +80,13 @@ class MainActivity : AppCompatActivity() {
     private fun observeViewModel() {
         viewModel.uiState.observe(this) { state ->
             applyConnectionState(state.connectionState)
+            findViewById<TextView>(R.id.tvDeviceId).text = DisplayText.deviceIdLabel(state.deviceId)
             updateNotificationBell(state.hasUnread)
+            val card = findViewById<View>(R.id.riskScoreCard)
             if (state.riskScore != null) {
-                RiskScoreCardBinder.bind(findViewById(R.id.riskScoreCard), state.riskScore)
+                RiskScoreCardBinder.bind(card, state.riskScore)
+            } else {
+                RiskScoreCardBinder.bindUnknown(card, riskUnknownMessage(state.connectionState))
             }
         }
         viewModel.fallAlertEvent.observe(this) { event ->
@@ -91,7 +99,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // 모달이 열린 채로 Activity가 소멸되면 WindowLeak 발생 → 명시적으로 dismiss
+        // 모달 유지 상태의 Activity 소멸 시 WindowLeak — 명시적 dismiss
         alertDialog?.dismiss()
         alertDialog = null
     }
@@ -102,18 +110,18 @@ class MainActivity : AppCompatActivity() {
             overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
         findViewById<View>(R.id.btnFullscreen).setOnClickListener {
-            startActivity(Intent(this, com.example.on_safe.ui.FullscreenActivity::class.java))
+            startActivity(Intent(this, FullscreenActivity::class.java))
             overridePendingTransition(R.anim.fullscreen_enter, R.anim.fullscreen_exit)
         }
         // 사고이력: 왼쪽 탭 → 왼쪽에서 슬라이드 인
-        // 홈은 finish()하지 않고 그대로 둠 → 뒤로가기를 누르면 사고이력/설정에서 홈으로 돌아옴
+        // 홈은 finish() 없이 유지 — 사고이력·설정에서 뒤로가기 시 홈 복귀
         findViewById<View>(R.id.tabHistory).setOnClickListener {
-            startActivity(Intent(this, com.example.on_safe.ui.history.AccidentHistoryActivity::class.java))
+            startActivity(Intent(this, AccidentHistoryActivity::class.java))
             overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
         }
         // 설정: 오른쪽 탭 → 오른쪽에서 슬라이드 인
         findViewById<View>(R.id.tabSettings).setOnClickListener {
-            startActivity(Intent(this, com.example.on_safe.ui.settings.SettingsActivity::class.java))
+            startActivity(Intent(this, SettingsActivity::class.java))
             overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
         }
         findViewById<View>(R.id.btn119).setOnClickListener {
@@ -129,6 +137,16 @@ class MainActivity : AppCompatActivity() {
         dot.backgroundTintList = ColorStateList.valueOf(color)
         tv.text = state.label
         tv.setTextColor(color)
+    }
+
+    // 점수 미수신 사유별 문구 분기 — 사용자가 취할 조치가 달라 상태별로 구분
+    private fun riskUnknownMessage(state: ConnectionState): String = when (state) {
+        ConnectionState.STANDBY -> "카메라 기기가 연결되면 표시됩니다."
+        ConnectionState.FAILED -> "위험 지수를 불러오지 못했습니다."
+        ConnectionState.INFERENCE_ERROR -> "낙상 감지 일시 중단 — 카메라 상태를 확인해주세요."
+        ConnectionState.SLOW -> "낙상 감지 처리 지연 중 — 잠시 후 다시 확인해주세요."
+        ConnectionState.RECONNECTING -> "연결 재확인 중 — 잠시만 기다려주세요."
+        else -> "위험 지수를 확인하는 중입니다."
     }
 
     // 위험 감지 바텀시트 — 감지 시점의 점수·시각 스냅샷 표시
@@ -157,7 +175,7 @@ class MainActivity : AppCompatActivity() {
         dialog.setContentView(view)
         dialog.setOnShowListener {
             // Material BottomSheetDialog 기본 둥근 배경 제거 → XML drawable 곡률만 표시
-            (view.parent as? android.view.View)?.background = null
+            (view.parent as? View)?.background = null
         }
         dialog.show()
         alertDialog = dialog

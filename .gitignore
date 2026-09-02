@@ -1,0 +1,13 @@
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE 로컬 상태 — 프로젝트 설정(.idea/misc.xml 등)은 팀 공유용이라 제외하지 않음.
+# 기기·세션별로만 달라지는 것들만 무시 (.idea/.gitignore, android/.idea/.gitignore와 중복 무해)
+.idea/workspace.xml
+.idea/shelf/
+.idea/caches/
+.idea/deviceManager.xml
+.idea/deploymentTargetSelector.xml
+.idea/deploymentTargetDropDown.xml

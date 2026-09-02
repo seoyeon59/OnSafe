@@ -40,7 +40,7 @@
             android:textSize="20sp"
             android:textStyle="bold" />
 
-        <!-- 오른쪽 여백 버튼 (Figma에서 opacity=0이었던 것) -->
+        <!-- 타이틀 가운데 정렬용 자리맞춤 (뒤로가기 버튼과 같은 폭) -->
         <View
             android:layout_width="32dp"
             android:layout_height="32dp" />

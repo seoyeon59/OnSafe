@@ -346,7 +346,7 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <!-- 다음 버튼 (비활성 상태) -->
+        <!-- 다음 버튼 — 활성 여부는 필수 동의 체크에 따라 코드에서 제어 -->
         <Button
             android:id="@+id/btnNext"
             android:layout_width="match_parent"

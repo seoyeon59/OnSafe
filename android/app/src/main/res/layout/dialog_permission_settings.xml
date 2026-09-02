@@ -48,7 +48,7 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <!-- 메세지는 코드에서 상황에 맞게 주입 -->
+        <!-- 문구는 PermissionActivity에서 주입 -->
         <TextView
             android:id="@+id/tvPermDialogMessage"
             android:layout_width="wrap_content"

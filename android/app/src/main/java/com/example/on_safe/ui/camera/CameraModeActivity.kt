@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
@@ -19,7 +20,6 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -33,12 +33,16 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.Recorder
 import androidx.camera.video.VideoCapture
-import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.LandmarkPoint
 import com.example.on_safe.ui.login.LoginActivity
+import com.example.on_safe.ui.tutorial.TutorialActivity
+import com.example.on_safe.util.AppScope
+import com.example.on_safe.util.DisplayText
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.toast
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 private const val TAG = "CameraModeActivity"
@@ -94,9 +98,7 @@ class CameraModeActivity : AppCompatActivity() {
     private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
     private var rollingVideoBufferManager: RollingVideoBufferManager? = null
     private val fallVideoUploader = FallVideoUploader()
-    // 최신 추론 결과 캐시 — 로깅 + 위험 이벤트 중복 트리거 방지용
-    private var latestFallScore: Float = 0f
-    private var latestFallLevel: String = "정상"
+    // 위험 이벤트 중복 트리거 방지 — 같은 logId는 한 번만 처리
     private var lastHandledDangerLogId: String? = null
 
     // 카메라 provider 보관용 (화면 종료 시 해제하려고 들고 있음)
@@ -154,7 +156,10 @@ class CameraModeActivity : AppCompatActivity() {
         setState(CameraState.STANDBY)
         observeViewModel()
         viewModel.setDeviceId(deviceId)
-        viewModel.loadGuardianName(TokenManager.getUserId(this))
+        val userId = TokenManager.getUserId(this)
+        viewModel.loadGuardianName(userId)
+        // 이 폰이 곧 감시 카메라 — 보호자 홈 조회용 등록
+        viewModel.registerDevice(userId, deviceId, Build.MODEL)
 
         // 권한이 있으면 바로 카메라 켜고, 없으면 권한 요청
         if (areCameraPermissionsGranted()) {
@@ -238,8 +243,9 @@ class CameraModeActivity : AppCompatActivity() {
 
     private fun observeViewModel() {
         viewModel.uiState.observe(this) { state ->
-            if (state.guardianName.isNotBlank()) tvGuardianName.text = state.guardianName
-            if (state.deviceId.isNotBlank()) tvDeviceId.text = state.deviceId
+            // 레이아웃 예시 문구 잔존 방지용 무조건 대입
+            tvGuardianName.text = DisplayText.loadingOrNone(state.guardianName)
+            tvDeviceId.text = DisplayText.loadingOrNone(state.deviceId)
         }
     }
 
@@ -254,7 +260,7 @@ class CameraModeActivity : AppCompatActivity() {
 
         btnLogout.setOnClickListener {
             if (currentState == CameraState.STREAMING || currentState == CameraState.CONNECTING) {
-                Toast.makeText(this, "촬영 종료 후 로그아웃해주세요.", Toast.LENGTH_SHORT).show()
+                toast("촬영 종료 후 로그아웃해주세요.")
                 return@setOnClickListener
             }
             showLogoutDialog()
@@ -263,9 +269,7 @@ class CameraModeActivity : AppCompatActivity() {
         btnFullscreen.setOnClickListener { toggleFullscreen() }
         btnHamburger.setOnClickListener { toggleFullscreen() }
         btnTutorial.setOnClickListener {
-            startActivity(
-                com.example.on_safe.ui.tutorial.TutorialActivity.intentFromSettings(this)
-            )
+            startActivity(TutorialActivity.intentFromSettings(this))
         }
     }
 
@@ -303,7 +307,7 @@ class CameraModeActivity : AppCompatActivity() {
         val accessToken = TokenManager.getAccessToken(this)
 
         if (accessToken.isNullOrBlank() || userId.isBlank()) {
-            Toast.makeText(this, "로그인 정보가 없습니다.", Toast.LENGTH_SHORT).show()
+            toast("로그인 정보가 없습니다.")
             setState(CameraState.FAILED)
             return
         }
@@ -333,8 +337,6 @@ class CameraModeActivity : AppCompatActivity() {
             }
 
             override fun onResult(fallScore: Float, fall: Boolean, level: String, logId: String?) {
-                latestFallScore = fallScore
-                latestFallLevel = level
                 Log.d(TAG, "낙상 추론 결과: score=$fallScore fall=$fall level=$level logId=$logId")
 
                 if (level == "위험" && logId != null && logId != lastHandledDangerLogId) {
@@ -343,7 +345,8 @@ class CameraModeActivity : AppCompatActivity() {
                     rollingVideoBufferManager?.captureDangerClip(
                         logId = logId,
                         onReady = { clipFile ->
-                            lifecycleScope.launch { fallVideoUploader.upload(ownerUserId, logId, clipFile) }
+                            // 낙상 영상은 사고 증거 — 화면이 닫혀도 업로드를 끝내야 함
+                            AppScope.launch { fallVideoUploader.upload(ownerUserId, logId, clipFile) }
                         },
                         onError = { e ->
                             Log.w(TAG, "위험 이벤트 클립 합성 실패 (logId=$logId)", e)
@@ -355,7 +358,7 @@ class CameraModeActivity : AppCompatActivity() {
             override fun onFailure(t: Throwable) {
                 runOnUiThread {
                     Log.w(TAG, "WS 연결 실패", t)
-                    Toast.makeText(this@CameraModeActivity, "서버 연결에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                    this@CameraModeActivity.toast("서버 연결에 실패했습니다.")
                     setState(CameraState.FAILED)
                 }
             }
@@ -426,7 +429,7 @@ class CameraModeActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 // 바인딩 실패 시 사용자에게 알림
                 Log.w(TAG, "카메라 바인딩 실패", e)
-                Toast.makeText(this, "카메라를 시작할 수 없습니다.", Toast.LENGTH_SHORT).show()
+                toast("카메라를 시작할 수 없습니다.")
             }
         }, ContextCompat.getMainExecutor(this))  // 메인 스레드에서 실행
     }
@@ -568,19 +571,24 @@ class CameraModeActivity : AppCompatActivity() {
             android.content.res.ColorStateList.valueOf(bgColor)
     }
 
-    // 서버 로그아웃(리프레시 토큰 블랙리스트) → 로컬 토큰 정리 → 로그인 화면 이동.
-    // 서버 호출이 실패해도 로컬 로그아웃은 진행 — 사용자 관점에서 항상 성공해야 함.
+    // 로컬 정리·화면 이동을 먼저 끝내고 서버 로그아웃은 뒤에 보낸다.
+    // 서버 응답을 기다리는 사이 화면이 사라지면 lifecycleScope가 취소되어
+    // 토큰이 남은 채로 "로그아웃됨"이 되던 문제 때문.
     private fun handleLogout() {
-        lifecycleScope.launch {
+        val refreshToken = TokenManager.getRefreshToken(this)
+        TokenManager.clearSession(this)
+        startActivity(Intent(this, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        // 리프레시 토큰 블랙리스트 등록 — 실패해도 로컬은 이미 정리된 상태
+        AppScope.launch {
             try {
-                ApiClient.api.logout(TokenManager.getRefreshToken(this@CameraModeActivity))
+                ApiClient.api.logout(refreshToken)
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
-                // 무시하고 로컬 정리로 진행
+                // 무시 — 토큰은 이미 로컬에서 제거됨
             }
-            TokenManager.clear(this@CameraModeActivity)
-            startActivity(Intent(this@CameraModeActivity, LoginActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            })
         }
     }
 

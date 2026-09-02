@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@color/surface_bg">
 
-    <!-- ============ 헤더 ============ -->
+    <!-- 헤더 -->
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="0dp"
@@ -47,7 +47,7 @@
 
     </LinearLayout>
 
-    <!-- ============ 검색 입력 행 ============ -->
+    <!-- 검색 입력 행 -->
     <LinearLayout
         android:id="@+id/searchRow"
         android:layout_width="0dp"
@@ -110,7 +110,7 @@
 
     </LinearLayout>
 
-    <!-- ============ 검색 팁 카드 (초기 상태에만 표시) ============ -->
+    <!-- 검색 팁 카드 (초기 상태에만 표시) -->
     <LinearLayout
         android:id="@+id/tipCard"
         android:layout_width="0dp"
@@ -211,7 +211,7 @@
 
     </LinearLayout>
 
-    <!-- ============ 빈 상태 / 안내 텍스트 ============ -->
+    <!-- 빈 상태 / 안내 텍스트 -->
     <!-- 사고이력·알림 화면과 동일한 구조(아이콘 + 문구)로 통일 -->
     <LinearLayout
         android:id="@+id/layoutEmptyState"
@@ -246,7 +246,7 @@
             android:textSize="14sp" />
     </LinearLayout>
 
-    <!-- ============ 검색 결과 목록 ============ -->
+    <!-- 검색 결과 목록 -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvAddress"
         android:layout_width="0dp"

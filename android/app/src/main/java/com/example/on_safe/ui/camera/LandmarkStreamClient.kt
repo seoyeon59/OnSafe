@@ -16,7 +16,7 @@ import okhttp3.WebSocketListener
 
 /**
  * Python AI 서버 WS /ws/stream 연결 — landmark 전송 + 추론 결과 수신.
- * 엔드포인트는 BuildConfig.AI_WS_URL (build.gradle.kts, ApiClient.BASE_URL과 동일 컨벤션)에서 가져온다.
+ * 엔드포인트는 BuildConfig.AI_WS_URL (BASE_URL과 동일 컨벤션).
  */
 class LandmarkStreamClient(private val listener: Listener) {
 
@@ -31,7 +31,7 @@ class LandmarkStreamClient(private val listener: Listener) {
         private val BASE_WS_URL = BuildConfig.AI_WS_URL
         private const val TAG = "LandmarkStreamClient"
 
-        // 촬영마다 새 인스턴스가 생기므로 OkHttpClient(스레드풀·커넥션풀)는 공유해서 재사용한다
+        // 촬영마다 새 인스턴스가 생기므로 OkHttpClient(스레드풀·커넥션풀)는 공유 재사용
         private val sharedClient = OkHttpClient.Builder().build()
     }
 
@@ -41,6 +41,8 @@ class LandmarkStreamClient(private val listener: Listener) {
 
     private var webSocket: WebSocket? = null
 
+    // TODO: [보안] 토큰이 쿼리스트링에 실려 프록시·서버 접근 로그에 남을 수 있음.
+    //       서버가 Sec-WebSocket-Protocol 또는 Authorization 헤더 인증을 지원하면 전환 필요.
     fun connect(userId: String, deviceId: String, accessToken: String) {
         val request = Request.Builder()
             .url("$BASE_WS_URL?token=$accessToken")
@@ -56,7 +58,9 @@ class LandmarkStreamClient(private val listener: Listener) {
                 val message = try {
                     gson.fromJson(text, StreamServerMessage::class.java)
                 } catch (e: Exception) {
-                    Log.w(TAG, "서버 메시지 파싱 실패: $text", e)
+                    // 원문에는 서버 응답이 그대로 담겨 릴리즈 로그에는 남기지 않는다
+                    if (BuildConfig.DEBUG) Log.w(TAG, "서버 메시지 파싱 실패: $text", e)
+                    else Log.w(TAG, "서버 메시지 파싱 실패")
                     return
                 }
                 when (message.type) {

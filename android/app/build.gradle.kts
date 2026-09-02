@@ -29,12 +29,18 @@ android {
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
             // Python AI 서버(docker-compose 기준 8000 포트) WS 스트림 엔드포인트. BASE_URL과 동일한 컨벤션.
             buildConfigField("String", "AI_WS_URL", "\"ws://10.0.2.2:8000/ws/stream\"")
+            // devices API는 Python 서버 전용 — Kotlin 중복분은 스펙 v4.2에서 제거
+            buildConfigField("String", "AI_BASE_URL", "\"http://10.0.2.2:8000/\"")
         }
         release {
             // TODO: 출시 전 백엔드 팀에서 제공한 실제 운영 서버 URL로 변경 필요
             buildConfigField("String", "BASE_URL", "\"https://api.neulbom.com/\"")
             // TODO: 출시 전 백엔드 팀에서 제공한 실제 운영 AI 서버 WS URL로 변경 필요
             buildConfigField("String", "AI_WS_URL", "\"wss://api.neulbom.com/ws/stream\"")
+            // TODO: 출시 전 실제 운영 AI 서버 URL로 변경 필요.
+            //       현재 BASE_URL과 동일한 값이라, 게이트웨이가 /api/devices/*를 Python으로
+            //       프록시하지 않으면 404 → 보호자 홈 기기 ID가 공란이 된다 (앱은 실패를 무시).
+            buildConfigField("String", "AI_BASE_URL", "\"https://api.neulbom.com/\"")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
