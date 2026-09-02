@@ -3,6 +3,7 @@ package com.example.on_safe.ui.camera
 import android.util.Log
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.network.ApiClient
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -67,6 +68,9 @@ class FallVideoUploader {
                 else Log.w(TAG, "업로드 완료 콜백 실패 (logId=$logId)")
                 clipFile.delete()
             }
+        } catch (e: CancellationException) {
+            // 화면 이탈로 취소된 경우 — 파일을 남겨 cacheDir 정리에 맡김
+            throw e
         } catch (e: Exception) {
             Log.w(TAG, "영상 업로드 파이프라인 실패 (logId=$logId)", e)
             clipFile.delete()

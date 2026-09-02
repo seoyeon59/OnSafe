@@ -14,4 +14,5 @@ val <T> Response<ApiResponse<T>>.isOk: Boolean
 
 /** 실패 문구 — 본문 message 우선, 없으면 errorBody 파싱, 그래도 없으면 fallback */
 fun <T> Response<ApiResponse<T>>.errorMessage(fallback: String): String =
-    body()?.message ?: ApiClient.parseErrorMessage(errorBody(), fallback)
+    body()?.message?.takeIf { it.isNotBlank() }
+        ?: ApiClient.parseErrorMessage(errorBody(), fallback)

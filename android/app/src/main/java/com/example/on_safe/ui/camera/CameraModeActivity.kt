@@ -33,7 +33,6 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.Recorder
 import androidx.camera.video.VideoCapture
-import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.LandmarkPoint
@@ -346,7 +345,8 @@ class CameraModeActivity : AppCompatActivity() {
                     rollingVideoBufferManager?.captureDangerClip(
                         logId = logId,
                         onReady = { clipFile ->
-                            lifecycleScope.launch { fallVideoUploader.upload(ownerUserId, logId, clipFile) }
+                            // 낙상 영상은 사고 증거 — 화면이 닫혀도 업로드를 끝내야 함
+                            AppScope.launch { fallVideoUploader.upload(ownerUserId, logId, clipFile) }
                         },
                         onError = { e ->
                             Log.w(TAG, "위험 이벤트 클립 합성 실패 (logId=$logId)", e)

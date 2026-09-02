@@ -139,10 +139,13 @@ class MainActivity : AppCompatActivity() {
         tv.setTextColor(color)
     }
 
-    // 점수 미수신 사유별 문구 분기
+    // 점수 미수신 사유별 문구 분기 — 사용자가 취할 조치가 달라 상태별로 구분
     private fun riskUnknownMessage(state: ConnectionState): String = when (state) {
         ConnectionState.STANDBY -> "카메라 기기가 연결되면 표시됩니다."
         ConnectionState.FAILED -> "위험 지수를 불러오지 못했습니다."
+        ConnectionState.INFERENCE_ERROR -> "낙상 감지 일시 중단 — 카메라 상태를 확인해주세요."
+        ConnectionState.SLOW -> "낙상 감지 처리 지연 중 — 잠시 후 다시 확인해주세요."
+        ConnectionState.RECONNECTING -> "연결 재확인 중 — 잠시만 기다려주세요."
         else -> "위험 지수를 확인하는 중입니다."
     }
 

@@ -19,7 +19,14 @@ enum class ConnectionState(val label: String, val colorRes: Int) {
     CONNECTED("기기 연결됨", R.color.status_normal),
     CONNECTING("연결 확인 중...", R.color.status_warning),
     FAILED("기기 연결 실패", R.color.status_danger),
-    STANDBY("대기 중 — 카메라 기기 연결 필요", R.color.status_standby)
+    STANDBY("대기 중 — 카메라 기기 연결 필요", R.color.status_standby),
+
+    // 프레임은 도착하나 추론이 실패 중 — 감지 기능 정지 상태라 danger 취급
+    INFERENCE_ERROR("낙상 감지 일시 중단", R.color.status_danger),
+    // 프레임은 도착하나 추론 결과만 정체 — 저사양 기기의 처리 지연
+    SLOW("낙상 감지 처리 지연 중", R.color.status_warning),
+    // 프레임 도착이 막 끊김 — STANDBY 확정 전 유예 구간
+    RECONNECTING("연결 재확인 중", R.color.status_warning)
 }
 
 // 홈 화면 상태 — 연결 상태 + 최신 위험 점수(폴링 전이라 아직 없으면 null) + 미읽음 알림 유무
@@ -47,8 +54,13 @@ class MainViewModel : ViewModel() {
     // DANGER 신규 진입 판별용 직전 등급
     private var lastRiskLevel: RiskScoreCardBinder.RiskLevel? = null
 
-    // 마지막 갱신 시각 — 서버의 촬영 상태 제공 시 판정에 쓸 값
+    // 직전 응답의 두 시각 — 정체 여부 판정 기준
     private var lastUpdatedAt: String? = null
+    private var lastDeviceSeenAt: String? = null
+
+    // 연속 정체 틱 수 (1틱 = POLLING_INTERVAL_MS)
+    private var updatedAtStaleTicks = 0
+    private var deviceSeenStaleTicks = 0
 
     private val notificationRepository: NotificationRepository = RealNotificationRepository()
 
@@ -65,6 +77,9 @@ class MainViewModel : ViewModel() {
         }
 
         lastUpdatedAt = null
+        lastDeviceSeenAt = null
+        updatedAtStaleTicks = 0
+        deviceSeenStaleTicks = 0
 
         // 첫 응답 전 직전 FAILED 잔상 제거
         setState { copy(connectionState = ConnectionState.CONNECTING) }
@@ -133,7 +148,7 @@ class MainViewModel : ViewModel() {
             when {
                 response.isSuccessful && body?.success == true && body.data != null -> {
                     val score = body.data.score.toInt().coerceIn(0, 100)
-                    applyFreshness(score, body.data.updatedAt)
+                    applyFreshness(score, body.data.level, body.data.updatedAt, body.data.deviceSeenAt)
                 }
                 response.code() == 404 -> {
                     setState { copy(connectionState = ConnectionState.STANDBY) }
@@ -150,14 +165,64 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    // 촬영 종료 여부는 앱에서 판단 불가.
-    // realtime_data는 종료 후에도 마지막 값이 남고 updated_at은 사람이 잡혔을 때만 갱신 —
-    // 무인 감시의 빈 방이 정상 상태라 updated_at 정지를 종료로 보면 오판.
-    // 따라서 데이터 존재 = 연결로 간주. 정확한 판정은 서버의 촬영 상태 제공 필요
-    // (devices 컬렉션 status·last_seen 협의 중).
-    private fun applyFreshness(score: Int, updatedAt: String?) {
+    /**
+     * 연결 상태 판정 — deviceSeenAt(프레임 도착)이 updatedAt(추론 성공)보다 상위 신호.
+     *
+     * 두 시각을 분리하지 않으면 "프레임 끊김"·"추론 실패"·"처리 지연"이 전부 STANDBY로
+     * 뭉쳐, 감지 기능이 죽은 상황이 "아직 안 켰나보다"로 감춰짐.
+     *
+     * 우선순위: 프레임 정체 → 추론 오류 → 처리 지연 → 정상
+     */
+    private fun applyFreshness(score: Int, level: String?, updatedAt: String?, deviceSeenAt: String?) {
+        // 구버전 서버 — 판정 근거가 없어 점수만으로 처리
+        if (updatedAt == null) {
+            applyRiskScore(score)
+            return
+        }
+
+        deviceSeenStaleTicks = if (deviceSeenAt != null && deviceSeenAt == lastDeviceSeenAt) {
+            deviceSeenStaleTicks + 1
+        } else 0
+        updatedAtStaleTicks = if (updatedAt == lastUpdatedAt) updatedAtStaleTicks + 1 else 0
+        lastDeviceSeenAt = deviceSeenAt
         lastUpdatedAt = updatedAt
+
+        // 2) 프레임은 오는데 추론이 실패 중 — 감지 기능 정지.
+        // deviceSeenAt과 무관하게 서버가 명시적으로 알려주는 신호라 항상 신뢰 가능
+        if (level == LEVEL_INFERENCE_ERROR) {
+            setStalled(ConnectionState.INFERENCE_ERROR)
+            return
+        }
+
+        // 하트비트 미지원 서버, 또는 하트비트가 무인 상태를 덮지 못하는 동안은 정체 판정 보류
+        if (deviceSeenAt == null || !HEARTBEAT_COVERS_IDLE) {
+            applyRiskScore(score)
+            return
+        }
+
+        // 1) 프레임 자체가 안 들어옴 — WiFi 재연결 유예를 두고 확정
+        if (deviceSeenStaleTicks >= RECONNECTING_TICKS) {
+            val stalled = if (deviceSeenStaleTicks >= DEVICE_STANDBY_TICKS) {
+                ConnectionState.STANDBY
+            } else {
+                ConnectionState.RECONNECTING
+            }
+            setStalled(stalled)
+            return
+        }
+
+        // 3) 프레임은 오는데 추론 결과만 정체 — 저사양 기기의 처리 지연
+        if (updatedAtStaleTicks >= SLOW_TICKS) {
+            setStalled(ConnectionState.SLOW)
+            return
+        }
+
         applyRiskScore(score)
+    }
+
+    // 정체·오류 상태의 직전 점수 제거 — 낡은 값이 현재 안전 상태로 오독됨
+    private fun setStalled(state: ConnectionState) {
+        setState { copy(connectionState = state, riskScore = null) }
     }
 
     private fun applyRiskScore(score: Int) {
@@ -192,5 +257,25 @@ class MainViewModel : ViewModel() {
 
         // 서버의 읽음 처리 반영 대기 시간
         private const val READ_SYNC_GRACE_MS = 3_000L
+
+        // 서버가 추론 실패를 알리는 level 값 (백엔드 INFERENCE_ERROR_LEVEL과 동일)
+        private const val LEVEL_INFERENCE_ERROR = "오류"
+
+        /*
+         * deviceSeenAt 기반 정체 판정 활성 여부.
+         *
+         * 서버 하트비트는 WS 프레임 수신 시 갱신되나, 앱은 관절이 잡힐 때만 프레임 전송
+         * (PoseLandmarkerHelper: poses.isEmpty() → return). 빈 방이 정상인 무인 감시에서
+         * deviceSeenAt이 멈춰 촬영 종료로 오판 — 커밋 1ef5a50에서 되돌린 문제와 동일.
+         *
+         * 무인 상태의 하트비트 유지에 서버·앱 합의가 끝나면 true로 전환.
+         */
+        private const val HEARTBEAT_COVERS_IDLE = false
+
+        // 정체 판정 임계 틱 — 폴링 5초 기준.
+        // 하트비트 간격도 5초라 1틱은 지터만으로도 겹침 — 최소 2틱부터 정체로 본다
+        private const val RECONNECTING_TICKS = 2    // 10초 — 유예 시작
+        private const val SLOW_TICKS = 3            // 15초 — 처리 지연
+        private const val DEVICE_STANDBY_TICKS = 6  // 30초 — WiFi 재연결 고려한 확정
     }
 }

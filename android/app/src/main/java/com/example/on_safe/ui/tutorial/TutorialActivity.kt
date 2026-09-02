@@ -97,9 +97,8 @@ class TutorialActivity : AppCompatActivity() {
     }
 
     /**
-     * 튜토리얼 종료.
-     * 로그인 플로우 중이면 완료·이탈 어느 쪽이든 권한 화면으로 이어져야 앱이 계속 진행된다.
-     * 자동 표시 플래그는 끝까지 본 경우에만 남겨, 중간 이탈 시 다음 로그인에 다시 보이게 한다.
+     * 튜토리얼 종료 — 로그인 플로우 중이면 완료·이탈 무관하게 권한 화면으로 연결.
+     * 자동 표시 플래그는 완주 시에만 기록 — 중간 이탈은 다음 로그인에 재표시.
      */
     private fun exitTutorial(completed: Boolean) {
         if (completed && fromLogin) markTutorialShown()

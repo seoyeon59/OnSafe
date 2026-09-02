@@ -6,6 +6,40 @@ OnSafe Android 클라이언트. 최신순.
 
 ---
 
+## 2026-09-04
+
+연결 상태 세분화, 최종 리뷰 차수.
+
+### 수정
+- **낙상 영상 유실** — 클립 업로드를 `lifecycleScope`로 실행해, 합성 중 화면을 벗어나면
+  취소되며 파일까지 삭제. 사고 증거라 `AppScope`로 이관 (`CameraModeActivity`)
+- **컴파일 실패** — `NotificationAdapter`가 `bindingAdapterPosition`(RecyclerView 1.2.0+)을 참조하나
+  해석 버전은 transitive 1.1.0. 동작이 같은 `adapterPosition`으로 교체
+- 영상 다운로드 중 화면 이탈이 "저장에 실패했습니다"로 오표시 (`AccidentHistoryActivity`)
+- 서버가 빈 문자열 `message`를 보내면 빈 토스트 출력 (`ApiResult.errorMessage`)
+
+### 변경
+- **연결 상태 판정 재설계** — 프레임 도착(`deviceSeenAt`)과 추론 성공(`updatedAt`)을 분리해
+  "프레임 끊김"·"추론 실패"·"처리 지연"을 각각 구분. 기존엔 셋 다 `STANDBY`("카메라 기기 연결 필요")로
+  뭉쳐, 감지 기능이 죽은 상황이 "아직 안 켰나보다"로 감춰짐
+  - `ConnectionState`에 `INFERENCE_ERROR` · `SLOW` · `RECONNECTING` 추가
+  - **현재 `INFERENCE_ERROR`만 활성** — 나머지는 `HEARTBEAT_COVERS_IDLE=false`로 보류.
+    하트비트가 WS 프레임 수신에 묶여 있고 앱은 관절이 잡힐 때만 프레임을 보내, 빈 방에서
+    `deviceSeenAt`이 멈춰 촬영 종료로 오판됨 (`1ef5a50`에서 되돌린 문제와 동일)
+  - 정체·오류 상태에서 직전 점수 제거 — 낡은 값이 현재 안전 상태로 오독됨
+  - 임계값: 10초 `RECONNECTING` / 15초 `SLOW` / 30초 `STANDBY`.
+    하트비트 간격도 5초라 1틱은 지터만으로 겹쳐 최소 2틱부터 정체로 판정
+  - `deviceSeenAt`·`updatedAt` 미제공 시 점수 표시로 폴백 (구버전 서버 호환)
+  - `RiskScoreResponse.level`을 nullable로 정정 — Gson이 생성자를 건너뛰어 응답 누락 시 null 유입
+  - 백엔드 `main` 대조 완료 — `deviceSeenAt` 미존재·`level`에 "오류" 미포함 상태라
+    현재 서버에서는 기존과 동일하게 동작 (신규 분기 전부 비활성)
+- 장황한 주석 8곳 축약 — 서술형 종결을 명사형으로 통일
+
+### 추가
+- `RiskScoreResponse.deviceSeenAt` — 원시 프레임 도착 시각 (nullable)
+
+---
+
 ## 2026-09-03
 
 문서 및 저장소 정리.

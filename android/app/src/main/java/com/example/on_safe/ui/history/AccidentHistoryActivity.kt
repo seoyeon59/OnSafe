@@ -31,6 +31,7 @@ import com.example.on_safe.R
 import com.example.on_safe.ui.settings.SettingsActivity
 import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.toast
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -272,6 +273,8 @@ class AccidentHistoryActivity : AppCompatActivity() {
             try {
                 withContext(Dispatchers.IO) { saveVideoToGallery(videoUrl, entryId) }
                 this@AccidentHistoryActivity.toast("갤러리에 저장되었습니다.")
+            } catch (e: CancellationException) {
+                throw e   // 화면 이탈에 의한 취소 — 실패 처리 대상 아님
             } catch (e: Exception) {
                 this@AccidentHistoryActivity.toast("저장에 실패했습니다.")
             }

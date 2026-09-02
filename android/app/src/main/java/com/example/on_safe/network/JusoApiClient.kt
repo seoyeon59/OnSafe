@@ -4,12 +4,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 /**
- * 도로명주소 API(외부 도메인) 전용 클라이언트.
- *
- * ApiClient와 반드시 분리 유지:
- * - ApiClient의 authInterceptor는 경로만 보고 Bearer를 붙이므로, 공유하면 사용자 JWT가
- *   business.juso.go.kr로 새어 나간다.
- * - 응답 키가 camelCase라 ApiClient의 snake_case 필드명 정책도 맞지 않는다.
+ * 도로명주소 API(외부 도메인) 전용 — ApiClient와 분리 유지 필수.
+ * 공유 시 authInterceptor가 경로만 보고 Bearer를 붙여 사용자 JWT 외부 유출.
+ * 응답 키도 camelCase라 snake_case 정책 불일치.
  */
 object JusoApiClient {
 

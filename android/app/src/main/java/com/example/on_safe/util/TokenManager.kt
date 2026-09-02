@@ -38,10 +38,8 @@ object TokenManager {
 
     /**
      * 암호화 저장소 생성.
-     *
-     * 백업 복원·Keystore 초기화 시 기존 파일의 키셋을 더 이상 복호화할 수 없어 생성 자체가 실패한다.
-     * 마스터 키는 백업 대상이 아니므로 기기를 옮기면 반드시 발생하는 상황 — 그대로 두면
-     * 토큰에 접근하는 모든 경로가 실행 즉시 죽는다. 손상된 파일을 버리고 한 번만 재생성.
+     * 백업 복원·Keystore 초기화 시 기존 키셋 복호화 불가로 생성 자체가 실패 —
+     * 마스터 키가 백업 대상이 아니라 기기 이전 시 필연. 손상 파일 폐기 후 1회 재생성.
      */
     private fun createEncryptedPrefs(context: Context): SharedPreferences =
         try {
