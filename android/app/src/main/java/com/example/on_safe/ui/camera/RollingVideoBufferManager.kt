@@ -16,8 +16,8 @@ import java.util.ArrayDeque
 import java.util.concurrent.Executors
 
 /**
- * 카메라 바인딩은 [CameraModeActivity]가 소유하므로(`videoCapture`를 넘겨줄 뿐 바인딩은 안 함),
- * 이 클래스는 15초 세그먼트 연속 녹화 + 링버퍼 관리 + 위험 이벤트 시 pre/post 세그먼트 스플라이스만 담당한다.
+ * 카메라 바인딩은 [CameraModeActivity] 소유(`videoCapture` 제공만 하고 바인딩은 안 함).
+ * 이 클래스는 세그먼트 연속 녹화 + 링버퍼 관리 + 위험 이벤트 시 pre/post 스플라이스만 담당.
  */
 class RollingVideoBufferManager(private val context: Context) {
 
@@ -28,7 +28,7 @@ class RollingVideoBufferManager(private val context: Context) {
         private const val PRE_EVENT_SEGMENTS = 8       // 약 2분
         private const val POST_EVENT_SEGMENTS = 8      // 약 2분
         private const val TARGET_BITRATE = 1_500_000
-        // stop() 직후 남은 Finalize 이벤트 전달이 끝날 시간을 벌기 위한 유예 (즉시 shutdown 시 예외)
+        // stop() 직후 남은 Finalize 이벤트 전달 대기용 유예 — 즉시 shutdown 시 예외
         private const val SHUTDOWN_GRACE_MS = 1_000L
     }
 
@@ -52,7 +52,7 @@ class RollingVideoBufferManager(private val context: Context) {
     private var segmentIndex = 0
     private var running = false
 
-    // 위험 이벤트 스플라이스 진행 상태 (한 번에 하나만 — synchronized(this)로 보호)
+    // 위험 이벤트 스플라이스 진행 상태 — 한 번에 하나만, synchronized(this)로 보호
     private var capturingLogId: String? = null
     private val postSegments = mutableListOf<File>()
     private var preSegmentsSnapshot: List<File> = emptyList()
@@ -81,7 +81,7 @@ class RollingVideoBufferManager(private val context: Context) {
             onClipReady = null
             onClipError = null
         }
-        // 인스턴스마다 executor가 생기므로 반드시 정리하되, 남은 Finalize 전달을 위해 유예를 둔다
+        // 인스턴스마다 executor가 생기므로 반드시 정리 — 남은 Finalize 전달 위해 유예
         mainHandler.postDelayed({ executor.shutdown() }, SHUTDOWN_GRACE_MS)
     }
 
@@ -123,7 +123,7 @@ class RollingVideoBufferManager(private val context: Context) {
         }
     }
 
-    /** 위험 이벤트 발생 시 호출 — 진행 중인 스플라이스가 있으면 무시(로그만 남김). */
+    /** 위험 이벤트 시 호출 — 진행 중인 스플라이스가 있으면 무시 */
     fun captureDangerClip(logId: String, onReady: (File) -> Unit, onError: (Throwable) -> Unit) {
         synchronized(this) {
             if (capturingLogId != null) {
@@ -138,7 +138,7 @@ class RollingVideoBufferManager(private val context: Context) {
         }
     }
 
-    // 호출부(onSegmentFinalized)에서 이미 synchronized(this) 블록 안이므로 별도 락 안 잡음
+    // 호출부(onSegmentFinalized)가 이미 synchronized(this) 안이라 별도 락 불필요
     private fun finishCaptureLocked() {
         val logId = capturingLogId ?: return
         val pre = preSegmentsSnapshot
@@ -164,8 +164,8 @@ class RollingVideoBufferManager(private val context: Context) {
                 }
             }
         } catch (e: java.util.concurrent.RejectedExecutionException) {
-            // stop()으로 executor가 이미 종료된 직후 위험 이벤트가 뒤늦게 마무리된 경우 —
-            // 합성을 포기하고 실패로 처리 (크래시 대신 로그만 남김)
+            // stop()으로 executor가 종료된 뒤 위험 이벤트가 뒤늦게 마무리된 경우 —
+            // 크래시 대신 로그만 남기고 실패 처리
             Log.w(TAG, "executor 종료 이후라 클립 합성 제출 실패 (logId=$logId)", e)
             errorCb?.invoke(e)
         }

@@ -8,9 +8,9 @@ import java.io.File
 import java.nio.ByteBuffer
 
 /**
- * 같은 인코딩 프로파일(H.264 720p 1.5Mbps, [RollingVideoBufferManager]가 보장)의
- * 세그먼트 mp4 파일들을 재인코딩 없이 트랙 샘플만 이어붙여 하나의 mp4로 합성한다.
- * 세그먼트 경계가 항상 키프레임이라 세그먼트 단위 이어붙이기로 충분하다.
+ * 동일 인코딩 프로파일(H.264 720p 1.5Mbps, [RollingVideoBufferManager] 보장)의
+ * 세그먼트 mp4를 재인코딩 없이 트랙 샘플만 이어붙여 하나로 합성.
+ * 세그먼트 경계가 항상 키프레임이라 세그먼트 단위 접합으로 충분.
  */
 object FallClipComposer {
 
@@ -65,7 +65,9 @@ object FallClipComposer {
         return -1
     }
 
-    // 트랙 샘플을 그대로 복사하며 PTS에 offsetUs를 더한다. 반환값: 이 세그먼트에서 복사한 구간 길이(다음 오프셋 계산용)
+    // 트랙 샘플을 그대로 복사하며 PTS에 offsetUs 가산.
+    // 반환값은 이 세그먼트의 최대 PTS — 다음 세그먼트 오프셋 계산용.
+    // (마지막 프레임 길이만큼 짧아 접합부에서 프레임 하나가 겹칠 수 있음)
     private fun copyTrack(
         extractor: MediaExtractor,
         srcTrackIndex: Int,

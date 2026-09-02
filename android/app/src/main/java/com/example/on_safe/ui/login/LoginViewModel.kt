@@ -5,8 +5,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import android.util.Log
+import com.example.on_safe.BuildConfig
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.LoginRequest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 // 로그인 화면 상태 — 로딩 여부, 인라인 에러 메시지(비었으면 표시 안 함)
@@ -15,7 +17,7 @@ data class LoginUiState(
     val errorMessage: String? = null
 )
 
-// 로그인 성공 결과 — 토큰 저장(TokenManager)과 화면 이동 판단은 Context가 필요해서 Activity가 담당
+// 로그인 성공 결과 — 토큰 저장·화면 이동은 Context 필요로 Activity가 담당
 data class LoginSuccess(
     val accessToken: String,
     val refreshToken: String,
@@ -31,7 +33,7 @@ class LoginViewModel : ViewModel() {
     private val _loginSuccess = MutableLiveData<LoginSuccess?>()
     val loginSuccess: LiveData<LoginSuccess?> = _loginSuccess
 
-    // id/pw 빈 값 체크와 테두리 강조는 순수 View 로직이라 Activity에서 미리 걸러서 호출한다
+    // id/pw 빈 값 체크·테두리 강조는 순수 View 로직 — Activity가 선처리
     fun login(id: String, password: String, deviceId: String) {
         setState { copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
@@ -46,11 +48,14 @@ class LoginViewModel : ViewModel() {
                 } else {
                     val message = body?.message
                         ?: ApiClient.parseErrorMessage(response.errorBody(), "아이디 또는 비밀번호가 올바르지 않습니다.")
-                    Log.w("Login", "실패 — HTTP ${response.code()}: $message")
+                    // 서버 응답 원문은 디버그에서만 — 릴리즈 logcat 노출 방지
+                    if (BuildConfig.DEBUG) Log.w("Login", "실패 — HTTP ${response.code()}: $message")
                     setState { copy(errorMessage = message) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                Log.e("Login", "네트워크 오류", e)
+                if (BuildConfig.DEBUG) Log.e("Login", "네트워크 오류", e)
                 setState { copy(errorMessage = "네트워크 오류가 발생했습니다.") }
             } finally {
                 setState { copy(isLoading = false) }
@@ -58,7 +63,7 @@ class LoginViewModel : ViewModel() {
         }
     }
 
-    // 로그인 성공 이벤트를 Activity가 처리(토큰 저장 + 화면 이동)한 뒤 호출 — 재구독 시 재실행 방지
+    // Activity가 토큰 저장·화면 이동을 마친 뒤 호출 — 재구독 시 재실행 방지
     fun onLoginHandled() {
         _loginSuccess.value = null
     }

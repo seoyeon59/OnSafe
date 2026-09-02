@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.on_safe.R
+import com.example.on_safe.util.EmailValidator
 
 class FindIdActivity : AppCompatActivity() {
 
@@ -52,11 +53,10 @@ class FindIdActivity : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
         btnGoLogin.setOnClickListener { finish() }
 
-        // 인증코드 발송 — 입력값 형식 검증만 여기서 하고, 실제 요청/상태 처리는 뷰모델에 맡김
+        // 인증코드 발송 — 형식 검증만 여기서, 요청·상태 처리는 뷰모델 담당
         btnRequestCode.setOnClickListener {
             val name = etName.text.toString().trim()
             val email = etEmail.text.toString().trim()
-            val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
 
             if (name.isEmpty()) {
                 Toast.makeText(this, "이름을 입력해주세요.", Toast.LENGTH_SHORT).show()
@@ -66,8 +66,8 @@ class FindIdActivity : AppCompatActivity() {
                 Toast.makeText(this, "이메일을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (!emailRegex.matches(email)) {
-                Toast.makeText(this, "올바른 이메일 형식을 입력해주세요.", Toast.LENGTH_SHORT).show()
+            if (!EmailValidator.isValid(email)) {
+                Toast.makeText(this, EmailValidator.ERROR_MSG, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -125,7 +125,7 @@ class FindIdActivity : AppCompatActivity() {
         }
     }
 
-    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    // 좌상단 뒤로가기 화면 공통 전환 — 알림 화면과 동일
     override fun finish() {
         super.finish()
         overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)

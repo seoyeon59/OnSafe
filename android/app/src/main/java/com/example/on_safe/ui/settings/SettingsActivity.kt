@@ -15,7 +15,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
-import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -29,12 +28,15 @@ import androidx.core.content.ContextCompat
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
+import com.example.on_safe.ui.history.AccidentHistoryActivity
+import com.example.on_safe.ui.login.LoginActivity
+import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.TokenManager
 
 // 설정 화면 (알림 토글, 개인정보 수정, 비밀번호 변경, 로그아웃, 회원탈퇴)
 //
-// 알림 토글은 서버가 진실의 원천, SharedPreferences("settings")는 오프라인 캐시.
-// 캐시를 먼저 보여주고 서버 값으로 덮어쓰며, PUT 실패 시 다음 GET 때 자동 재동기화된다.
+// 알림 토글의 진실의 원천은 서버, SharedPreferences("settings")는 오프라인 캐시.
+// 캐시 선표시 → 서버 값으로 덮어쓰기, PUT 실패 시 다음 GET에서 자동 재동기화.
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var switchNotification: SwitchCompat
@@ -51,16 +53,14 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var rowLogout: LinearLayout
     private lateinit var rowWithdraw: LinearLayout
 
-    // btnBack은 레이아웃에서 제거됨
-    // private lateinit var btnBack: ImageButton
-    private lateinit var btnTutorial: android.widget.ImageView
+    private lateinit var btnTutorial: ImageView
 
     private lateinit var tabHistory: LinearLayout
     private lateinit var tabHome: LinearLayout
 
     private lateinit var tvUserName: TextView
 
-    // 프로그래밍적으로 토글을 세팅할 때 리스너 재발화(재-PUT) 방지
+    // 토글을 코드로 세팅할 때 리스너 재발화(재-PUT) 방지
     private var suppressToggleListeners = false
 
     private val settingsPrefs by lazy { getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
@@ -76,7 +76,7 @@ class SettingsActivity : AppCompatActivity() {
         setupClickListeners()
         observeViewModel()
 
-        // 탭 화면에서 뒤로가기 → 앱 종료가 아니라 홈으로 이동한다
+        // 탭 화면 뒤로가기 → 앱 종료 대신 홈 이동
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 startActivity(Intent(this@SettingsActivity, MainActivity::class.java).apply {
@@ -115,7 +115,7 @@ class SettingsActivity : AppCompatActivity() {
 
         viewModel.logoutEvent.observe(this) { fired ->
             if (fired == true) {
-                TokenManager.clear(this)
+                TokenManager.clearSession(this)
                 Toast.makeText(this, "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show()
                 goToLogin()
                 viewModel.onLogoutHandled()
@@ -126,7 +126,7 @@ class SettingsActivity : AppCompatActivity() {
             if (result != null) {
                 Toast.makeText(this, result.message, Toast.LENGTH_SHORT).show()
                 if (result.success) {
-                    TokenManager.clear(this)
+                    TokenManager.clearSession(this)
                     goToLogin()
                 }
                 viewModel.onWithdrawHandled()
@@ -136,7 +136,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun goToLogin() {
         startActivity(
-            Intent(this, com.example.on_safe.ui.login.LoginActivity::class.java).apply {
+            Intent(this, LoginActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
         )
@@ -144,17 +144,16 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // 개인정보 수정에서 이름을 바꾸고 돌아왔을 수 있어 복귀 시마다 다시 조회한다
+        // 개인정보 수정에서 이름이 바뀌었을 수 있어 복귀 시마다 재조회
         viewModel.loadUserName(TokenManager.getUserId(this))
         // 시스템 설정에서 알림 권한이 취소된 경우 토글 강제 OFF 동기화
-        // (프로그래밍 방식 변경이지만 리스너 발화가 필요 — 캐시·서버 모두 반영)
+        // (코드 변경이지만 리스너 발화가 필요 — 캐시·서버 모두 반영)
         if (!isNotificationPermissionGranted() && switchNotification.isChecked) {
             switchNotification.isChecked = false
         }
     }
 
     private fun initViews() {
-        // btnBack은 레이아웃에서 제거됨
         switchNotification = findViewById(R.id.switchNotification)
         switchSound        = findViewById(R.id.switchSound)
         switchVibration    = findViewById(R.id.switchVibration)
@@ -172,7 +171,7 @@ class SettingsActivity : AppCompatActivity() {
         tvUserName         = findViewById(R.id.tvUserName)
         btnTutorial        = findViewById(R.id.btnTutorial)
 
-        // 캐시에서 즉시 복원 (오프라인/서버 응답 전에도 정확한 마지막 값 표시)
+        // 캐시 즉시 복원 — 서버 응답 전에도 마지막 값 표시
         applyNotificationValues(
             notification = settingsPrefs.getBoolean(KEY_NOTIFY, true),
             sound = settingsPrefs.getBoolean(KEY_SOUND, true),
@@ -180,7 +179,7 @@ class SettingsActivity : AppCompatActivity() {
         )
     }
 
-    // UI 3개 토글과 활성 상태를 리스너 억제 상태로 일괄 적용
+    // 토글 3개와 활성 상태를 리스너 억제 상태에서 일괄 적용
     private fun applyNotificationValues(notification: Boolean, sound: Boolean, vibration: Boolean) {
         suppressToggleListeners = true
         switchNotification.isChecked = notification
@@ -194,12 +193,12 @@ class SettingsActivity : AppCompatActivity() {
         suppressToggleListeners = false
     }
 
-    // 알림 마스터 스위치 상태에 맞춰 벨 아이콘을 울리는 모양/기본 모양으로 교체
+    // 알림 상태에 맞춘 벨 아이콘 교체
     private fun updateNotificationIcon(on: Boolean) {
         ivNotificationIcon.setImageResource(if (on) R.drawable.ic_notification_ringing else R.drawable.ic_notification)
     }
 
-    // 소리/진동 스위치 상태에 맞춰 행 아이콘도 on/off 아이콘으로 교체
+    // 소리·진동 상태에 맞춘 행 아이콘 교체
     private fun updateSoundIcon(on: Boolean) {
         ivSoundIcon.setImageResource(if (on) R.drawable.ic_volume else R.drawable.ic_volume_off)
     }
@@ -208,7 +207,7 @@ class SettingsActivity : AppCompatActivity() {
         ivVibrationIcon.setImageResource(if (on) R.drawable.ic_vibration else R.drawable.ic_vibration_off)
     }
 
-    // 캐시 저장 (서버 저장과 별개의 단순 로컬 미러)
+    // 캐시 저장 — 서버 저장과 별개의 로컬 미러
     private fun writeCache(notification: Boolean?, sound: Boolean?, vibration: Boolean?) {
         val editor = settingsPrefs.edit()
         if (notification != null) editor.putBoolean(KEY_NOTIFY, notification)
@@ -218,7 +217,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     // 알림 권한 (API 33+)
-    // 권한 허용 시 turnNotificationOn()을 거쳐야 소리/진동 활성화와 서버 반영까지 완료된다
+    // 허용 시 turnNotificationOn()을 거쳐야 소리·진동 활성화와 서버 반영까지 완료
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
@@ -274,51 +273,29 @@ class SettingsActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    // 알림 마스터 스위치 ON — 소리·진동도 함께 켜고, 서버에 반영
-    // 스위치 직접 조작 / 권한 허용 콜백(requestNotificationPermission, openNotificationSettings) 양쪽에서 공용으로 호출
-    private fun turnNotificationOn() {
-        suppressToggleListeners = true
-        switchNotification.isChecked = true
-        switchSound.isEnabled = true
-        switchVibration.isEnabled = true
-        switchSound.isChecked = true
-        switchVibration.isChecked = true
-        updateNotificationIcon(true)
-        updateSoundIcon(true)
-        updateVibrationIcon(true)
-        suppressToggleListeners = false
-        writeCache(notification = true, sound = true, vibration = true)
+    // 알림 마스터 스위치 — 소리·진동을 함께 맞추고 캐시·서버까지 반영.
+    // 스위치 직접 조작과 권한 허용 콜백(requestNotificationPermission,
+    // openNotificationSettings) 양쪽에서 공용 호출.
+    private fun setNotificationAll(on: Boolean) {
+        applyNotificationValues(notification = on, sound = on, vibration = on)
+        writeCache(notification = on, sound = on, vibration = on)
         viewModel.updateNotificationSetting(
-            TokenManager.getUserId(this), notification = true, sound = true, vibration = true
+            TokenManager.getUserId(this), notification = on, sound = on, vibration = on
         )
     }
 
-    // 알림 마스터 스위치 OFF — 소리·진동도 함께 끄고 비활성화, 서버에 반영
-    private fun turnNotificationOff() {
-        suppressToggleListeners = true
-        switchNotification.isChecked = false
-        switchSound.isEnabled = false
-        switchVibration.isEnabled = false
-        switchSound.isChecked = false
-        switchVibration.isChecked = false
-        updateNotificationIcon(false)
-        updateSoundIcon(false)
-        updateVibrationIcon(false)
-        suppressToggleListeners = false
-        writeCache(notification = false, sound = false, vibration = false)
-        viewModel.updateNotificationSetting(
-            TokenManager.getUserId(this), notification = false, sound = false, vibration = false
-        )
-    }
+    private fun turnNotificationOn() = setNotificationAll(true)
 
-    // 알림 ON → 소리·진동도 함께 ON / 알림 OFF → 소리·진동 함께 OFF·비활성화
+    private fun turnNotificationOff() = setNotificationAll(false)
+
+    // 알림 ON → 소리·진동 동반 ON / OFF → 동반 OFF·비활성화
     private fun setupToggleDependency() {
         switchNotification.setOnCheckedChangeListener { _, isChecked ->
             if (suppressToggleListeners) return@setOnCheckedChangeListener
 
             if (isChecked && !isNotificationPermissionGranted()) {
-                // 권한 응답이 오기 전까지는 스위치를 다시 꺼둔다 — 응답 결과는
-                // requestNotificationPermission 콜백에서 turnNotificationOn()으로 최종 반영됨
+                // 권한 응답 전까지 스위치 되돌림 — 최종 반영은
+                // requestNotificationPermission 콜백의 turnNotificationOn()
                 suppressToggleListeners = true
                 switchNotification.isChecked = false
                 suppressToggleListeners = false
@@ -345,7 +322,7 @@ class SettingsActivity : AppCompatActivity() {
             viewModel.updateNotificationSetting(TokenManager.getUserId(this), vibration = isChecked)
         }
 
-        // 비활성 스위치는 탭해도 반응이 없어 오작동처럼 보이므로 안내 토스트를 띄운다
+        // 비활성 스위치는 무반응이라 오작동처럼 보임 — 안내 토스트로 대체
         // (OnTouchListener는 isEnabled=false여도 호출됨)
         val disabledSwitchHint = View.OnTouchListener { view, event ->
             if (!view.isEnabled && event.action == MotionEvent.ACTION_UP) {
@@ -406,19 +383,17 @@ class SettingsActivity : AppCompatActivity() {
             finish()
         }
 
-        // 바텀 네비: 사고 이력 — 홈을 건너뛰고 이동하므로 더 빠른 전환으로 "스쳐 지나가는" 느낌을 줌
-        // 탭 화면끼리는 항상 finish()로 이전 탭을 정리 → 뒤로가기 눌러도 다른 탭이 쌓여있지 않음
+        // 바텀 네비: 사고 이력 — 홈을 건너뛰는 이동이라 더 빠른 전환
+        // 탭 간 이동은 finish()로 이전 탭 정리 — 뒤로가기 시 탭 누적 방지
         tabHistory.setOnClickListener {
-            startActivity(Intent(this, com.example.on_safe.ui.history.AccidentHistoryActivity::class.java))
+            startActivity(Intent(this, AccidentHistoryActivity::class.java))
             overridePendingTransition(R.anim.slide_in_left_fast, R.anim.slide_out_right_fast)
             finish()
         }
 
-        // 헤더 튜토리얼 버튼 (온보딩 완료 후에도 상시 진입)
+        // 헤더 튜토리얼 버튼 — 온보딩 완료 후에도 상시 진입
         btnTutorial.setOnClickListener {
-            startActivity(
-                com.example.on_safe.ui.tutorial.TutorialActivity.intentFromSettings(this)
-            )
+            startActivity(TutorialActivity.intentFromSettings(this))
         }
     }
 

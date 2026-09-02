@@ -5,10 +5,8 @@ import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.text.Editable
 import android.text.SpannableString
 import android.text.Spanned
-import android.text.TextWatcher
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.LinkMovementMethod
 import android.text.method.PasswordTransformationMethod
@@ -32,6 +30,7 @@ import com.example.on_safe.R
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.DoubleBackToExit
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.onTextChanged
 
 class LoginActivity : AppCompatActivity() {
 
@@ -57,12 +56,12 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 디버그 빌드 여부 — FLAG_DEBUGGABLE은 릴리즈 서명 빌드에서 자동으로 제거됨
+        // 디버그 빌드 여부 — FLAG_DEBUGGABLE은 릴리즈 서명 빌드에서 자동 제거
         val isDebug = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
         // ── 자동 로그인 체크 ──────────────────────────────────────────────────────
-        // 토큰이 살아있고 마지막 로그인으로부터 30일 이내 → 로그인 화면 건너뜀
-        // TODO: 테스팅 완료 후 isDebug 조건 제거하여 자동 로그인 활성화
+        // 토큰 유효 + 마지막 로그인 30일 이내 → 로그인 화면 건너뜀
+        // TODO: 테스팅 완료 후 isDebug 조건 제거로 자동 로그인 활성화
         if (!isDebug && TokenManager.isLoggedIn(this) && !TokenManager.isSessionExpired(this)) {
             val next = if (!TutorialActivity.isTutorialShown(this)) {
                 TutorialActivity.intentForLogin(this)
@@ -111,17 +110,13 @@ class LoginActivity : AppCompatActivity() {
         }
 
         // 입력 시 오류 상태 초기화
-        val clearError = object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                tvLoginError.visibility = View.GONE
-                setContainerBorderNormal(etId)
-                setContainerBorderNormal(etPw)
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        val clearError = {
+            tvLoginError.visibility = View.GONE
+            setContainerBorderNormal(etId)
+            setContainerBorderNormal(etPw)
         }
-        etId.addTextChangedListener(clearError)
-        etPw.addTextChangedListener(clearError)
+        etId.onTextChanged { clearError() }
+        etPw.onTextChanged { clearError() }
 
         btnTogglePw.setOnClickListener {
             isPwVisible = !isPwVisible
@@ -166,7 +161,7 @@ class LoginActivity : AppCompatActivity() {
         setupTermsLinks()
         observeViewModel()
 
-        // 로그인 화면은 앱의 시작점 — 여기서도 실수로 종료되지 않게 두 번 눌러야 나가도록 한다
+        // 로그인 화면은 앱의 시작점 — 실수 종료 방지용 뒤로가기 2회
         DoubleBackToExit.attach(this)
     }
 
@@ -182,7 +177,8 @@ class LoginActivity : AppCompatActivity() {
             if (success != null) {
                 TokenManager.saveTokens(this, success.accessToken, success.refreshToken, success.userId)
                 if (BuildConfig.DEBUG) Log.d("Login", "저장 완료 — userId=${success.userId}")
-                // TODO: 로그인 직후 Python 서버 POST /api/devices/{userId} 기기 등록 호출 필요 — 미착수
+                // 기기 등록은 카메라 모드 진입 시 수행 — 여기서 하면 보호자 폰이
+                // 자기 자신을 카메라로 등록하게 됨 (CameraModeViewModel.registerDevice)
                 // 최초 로그인 시 튜토리얼 표시 (기기별 1회)
                 val next = if (!TutorialActivity.isTutorialShown(this)) {
                     TutorialActivity.intentForLogin(this)
@@ -248,7 +244,7 @@ class LoginActivity : AppCompatActivity() {
         tvLoginError.visibility = View.VISIBLE
     }
 
-    // etId / etPw는 background="@null" 이므로 부모 FrameLayout에 테두리를 적용한다
+    // etId / etPw는 background="@null" — 테두리는 부모 FrameLayout에 적용
     private fun setContainerBorderError(et: EditText) {
         val container = et.parent as? FrameLayout ?: return
         val drawable = GradientDrawable()

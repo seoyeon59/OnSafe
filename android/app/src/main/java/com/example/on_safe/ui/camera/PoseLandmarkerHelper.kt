@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * On-device MediaPipe Pose Landmarker(LIVE_STREAM) 래퍼.
- * 카메라 바인딩은 [CameraModeActivity]가 소유하고, 여기서는 추론과 [analyze] 콜백만 담당한다.
+ * 카메라 바인딩은 [CameraModeActivity] 소유 — 여기서는 추론과 [analyze] 콜백만 담당.
  */
 class PoseLandmarkerHelper(private val context: Context, private val listener: Listener) {
 
@@ -32,11 +32,11 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
 
     companion object {
         private const val MODEL_ASSET_PATH = "pose_landmarker_lite.task"
-        // unbind 반영 전에 shutdown()하면 남은 프레임 전달이 RejectedExecutionException을 내므로 유예를 둔다
+        // unbind 반영 전 shutdown() 시 남은 프레임 전달이 RejectedExecutionException 유발 — 유예 필요
         private const val SHUTDOWN_GRACE_MS = 1_000L
     }
 
-    // ImageAnalysis.setAnalyzer()에 그대로 넘겨 쓸 전용 실행기 — 레코딩 세션(start~stop)과 생명주기 동일
+    // ImageAnalysis.setAnalyzer()에 넘길 전용 실행기 — 레코딩 세션(start~stop)과 생명주기 동일
     val executor: ExecutorService = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -69,7 +69,10 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
         }
     }
 
-    /** [ImageAnalysis]의 Analyzer로 그대로 등록해서 쓰는 프레임 콜백 */
+    /**
+     * [ImageAnalysis]의 Analyzer로 등록해 쓰는 프레임 콜백.
+     * TODO: planes[0].rowStride가 width*4와 다른 기기에서 이미지가 어긋날 수 있음 — 실기기 확인 필요.
+     */
     fun analyze(imageProxy: ImageProxy) {
         val landmarker = poseLandmarker
         if (landmarker == null) {
@@ -91,6 +94,8 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
         landmarker.detectAsync(mpImage, SystemClock.uptimeMillis())
     }
 
+    // input은 MediaPipe 콜백 시그니처상 필수 — 사용하지 않음
+    @Suppress("UNUSED_PARAMETER")
     private fun onLivestreamResult(result: PoseLandmarkerResult, input: MPImage) {
         val poses = result.landmarks()
         if (poses.isEmpty()) return

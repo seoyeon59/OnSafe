@@ -6,9 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.on_safe.network.JusoApiClient
 import com.example.on_safe.network.dto.JusoItem
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-// 주소 검색 화면 상태 — 팁 안내 / 결과 목록 / 결과 없음(에러 메시지 포함) 세 가지뿐
+// 주소 검색 화면 상태 — 팁 안내 / 결과 목록 / 결과 없음(에러 메시지 포함)
 sealed class AddressSearchUiState {
     object Tip : AddressSearchUiState()
     data class Results(val list: List<JusoItem>) : AddressSearchUiState()
@@ -19,7 +20,8 @@ class AddressSearchViewModel : ViewModel() {
 
     companion object {
         // 검색 API 전용 승인키 (팝업 키 아님)
-        // TODO: [보안] 평문 커밋 상태 — local.properties + BuildConfig로 분리 및 키 재발급 필요
+        // TODO: [보안] 평문 커밋 상태 — 실배포 전 local.properties + BuildConfig로 분리 및 키 재발급 필요.
+        //       팀 공용 키가 없어 지금 분리하면 다른 개발자 빌드에서 주소 검색이 막히므로 상수 유지.
         private const val CONFM_KEY = "devU01TX0FVVEgyMDI2MDYwMjAyMDEyODExODk3NTM="
     }
 
@@ -27,6 +29,13 @@ class AddressSearchViewModel : ViewModel() {
     val uiState: LiveData<AddressSearchUiState> = _uiState
 
     fun search(keyword: String) {
+        // 키 미주입 빌드에서 원인 불명의 검색 실패 대신 명시적 안내
+        if (CONFM_KEY.isBlank()) {
+            _uiState.value = AddressSearchUiState.Empty(
+                "주소 검색을 사용할 수 없습니다.\n관리자에게 문의해주세요."
+            )
+            return
+        }
         viewModelScope.launch {
             try {
                 val response = JusoApiClient.api.searchAddress(
@@ -46,6 +55,8 @@ class AddressSearchViewModel : ViewModel() {
                 } else {
                     AddressSearchUiState.Empty(results?.common?.errorMessage ?: "검색에 실패했습니다.")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = AddressSearchUiState.Empty("네트워크 오류가 발생했습니다.\n연결 상태를 확인해주세요.")
             }

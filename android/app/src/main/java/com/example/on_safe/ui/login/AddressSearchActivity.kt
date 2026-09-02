@@ -48,7 +48,7 @@ class AddressSearchActivity : AppCompatActivity() {
         tipCard   = findViewById(R.id.tipCard)
 
         rvAddress.layoutManager = LinearLayoutManager(this)
-        // 카드 간 마진(item_address.xml layout_marginBottom)으로만 구분 — 별도 구분선 없음
+        // 카드 간 마진(item_address.xml)으로만 구분 — 별도 구분선 없음
 
         btnBack.setOnClickListener { finish() }
         btnSearch.setOnClickListener { search() }
@@ -60,7 +60,7 @@ class AddressSearchActivity : AppCompatActivity() {
             } else false
         }
 
-        // 뷰모델 상태를 관찰해서 화면만 갱신 — 검색 로직/서버 통신은 전부 뷰모델 쪽으로 이동
+        // 상태 관찰 후 화면 갱신만 — 검색 로직·서버 통신은 뷰모델 담당
         viewModel.uiState.observe(this) { state ->
             when (state) {
                 is AddressSearchUiState.Tip -> showTip()
@@ -106,7 +106,7 @@ class AddressSearchActivity : AppCompatActivity() {
         layoutEmptyState.visibility = View.GONE
     }
 
-    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    // 좌상단 뒤로가기 화면 공통 전환 — 알림 화면과 동일
     override fun finish() {
         super.finish()
         overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)

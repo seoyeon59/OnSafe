@@ -39,8 +39,11 @@ import com.example.on_safe.R
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.LandmarkPoint
 import com.example.on_safe.ui.login.LoginActivity
+import com.example.on_safe.ui.tutorial.TutorialActivity
+import com.example.on_safe.util.AppScope
 import com.example.on_safe.util.DisplayText
 import com.example.on_safe.util.TokenManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 private const val TAG = "CameraModeActivity"
@@ -96,9 +99,7 @@ class CameraModeActivity : AppCompatActivity() {
     private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
     private var rollingVideoBufferManager: RollingVideoBufferManager? = null
     private val fallVideoUploader = FallVideoUploader()
-    // 최신 추론 결과 캐시 — 로깅 + 위험 이벤트 중복 트리거 방지용
-    private var latestFallScore: Float = 0f
-    private var latestFallLevel: String = "정상"
+    // 위험 이벤트 중복 트리거 방지 — 같은 logId는 한 번만 처리
     private var lastHandledDangerLogId: String? = null
 
     // 카메라 provider 보관용 (화면 종료 시 해제하려고 들고 있음)
@@ -269,9 +270,7 @@ class CameraModeActivity : AppCompatActivity() {
         btnFullscreen.setOnClickListener { toggleFullscreen() }
         btnHamburger.setOnClickListener { toggleFullscreen() }
         btnTutorial.setOnClickListener {
-            startActivity(
-                com.example.on_safe.ui.tutorial.TutorialActivity.intentFromSettings(this)
-            )
+            startActivity(TutorialActivity.intentFromSettings(this))
         }
     }
 
@@ -339,8 +338,6 @@ class CameraModeActivity : AppCompatActivity() {
             }
 
             override fun onResult(fallScore: Float, fall: Boolean, level: String, logId: String?) {
-                latestFallScore = fallScore
-                latestFallLevel = level
                 Log.d(TAG, "낙상 추론 결과: score=$fallScore fall=$fall level=$level logId=$logId")
 
                 if (level == "위험" && logId != null && logId != lastHandledDangerLogId) {
@@ -574,19 +571,24 @@ class CameraModeActivity : AppCompatActivity() {
             android.content.res.ColorStateList.valueOf(bgColor)
     }
 
-    // 서버 로그아웃(리프레시 토큰 블랙리스트) → 로컬 토큰 정리 → 로그인 화면 이동.
-    // 서버 호출이 실패해도 로컬 로그아웃은 진행 — 사용자 관점에서 항상 성공해야 함.
+    // 로컬 정리·화면 이동을 먼저 끝내고 서버 로그아웃은 뒤에 보낸다.
+    // 서버 응답을 기다리는 사이 화면이 사라지면 lifecycleScope가 취소되어
+    // 토큰이 남은 채로 "로그아웃됨"이 되던 문제 때문.
     private fun handleLogout() {
-        lifecycleScope.launch {
+        val refreshToken = TokenManager.getRefreshToken(this)
+        TokenManager.clearSession(this)
+        startActivity(Intent(this, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        // 리프레시 토큰 블랙리스트 등록 — 실패해도 로컬은 이미 정리된 상태
+        AppScope.launch {
             try {
-                ApiClient.api.logout(TokenManager.getRefreshToken(this@CameraModeActivity))
+                ApiClient.api.logout(refreshToken)
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
-                // 무시하고 로컬 정리로 진행
+                // 무시 — 토큰은 이미 로컬에서 제거됨
             }
-            TokenManager.clear(this@CameraModeActivity)
-            startActivity(Intent(this@CameraModeActivity, LoginActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            })
         }
     }
 

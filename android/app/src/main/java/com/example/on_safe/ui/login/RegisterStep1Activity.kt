@@ -15,13 +15,6 @@ import com.example.on_safe.R
 // 회원가입 Step1 — 서비스 이용 동의 (필수 3개 + 선택 1개)
 class RegisterStep1Activity : AppCompatActivity() {
 
-    // TODO: 서비스 약관 페이지 URL이 확정되면 아래 빈 문자열을 실제 URL로 채워주세요.
-    //       URL이 비어 있거나 잘못된 경우 openTermsUrl()이 공통 오류 메시지를 표시합니다.
-    private val TERMS_URL_AGREE1 = ""  // 이용약관
-    private val TERMS_URL_AGREE2 = ""  // 개인정보 수집 및 이용
-    private val TERMS_URL_AGREE3 = ""  // 민감정보(건강·위치 데이터) 처리
-    private val TERMS_URL_AGREE5 = ""  // 마케팅 정보 수신
-
     private lateinit var btnBack: ImageButton
     private lateinit var btnNext: Button
 
@@ -79,7 +72,7 @@ class RegisterStep1Activity : AppCompatActivity() {
     private fun setupListeners() {
         btnBack.setOnClickListener { finish() }
 
-        // 전체 동의: 현재 모든 항목이 체크됐으면 전부 해제, 아니면 전부 체크
+        // 전체 동의 — 전부 체크된 상태면 해제, 아니면 전부 체크
         layoutAgreeAll.setOnClickListener {
             val allChecked = isCheck1 && isCheck2 && isCheck3 && isCheck5
             val newState = !allChecked
@@ -95,16 +88,16 @@ class RegisterStep1Activity : AppCompatActivity() {
         layoutAgree3.setOnClickListener { setCheck(3, !isCheck3); refreshUI() }
         layoutAgree5.setOnClickListener { setCheck(5, !isCheck5); refreshUI() }
 
-        // 각 약관의 화살표 버튼 클릭 → URL 열기 (체크박스 토글과 독립 동작)
-        btnViewAgree1.setOnClickListener { openTermsUrl(TERMS_URL_AGREE1) }
-        btnViewAgree2.setOnClickListener { openTermsUrl(TERMS_URL_AGREE2) }
-        btnViewAgree3.setOnClickListener { openTermsUrl(TERMS_URL_AGREE3) }
-        btnViewAgree5.setOnClickListener { openTermsUrl(TERMS_URL_AGREE5) }
+        // 약관 화살표 → URL 열기 (체크박스 토글과 독립)
+        btnViewAgree1.setOnClickListener { openTermsUrl(TERMS_URL_SERVICE) }
+        btnViewAgree2.setOnClickListener { openTermsUrl(TERMS_URL_PRIVACY) }
+        btnViewAgree3.setOnClickListener { openTermsUrl(TERMS_URL_SENSITIVE) }
+        btnViewAgree5.setOnClickListener { openTermsUrl(TERMS_URL_MARKETING) }
 
         btnNext.setOnClickListener {
             startActivity(
                 Intent(this, RegisterStep2Activity::class.java).apply {
-                    // 마케팅 정보 수신 동의(선택)는 필수 3개와 별개로, 체크한 그대로 Step2 → 서버까지 전달
+                    // 마케팅 수신 동의(선택)는 필수 3개와 별개로 Step2 → 서버까지 전달
                     putExtra(RegisterStep2Activity.EXTRA_MARKETING_CONSENT, isCheck5)
                 }
             )
@@ -126,7 +119,7 @@ class RegisterStep1Activity : AppCompatActivity() {
         }
     }
 
-    // 약관 URL 열기 — URL이 없거나 브라우저를 열 수 없을 때 공통 오류 메시지 표시
+    // 약관 URL 열기 — URL 부재·브라우저 실행 실패 시 공통 오류 메시지
     private fun openTermsUrl(url: String) {
         if (url.isBlank()) {
             Toast.makeText(this, "약관 페이지가 아직 준비 중입니다.", Toast.LENGTH_SHORT).show()
@@ -139,7 +132,7 @@ class RegisterStep1Activity : AppCompatActivity() {
         }
     }
 
-    // 전체 동의 체크 + 다음 버튼 상태를 한 번에 갱신
+    // 전체 동의 체크 + 다음 버튼 상태 일괄 갱신
     private fun refreshUI() {
         val allChecked = isCheck1 && isCheck2 && isCheck3 && isCheck5
         checkAll.setBackgroundResource(
@@ -152,9 +145,18 @@ class RegisterStep1Activity : AppCompatActivity() {
         btnNext.alpha = if (requiredChecked) 1.0f else 0.4f
     }
 
-    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    // 좌상단 뒤로가기 화면 공통 전환 — 알림 화면과 동일
     override fun finish() {
         super.finish()
         overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
+    }
+
+    companion object {
+        // TODO: 약관 페이지 URL 확정 후 채우기 (LoginActivity 상수와 일괄 교체)
+        // 빈 값이면 openTermsUrl()이 "준비 중" 안내 표시
+        private const val TERMS_URL_SERVICE = ""    // 이용약관
+        private const val TERMS_URL_PRIVACY = ""    // 개인정보 수집 및 이용
+        private const val TERMS_URL_SENSITIVE = ""  // 민감정보(건강·위치) 처리
+        private const val TERMS_URL_MARKETING = ""  // 마케팅 정보 수신
     }
 }

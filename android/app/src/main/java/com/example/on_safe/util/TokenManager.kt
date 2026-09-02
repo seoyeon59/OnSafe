@@ -16,6 +16,8 @@ object TokenManager {
     private const val KEY_REFRESH         = "refresh_token"
     private const val KEY_USER_ID         = "user_id"
     private const val KEY_LOGIN_TIME      = "login_time"
+    // SettingsActivity·EditProfileActivity가 알림·마케팅 설정을 캐시하는 파일
+    private const val SETTINGS_PREFS      = "settings"
     // 마지막 로그인으로부터 30일 이상 경과 시 재인증 요구
     private const val SESSION_DURATION_MS = 30L * 24 * 60 * 60 * 1000
 
@@ -74,6 +76,13 @@ object TokenManager {
         prefs(context).edit().clear().apply()
         // 캐시 무효화 — 다음 접근 시 새 파일로 재초기화
         cachedPrefs = null
+    }
+
+    // 로그아웃·회원탈퇴 공통 — 토큰과 함께 화면 설정 캐시까지 정리.
+    // 남겨두면 같은 기기에 다른 계정이 로그인했을 때 이전 사용자의 설정이 보인다.
+    fun clearSession(context: Context) {
+        clear(context)
+        context.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE).edit().clear().apply()
     }
 
     fun isLoggedIn(context: Context): Boolean = getAccessToken(context) != null

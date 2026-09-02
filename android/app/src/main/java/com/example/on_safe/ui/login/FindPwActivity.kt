@@ -14,6 +14,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
+import com.example.on_safe.util.EmailValidator
 
 class FindPwActivity : AppCompatActivity() {
 
@@ -31,8 +32,8 @@ class FindPwActivity : AppCompatActivity() {
     private lateinit var tvResend: TextView
     private lateinit var pbLoading: ProgressBar
 
-    // navigateToResetPassword()에서 전환(다음 화면)과 finish()(스택 정리)를 함께 호출할 때,
-    // finish()의 기본 "뒤로 나가는" 전환이 방금 지정한 "다음으로 넘어가는" 전환을 덮어쓰지 않도록 함
+    // 다음 화면 전환과 finish()를 함께 호출할 때, finish()의 역방향 전환이
+    // 방금 지정한 정방향 전환을 덮어쓰는 것을 방지
     private var suppressFinishTransition = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,11 +55,10 @@ class FindPwActivity : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
         btnGoLogin.setOnClickListener { finish() }
 
-        // 재설정 코드 발송 — 입력값 형식 검증만 여기서, 실제 요청/상태 처리는 뷰모델에 맡김
+        // 재설정 코드 발송 — 형식 검증만 여기서, 요청·상태 처리는 뷰모델 담당
         btnRequestCode.setOnClickListener {
             val userId = etUserId.text.toString().trim()
             val email = etEmail.text.toString().trim()
-            val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
 
             if (userId.isEmpty()) {
                 Toast.makeText(this, "아이디를 입력해주세요.", Toast.LENGTH_SHORT).show()
@@ -68,8 +68,8 @@ class FindPwActivity : AppCompatActivity() {
                 Toast.makeText(this, "이메일을 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (!emailRegex.matches(email)) {
-                Toast.makeText(this, "올바른 이메일 형식을 입력해주세요.", Toast.LENGTH_SHORT).show()
+            if (!EmailValidator.isValid(email)) {
+                Toast.makeText(this, EmailValidator.ERROR_MSG, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -137,8 +137,8 @@ class FindPwActivity : AppCompatActivity() {
         finish()
     }
 
-    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
-    // (다음 화면으로 넘어가며 스택 정리 차원에서 finish()를 호출하는 경우는 예외)
+    // 좌상단 뒤로가기 화면 공통 전환 — 알림 화면과 동일
+    // (다음 화면으로 넘어가며 스택을 정리하는 finish()는 예외)
     override fun finish() {
         super.finish()
         if (!suppressFinishTransition) {

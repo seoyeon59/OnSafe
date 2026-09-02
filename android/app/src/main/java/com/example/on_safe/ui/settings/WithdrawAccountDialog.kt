@@ -5,17 +5,16 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.Window
 import android.view.WindowManager
 import android.widget.EditText
 import android.widget.TextView
 import com.example.on_safe.R
+import com.example.on_safe.util.onTextChanged
 
 /**
  * 회원탈퇴 확인 다이얼로그.
- * 입력란에 "회원탈퇴"를 정확히 입력해야 탈퇴하기 버튼이 활성화된다.
+ * 확인 문구를 정확히 입력해야 탈퇴 버튼 활성화.
  */
 class WithdrawAccountDialog(
     context: Context,
@@ -38,20 +37,13 @@ class WithdrawAccountDialog(
         val btnWithdraw = findViewById<TextView>(R.id.btnWithdraw)
         val btnCancel = findViewById<TextView>(R.id.btnCancel)
 
-        // 초기 상태: 탈퇴하기 비활성
-        updateWithdrawButton(btnWithdraw, false)
+        // 초기 상태: 탈퇴 비활성
+        setWithdrawEnabled(btnWithdraw, false)
 
-        etConfirm.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                val enabled = s.toString() == "회원탈퇴"
-                updateWithdrawButton(btnWithdraw, enabled)
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
+        etConfirm.onTextChanged { setWithdrawEnabled(btnWithdraw, it == CONFIRM_PHRASE) }
 
         btnWithdraw.setOnClickListener {
-            if (etConfirm.text.toString() == "회원탈퇴") {
+            if (etConfirm.text.toString() == CONFIRM_PHRASE) {
                 dismiss()
                 onWithdraw()
             }
@@ -60,11 +52,15 @@ class WithdrawAccountDialog(
         btnCancel.setOnClickListener { dismiss() }
     }
 
-    private fun updateWithdrawButton(btn: TextView, enabled: Boolean) {
-        if (enabled) {
-            btn.setTextColor(context.getColor(R.color.status_danger))
-        } else {
-            btn.setTextColor(context.getColor(R.color.ink_500))
-        }
+    // 색상과 클릭 가능 여부를 함께 조정 — VerifyPasswordDialog와 동일 패턴
+    private fun setWithdrawEnabled(btn: TextView, enabled: Boolean) {
+        btn.setTextColor(
+            context.getColor(if (enabled) R.color.status_danger else R.color.ink_500)
+        )
+        btn.isClickable = enabled
+    }
+
+    private companion object {
+        const val CONFIRM_PHRASE = "회원탈퇴"
     }
 }

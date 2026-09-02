@@ -5,8 +5,6 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
 import android.view.Window
@@ -15,10 +13,11 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
 import com.example.on_safe.R
+import com.example.on_safe.util.onTextChanged
 
 /**
  * 개인정보 수정 진입 전 본인 확인 다이얼로그.
- * onConfirm으로 입력값만 전달하고 서버 검증은 호출 측 책임.
+ * 입력값 전달까지만 담당 — 서버 검증은 호출부 책임.
  */
 class VerifyPasswordDialog(
     context: Context,
@@ -49,13 +48,7 @@ class VerifyPasswordDialog(
         setConfirmEnabled(btnConfirm, false)
 
         // 입력 여부에 따라 확인 버튼 활성화
-        etPassword.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                setConfirmEnabled(btnConfirm, !s.isNullOrEmpty())
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
+        etPassword.onTextChanged { setConfirmEnabled(btnConfirm, it.isNotEmpty()) }
 
         // 비밀번호 표시 토글
         btnTogglePw.setOnClickListener {
@@ -85,7 +78,7 @@ class VerifyPasswordDialog(
             onCancel()
         }
 
-        // 다이얼로그 외부 터치로 닫히지 않도록
+        // 외부 터치·뒤로가기로 닫히지 않도록 — 취소는 버튼으로만
         setCanceledOnTouchOutside(false)
         setCancelable(false)
     }

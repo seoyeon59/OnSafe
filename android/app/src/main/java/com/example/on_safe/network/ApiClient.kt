@@ -129,17 +129,27 @@ object ApiClient {
         return count
     }
 
+    // 로깅은 디버그 빌드에서만 — 릴리즈 logcat에 토큰 등 민감 정보 노출 방지
+    private fun OkHttpClient.Builder.withDebugLogging() = apply {
+        if (BuildConfig.DEBUG) {
+            addInterceptor(HttpLoggingInterceptor { message -> Log.d("OkHttp", message) }.apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            })
+        }
+    }
+
     private val httpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .authenticator(tokenAuthenticator)
-        .apply {
-            // 로깅은 디버그 빌드에서만 — 릴리즈에서 토큰 등 민감 정보가 logcat에 노출되지 않도록
-            if (BuildConfig.DEBUG) {
-                addInterceptor(HttpLoggingInterceptor { message -> Log.d("OkHttp", message) }.apply {
-                    level = HttpLoggingInterceptor.Level.BODY
-                })
-            }
-        }
+        .withDebugLogging()
+        .build()
+
+    // Python 서버 전용 — Authenticator를 일부러 뺐다.
+    // 두 서버의 JWT 시크릿이 어긋나면 기기 조회 401이 리프레시 실패로 이어져
+    // TokenManager.clear()가 호출되고, 부가 기능 하나 때문에 로그아웃되는 사고가 난다.
+    private val aiHttpClient = OkHttpClient.Builder()
+        .addInterceptor(authInterceptor)
+        .withDebugLogging()
         .build()
 
     val api: ApiService by lazy {
@@ -151,11 +161,11 @@ object ApiClient {
             .create(ApiService::class.java)
     }
 
-    // JWT 동일 — httpClient 공유, 주소·응답 형식만 상이
+    // JWT는 동일하나 주소·응답 형식이 다르고, 401 처리 정책도 달라 클라이언트 분리
     val aiApi: AiApiService by lazy {
         Retrofit.Builder()
             .baseUrl(AI_BASE_URL)
-            .client(httpClient)
+            .client(aiHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(AiApiService::class.java)

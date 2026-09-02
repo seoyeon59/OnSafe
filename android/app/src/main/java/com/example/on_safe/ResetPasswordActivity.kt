@@ -2,8 +2,6 @@ package com.example.on_safe
 
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
 import android.view.View
@@ -16,6 +14,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import com.example.on_safe.util.onTextChanged
 
 class ResetPasswordActivity : AppCompatActivity() {
 
@@ -134,15 +133,6 @@ class ResetPasswordActivity : AppCompatActivity() {
             et.setSelection(et.text.length)
             btn.setImageResource(if (visible) R.drawable.ic_eye_off else R.drawable.ic_eye)
         }
-    }
-
-    // TextWatcher 빈 오버라이드 3중 중복 제거용 확장
-    private fun EditText.onTextChanged(action: (String) -> Unit) {
-        addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) = action(s.toString())
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
     }
 
     private fun applyValidation(et: EditText, tv: TextView, validation: FieldValidation) {

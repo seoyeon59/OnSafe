@@ -76,6 +76,30 @@ Android가 카메라 모드 진입 시마다 이 API를 호출합니다(기기 �
 
 ---
 
+## 4. `/ws/stream` 토큰이 쿼리스트링으로 전달됩니다 (우선순위: 중)
+
+**위치:** `app/domain/camera/router.py` `ws_stream(websocket, token: str = Query(...))`
+
+**현상:**
+액세스 토큰이 URL 쿼리 파라미터로 전달됩니다.
+
+```
+ws://.../ws/stream?token=eyJhbGciOi...
+```
+
+URL은 리버스 프록시·로드밸런서·서버 접근 로그에 그대로 남는 것이 일반적이라,
+토큰이 로그 파일에 평문으로 축적될 수 있습니다.
+
+**요청:**
+`Authorization: Bearer` 헤더 또는 `Sec-WebSocket-Protocol` 기반 인증 지원.
+앱은 OkHttp를 쓰기 때문에 WS 핸드셰이크에 임의 헤더를 붙일 수 있습니다
+(브라우저 클라이언트와 달리 제약이 없습니다).
+
+서버가 지원하면 앱 쪽은 `LandmarkStreamClient.connect()` 한 곳만 바꾸면 됩니다.
+현재는 해당 위치에 TODO로 표시해 두었습니다.
+
+---
+
 ## 참고: 응답 형식 차이 (조치 불필요)
 
 Python은 flat JSON, Kotlin은 `{success, message, data}` 래퍼를 쓰는 점은

@@ -53,10 +53,13 @@ class ModeSelectActivity : AppCompatActivity() {
             updateCardState()
         }
 
+        // 미선택 상태에서 눌러도 반응이 없어 고장으로 보이던 문제 — 선택 전까지 비활성
+        btnNext.isEnabled = false
+        btnNext.alpha = 0.4f
+
         btnNext.setOnClickListener {
             if (selectedMode == 0) return@setOnClickListener
-            // 권한 요청은 온보딩(Tutorial → Permission)에서 이미 완료됨
-            // 모드 선택 후 바로 해당 모드 화면으로 진입
+            // 권한 요청은 온보딩(Tutorial → Permission)에서 완료 — 바로 해당 모드로 진입
             val intent = when (selectedMode) {
                 2 -> Intent(this, CameraModeActivity::class.java)
                 else -> Intent(this, MainActivity::class.java)
@@ -87,7 +90,7 @@ class ModeSelectActivity : AppCompatActivity() {
             if (!isGuardian) R.drawable.bg_container_blue else R.drawable.bg_container_gray
         )
 
-        // 아이콘 자체 색상 — 선택되면 파란색, 아니면 원래 잉크색
+        // 아이콘 색상 — 선택 시 파란색, 아니면 잉크색
         val colorBlue = ContextCompat.getColor(this, R.color.primary_blue)
         val colorInk = ContextCompat.getColor(this, R.color.ink_900)
         iconGuardian.imageTintList = ColorStateList.valueOf(if (isGuardian) colorBlue else colorInk)
@@ -102,7 +105,7 @@ class ModeSelectActivity : AppCompatActivity() {
         btnNext.alpha = 1.0f
     }
 
-    // FlexboxLayout의 자식 TextView들에 selected 상태에 따라 pill 스타일 적용
+    // FlexboxLayout 자식 TextView에 선택 상태별 pill 스타일 적용
     private fun applyTagStyle(container: ViewGroup, selected: Boolean) {
         val bgRes = if (selected) R.drawable.bg_pill_blue else R.drawable.bg_pill_gray
         val textColor = if (selected) 0xFF4D80FF.toInt() else 0xFF6B7280.toInt()

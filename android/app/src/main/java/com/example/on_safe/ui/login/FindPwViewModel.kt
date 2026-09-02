@@ -8,9 +8,10 @@ import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.SendResetCodeRequest
 import com.example.on_safe.network.dto.VerifyResetCodeRequest
 import com.example.on_safe.util.VerificationCodeTimer
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-// FindIdUiState와 구조는 같지만 이 화면엔 "결과 카드"가 없고 대신 다음 화면(비밀번호 재설정)으로 넘어감
+// FindIdUiState와 동일 구조 — 결과 카드 대신 비밀번호 재설정 화면으로 이동
 data class FindPwUiState(
     val isLoading: Boolean = false,
     val isRequestCodeEnabled: Boolean = true,
@@ -29,7 +30,7 @@ class FindPwViewModel : ViewModel() {
     private val _toastMessage = MutableLiveData<String?>()
     val toastMessage: LiveData<String?> = _toastMessage
 
-    // 코드 확인 성공 시 비밀번호 재설정 화면으로 넘어가라는 1회성 신호 — Activity에서 소비 후 onNavigated()로 리셋
+    // 재설정 화면 이동 1회성 신호 — Activity가 소비 후 onNavigated()로 리셋
     private val _navigateToReset = MutableLiveData(false)
     val navigateToReset: LiveData<Boolean> = _navigateToReset
 
@@ -59,6 +60,8 @@ class FindPwViewModel : ViewModel() {
                     _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "코드 발송에 실패했습니다.")
                     setState { copy(isRequestCodeEnabled = true) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _toastMessage.value = "네트워크 오류가 발생했습니다."
                 setState { copy(isRequestCodeEnabled = true) }
@@ -81,6 +84,8 @@ class FindPwViewModel : ViewModel() {
                     _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "코드가 올바르지 않습니다.")
                     setState { copy(isConfirmEnabled = true) }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _toastMessage.value = "네트워크 오류가 발생했습니다."
                 setState { copy(isConfirmEnabled = true) }
@@ -103,6 +108,8 @@ class FindPwViewModel : ViewModel() {
                     setState { copy(isResendVisible = true) }
                     _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "재설정 코드 재발송에 실패했습니다.")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 setState { copy(isResendVisible = true) }
                 _toastMessage.value = "네트워크 오류가 발생했습니다."

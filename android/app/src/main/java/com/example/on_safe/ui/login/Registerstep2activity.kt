@@ -4,8 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
 import android.view.View
@@ -20,6 +18,8 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.on_safe.FieldValidation
 import com.example.on_safe.R
+import com.example.on_safe.util.PhoneField
+import com.example.on_safe.util.onTextChanged
 
 class RegisterStep2Activity : AppCompatActivity() {
 
@@ -58,10 +58,10 @@ class RegisterStep2Activity : AppCompatActivity() {
     private var isPwConfirmVisible = false
     private var isFormattingPhone = false
 
-    // 완료 조건 충족 여부 — 버튼 자체는 항상 활성이고, 미충족이면 안내 토스트를 띄운다
+    // 완료 조건 충족 여부 — 버튼은 항상 활성, 미충족 시 안내 토스트
     private var isCompleteReady = false
 
-    // Step1에서 넘어온 마케팅 정보 수신 동의 여부 (기본값 false — 값이 안 넘어온 경우 대비)
+    // Step1에서 전달된 마케팅 수신 동의 (미전달 대비 기본 false)
     private var marketingConsent = false
 
     private val COLOR_RED = 0xFFEF4444.toInt()
@@ -71,7 +71,7 @@ class RegisterStep2Activity : AppCompatActivity() {
     private var dpScale = 0f
     private var cornerPx = 0f
 
-    // 주소 검색 Activity에서 결과를 받아오는 런처
+    // 주소 검색 결과 수신 런처
     private val addressLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -141,72 +141,29 @@ class RegisterStep2Activity : AppCompatActivity() {
             btnTogglePwConfirm.setImageResource(if (isPwConfirmVisible) R.drawable.ic_eye_off else R.drawable.ic_eye)
         }
 
-        // 아이디 변경 시 중복확인 초기화 — 판단은 뷰모델, 표시만 여기서
-        etId.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                viewModel.onIdChanged(s.toString())
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
+        // 유효성 판단은 전부 뷰모델 담당 — Activity는 입력 전달만
+        // (etAddressDetail은 선택 항목이라 watcher 불필요)
+        etId.onTextChanged(viewModel::onIdChanged)
+        etPw.onTextChanged(viewModel::onPwChanged)
+        etPwConfirm.onTextChanged(viewModel::onPwConfirmChanged)
+        etEmail.onTextChanged(viewModel::onEmailChanged)
+        etName.onTextChanged(viewModel::onNameChanged)
 
-        // 비밀번호 유효성
-        etPw.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                viewModel.onPwChanged(s.toString())
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-
-        // 비밀번호 확인 유효성
-        etPwConfirm.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                viewModel.onPwConfirmChanged(s.toString())
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-
-        // 전화번호 — 자동 하이픈 포맷은 View 조작이라 여기 그대로 두고, 유효성 판단만 뷰모델에 넘김
-        etPhone.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                // 자동 하이픈 포맷 (재귀 방지 가드)
-                if (!isFormattingPhone) {
-                    isFormattingPhone = true
-                    val digits = s.toString().filter { it.isDigit() }.take(11)
-                    val formatted = formatPhone(digits)
-                    if (formatted != s.toString()) {
-                        etPhone.setText(formatted)
-                        etPhone.setSelection(formatted.length) // 커서 맨 뒤로
-                    }
-                    isFormattingPhone = false
+        // 전화번호만 예외 — 하이픈 자동 포맷이 View 조작이라 여기서 처리
+        etPhone.onTextChanged { raw ->
+            if (!isFormattingPhone) {
+                isFormattingPhone = true
+                val formatted = PhoneField.formatInput(raw)
+                if (formatted != raw) {
+                    etPhone.setText(formatted)
+                    etPhone.setSelection(formatted.length)   // 커서 맨 뒤로
                 }
-                viewModel.onPhoneChanged(etPhone.text.toString())
+                isFormattingPhone = false
             }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
+            viewModel.onPhoneChanged(etPhone.text.toString())
+        }
 
-        // 이메일 유효성
-        etEmail.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                viewModel.onEmailChanged(s.toString())
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-
-        // 보호자 이름 (etAddressDetail은 선택 항목이므로 watcher 불필요)
-        etName.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {
-                viewModel.onNameChanged(s.toString())
-            }
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-        })
-
-        // 아이디 중복 확인 — 형식 검증은 뷰모델이 하고, 빈 값 체크만 여기서
+        // 아이디 중복 확인 — 형식 검증은 뷰모델, 빈 값 체크만 여기서
         btnCheckId.setOnClickListener {
             val id = etId.text.toString().trim()
             if (id.isEmpty()) {
@@ -231,7 +188,7 @@ class RegisterStep2Activity : AppCompatActivity() {
             viewModel.confirmEmailCode(code)
         }
 
-        // 재전송 — 응답 오기 전 중복 탭 방지를 위해 즉시 숨기고, 실패 시에만 다시 보이게 복구
+        // 재전송 — 중복 탭 방지용 즉시 숨김, 실패 시에만 복구
         tvEmailResend.setOnClickListener {
             etEmailCode.text.clear()
             viewModel.resendEmailCode()
@@ -244,7 +201,7 @@ class RegisterStep2Activity : AppCompatActivity() {
         }
 
         btnComplete.setOnClickListener {
-            // 조건 미충족 시 버튼을 막는 대신, 무엇이 빠졌는지 알려준다
+            // 조건 미충족 시 차단 대신 누락 항목 안내
             if (!isCompleteReady) {
                 viewModel.showFirstMissingRequirement()
                 return@setOnClickListener
@@ -263,8 +220,9 @@ class RegisterStep2Activity : AppCompatActivity() {
     private fun observeViewModel() {
         viewModel.uiState.observe(this) { state ->
             // 아이디
+            // 조회 중에도 활성처럼 보이던 문제 — isEnabled와 알파 조건 일치
             btnCheckId.isEnabled = state.isIdCheckEnabled
-            btnCheckId.alpha = if (state.isIdChecked) 0.4f else 1.0f
+            btnCheckId.alpha = if (state.isIdCheckEnabled) 1.0f else 0.4f
             applyValidation(etId, tvIdMessage, state.idValidation)
 
             // 비밀번호 / 비밀번호 확인
@@ -285,7 +243,7 @@ class RegisterStep2Activity : AppCompatActivity() {
             btnConfirmCode.isEnabled = state.isConfirmCodeEnabled
             btnConfirmCode.alpha = if (state.isConfirmCodeEnabled) 1.0f else 0.4f
 
-            // 최종 가입 — 버튼은 항상 누를 수 있게 두고(안내를 띄우기 위해) 흐리게만 표시한다
+            // 최종 가입 — 안내 표시를 위해 버튼은 활성 유지, 흐리게만 처리
             pbLoading.visibility = if (state.isLoading) View.VISIBLE else View.GONE
             isCompleteReady = state.isCompleteEnabled
             btnComplete.isEnabled = !state.isLoading
@@ -346,14 +304,7 @@ class RegisterStep2Activity : AppCompatActivity() {
         et.setBackgroundResource(R.drawable.bg_input_rounded)
     }
 
-    // 010-1234-5678 형태로 하이픈 자동 삽입 (3-3(또는4)-4)
-    private fun formatPhone(digits: String): String = when {
-        digits.length <= 3  -> digits
-        digits.length <= 7  -> "${digits.substring(0,3)}-${digits.substring(3)}"
-        else                -> "${digits.substring(0,3)}-${digits.substring(3, digits.length-4)}-${digits.substring(digits.length-4)}"
-    }
-
-    // 좌상단 뒤로가기 버튼이 있는 화면 공통 — 알림 화면과 동일한 "파고들어왔다 빠져나가는" 전환
+    // 좌상단 뒤로가기 화면 공통 전환 — 알림 화면과 동일
     override fun finish() {
         super.finish()
         overridePendingTransition(R.anim.detail_pop_enter, R.anim.detail_pop_exit)
