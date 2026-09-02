@@ -66,7 +66,7 @@ class PermissionActivity : AppCompatActivity() {
     }
 
     private fun handlePermissionResults(results: Map<String, Boolean>) {
-        val denied = results.filter { !it.value }.keys
+        val denied = results.filterValues { !it }.keys
         if (denied.isEmpty()) { goToModeSelect(); return }
 
         // 영구 거부 항목이 하나라도 있으면 설정 화면으로 유도

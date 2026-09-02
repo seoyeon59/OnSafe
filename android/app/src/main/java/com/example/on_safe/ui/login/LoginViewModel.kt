@@ -1,13 +1,15 @@
 package com.example.on_safe.ui.login
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import android.util.Log
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.LoginRequest
+import com.example.on_safe.network.errorMessage
+import com.example.on_safe.network.isOk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -41,13 +43,11 @@ class LoginViewModel : ViewModel() {
                 val response = ApiClient.api.login(
                     LoginRequest(userId = id, password = password, deviceId = deviceId)
                 )
-                val body = response.body()
-                if (response.isSuccessful && body?.success == true && body.data != null) {
-                    val data = body.data
+                val data = response.body()?.data
+                if (response.isOk && data != null) {
                     _loginSuccess.value = LoginSuccess(data.accessToken, data.refreshToken, data.userId)
                 } else {
-                    val message = body?.message
-                        ?: ApiClient.parseErrorMessage(response.errorBody(), "아이디 또는 비밀번호가 올바르지 않습니다.")
+                    val message = response.errorMessage("아이디 또는 비밀번호가 올바르지 않습니다.")
                     // 서버 응답 원문은 디버그에서만 — 릴리즈 logcat 노출 방지
                     if (BuildConfig.DEBUG) Log.w("Login", "실패 — HTTP ${response.code()}: $message")
                     setState { copy(errorMessage = message) }
@@ -66,6 +66,11 @@ class LoginViewModel : ViewModel() {
     // Activity가 토큰 저장·화면 이동을 마친 뒤 호출 — 재구독 시 재실행 방지
     fun onLoginHandled() {
         _loginSuccess.value = null
+    }
+
+    // 오류 문구 표시 후 호출 — 남겨두면 화면 회전 재구독 시 지나간 오류가 되살아남
+    fun onErrorShown() {
+        setState { copy(errorMessage = null) }
     }
 
     private inline fun setState(update: LoginUiState.() -> LoginUiState) {

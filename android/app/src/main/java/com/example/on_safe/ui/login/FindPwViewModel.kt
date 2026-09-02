@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.SendResetCodeRequest
 import com.example.on_safe.network.dto.VerifyResetCodeRequest
+import com.example.on_safe.network.errorMessage
+import com.example.on_safe.network.isOk
 import com.example.on_safe.util.VerificationCodeTimer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -48,27 +50,57 @@ class FindPwViewModel : ViewModel() {
         }
     )
 
-    // 재설정 코드 발송
     fun requestCode(userId: String, email: String) {
         setState { copy(isRequestCodeEnabled = false, isLoading = true) }
+        sendCode(userId, email, isResend = false)
+    }
+
+    fun resendCode(userId: String, email: String) {
+        setState { copy(isResendVisible = false) }
+        sendCode(userId, email, isResend = true)
+    }
+
+    // 발송·재발송 공통 — 안내 문구와 실패 시 복구 대상만 다름
+    private fun sendCode(userId: String, email: String, isResend: Boolean) {
         viewModelScope.launch {
             try {
                 val response = ApiClient.api.sendResetCode(SendResetCodeRequest(userId = userId, mail = email))
-                if (response.isSuccessful && response.body()?.success == true) {
-                    startVerification()
+                if (response.isOk) {
+                    startVerification(isResend)
                 } else {
-                    _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "코드 발송에 실패했습니다.")
-                    setState { copy(isRequestCodeEnabled = true) }
+                    restoreSendButton(isResend)
+                    _toastMessage.value = response.errorMessage(
+                        if (isResend) "재설정 코드 재발송에 실패했습니다." else "코드 발송에 실패했습니다."
+                    )
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
+                restoreSendButton(isResend)
                 _toastMessage.value = "네트워크 오류가 발생했습니다."
-                setState { copy(isRequestCodeEnabled = true) }
             } finally {
-                setState { copy(isLoading = false) }
+                // 재발송은 애초에 로딩을 켜지 않음 — 진행 중인 다른 요청의 스피너를 끄지 않도록 제외
+                if (!isResend) setState { copy(isLoading = false) }
             }
         }
+    }
+
+    private fun restoreSendButton(isResend: Boolean) {
+        if (isResend) setState { copy(isResendVisible = true) }
+        else setState { copy(isRequestCodeEnabled = true) }
+    }
+
+    private fun startVerification(isResend: Boolean) {
+        setState {
+            copy(
+                isRequestCodeEnabled = false,
+                isCodeLayoutVisible = true,
+                isResendVisible = true,
+                isConfirmEnabled = true
+            )
+        }
+        _toastMessage.value = if (isResend) "재설정 코드를 재발송했습니다." else "재설정 코드를 발송했습니다."
+        timer.start()
     }
 
     // 재설정 코드 확인
@@ -77,42 +109,20 @@ class FindPwViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val response = ApiClient.api.verifyResetCode(VerifyResetCodeRequest(userId = userId, code = code))
-                if (response.isSuccessful && response.body()?.success == true) {
+                if (response.isOk) {
                     timer.cancel()
                     _navigateToReset.value = true
                 } else {
-                    _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "코드가 올바르지 않습니다.")
+                    _toastMessage.value = response.errorMessage("코드가 올바르지 않습니다.")
                     setState { copy(isConfirmEnabled = true) }
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _toastMessage.value = "네트워크 오류가 발생했습니다."
                 setState { copy(isConfirmEnabled = true) }
             } finally {
                 setState { copy(isLoading = false) }
-            }
-        }
-    }
-
-    // 재전송
-    fun resendCode(userId: String, email: String) {
-        setState { copy(isResendVisible = false) }
-        viewModelScope.launch {
-            try {
-                val response = ApiClient.api.sendResetCode(SendResetCodeRequest(userId = userId, mail = email))
-                if (response.isSuccessful && response.body()?.success == true) {
-                    startVerification()
-                    _toastMessage.value = "재설정 코드를 재발송했습니다."
-                } else {
-                    setState { copy(isResendVisible = true) }
-                    _toastMessage.value = response.body()?.message ?: ApiClient.parseErrorMessage(response.errorBody(), "재설정 코드 재발송에 실패했습니다.")
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                setState { copy(isResendVisible = true) }
-                _toastMessage.value = "네트워크 오류가 발생했습니다."
             }
         }
     }
@@ -123,19 +133,6 @@ class FindPwViewModel : ViewModel() {
 
     fun onNavigated() {
         _navigateToReset.value = false
-    }
-
-    private fun startVerification() {
-        setState {
-            copy(
-                isRequestCodeEnabled = false,
-                isCodeLayoutVisible = true,
-                isResendVisible = true,
-                isConfirmEnabled = true
-            )
-        }
-        _toastMessage.value = "재설정 코드를 발송했습니다."
-        timer.start()
     }
 
     private inline fun setState(update: FindPwUiState.() -> FindPwUiState) {

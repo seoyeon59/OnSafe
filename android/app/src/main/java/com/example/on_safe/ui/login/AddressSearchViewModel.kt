@@ -57,7 +57,7 @@ class AddressSearchViewModel : ViewModel() {
                 }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _uiState.value = AddressSearchUiState.Empty("네트워크 오류가 발생했습니다.\n연결 상태를 확인해주세요.")
             }
         }
