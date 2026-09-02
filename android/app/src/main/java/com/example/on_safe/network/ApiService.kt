@@ -122,6 +122,8 @@ interface ApiService {
         @Path("logId") logId: String
     ): Response<ApiResponse<Unit>>
 
+    // TODO: 아래 두 응답을 DTO로 승격 — 키를 문자열로 꺼내 오타가 컴파일에 잡히지 않음.
+    //       백엔드와 키 확정 후 진행.
     // 1시간 유효한 signed URL — 재생/다운로드 시점마다 새로 발급받아 사용
     // 응답 data 키: signed_url
     @GET("api/fall-logs/{userId}/{logId}/video")

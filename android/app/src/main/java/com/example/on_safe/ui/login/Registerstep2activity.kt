@@ -13,8 +13,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
-import com.example.on_safe.FieldValidation
 import com.example.on_safe.R
+import com.example.on_safe.util.FieldValidation
 import com.example.on_safe.util.INPUT_BORDER_ERROR
 import com.example.on_safe.util.INPUT_BORDER_VALID
 import com.example.on_safe.util.bindPasswordToggle

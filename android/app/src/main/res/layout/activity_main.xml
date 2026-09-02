@@ -7,7 +7,7 @@
     android:background="@color/surface_bg"
     tools:context=".MainActivity">
 
-    <!-- ============ 상단 헤더 ============ -->
+    <!-- 상단 헤더 -->
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="0dp"
@@ -94,7 +94,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/header" />
 
-    <!-- ============ 콘텐츠 영역 ============ -->
+    <!-- 콘텐츠 영역 -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -310,7 +310,7 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- ============ 바텀 네비 ============ -->
+    <!-- 바텀 네비 -->
     <LinearLayout
         android:id="@+id/bottomNav"
         android:layout_width="0dp"

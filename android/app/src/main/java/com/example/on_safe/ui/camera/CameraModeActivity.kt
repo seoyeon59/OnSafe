@@ -20,7 +20,6 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -43,6 +42,7 @@ import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.AppScope
 import com.example.on_safe.util.DisplayText
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.toast
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -261,7 +261,7 @@ class CameraModeActivity : AppCompatActivity() {
 
         btnLogout.setOnClickListener {
             if (currentState == CameraState.STREAMING || currentState == CameraState.CONNECTING) {
-                Toast.makeText(this, "촬영 종료 후 로그아웃해주세요.", Toast.LENGTH_SHORT).show()
+                toast("촬영 종료 후 로그아웃해주세요.")
                 return@setOnClickListener
             }
             showLogoutDialog()
@@ -308,7 +308,7 @@ class CameraModeActivity : AppCompatActivity() {
         val accessToken = TokenManager.getAccessToken(this)
 
         if (accessToken.isNullOrBlank() || userId.isBlank()) {
-            Toast.makeText(this, "로그인 정보가 없습니다.", Toast.LENGTH_SHORT).show()
+            toast("로그인 정보가 없습니다.")
             setState(CameraState.FAILED)
             return
         }
@@ -358,7 +358,7 @@ class CameraModeActivity : AppCompatActivity() {
             override fun onFailure(t: Throwable) {
                 runOnUiThread {
                     Log.w(TAG, "WS 연결 실패", t)
-                    Toast.makeText(this@CameraModeActivity, "서버 연결에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                    this@CameraModeActivity.toast("서버 연결에 실패했습니다.")
                     setState(CameraState.FAILED)
                 }
             }
@@ -429,7 +429,7 @@ class CameraModeActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 // 바인딩 실패 시 사용자에게 알림
                 Log.w(TAG, "카메라 바인딩 실패", e)
-                Toast.makeText(this, "카메라를 시작할 수 없습니다.", Toast.LENGTH_SHORT).show()
+                toast("카메라를 시작할 수 없습니다.")
             }
         }, ContextCompat.getMainExecutor(this))  // 메인 스레드에서 실행
     }

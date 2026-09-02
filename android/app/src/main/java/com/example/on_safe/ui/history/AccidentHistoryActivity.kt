@@ -18,7 +18,6 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.activity.OnBackPressedCallback
@@ -31,6 +30,7 @@ import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ui.settings.SettingsActivity
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -68,7 +68,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
                 if (permanentlyDenied) {
                     showMediaPermissionSettingsDialog()
                 } else {
-                    Toast.makeText(this, "영상 저장을 위해 사진/영상 접근 권한이 필요합니다.", Toast.LENGTH_LONG).show()
+                    toast("영상 저장을 위해 사진/영상 접근 권한이 필요합니다.", longDuration = true)
                 }
             }
         }
@@ -109,7 +109,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
         viewModel.uiState.observe(this) { state -> renderState(state) }
         viewModel.toastEvent.observe(this) { event ->
             if (event != null) {
-                Toast.makeText(this, event.message, Toast.LENGTH_SHORT).show()
+                toast(event.message)
                 viewModel.onToastHandled()
             }
         }
@@ -243,7 +243,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
 
     private fun handleWatchVideo(entry: HistoryListItem.HistoryEntry) {
         if (!entry.hasVideo) {
-            Toast.makeText(this, videoUnavailableMessage(entry, "재생할 영상이 없습니다."), Toast.LENGTH_SHORT).show()
+            toast(videoUnavailableMessage(entry, "재생할 영상이 없습니다."))
             return
         }
         viewModel.fetchVideoUrl(TokenManager.getUserId(this), entry, forDownload = false)
@@ -251,7 +251,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
 
     private fun handleDownload(entry: HistoryListItem.HistoryEntry) {
         if (!entry.hasVideo) {
-            Toast.makeText(this, videoUnavailableMessage(entry, "저장 가능한 영상이 없습니다."), Toast.LENGTH_SHORT).show()
+            toast(videoUnavailableMessage(entry, "저장 가능한 영상이 없습니다."))
             return
         }
         // API 29 미만만 권한 필요 — 이후는 MediaStore 자체 경로라 불필요.
@@ -271,9 +271,9 @@ class AccidentHistoryActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) { saveVideoToGallery(videoUrl, entryId) }
-                Toast.makeText(this@AccidentHistoryActivity, "갤러리에 저장되었습니다.", Toast.LENGTH_SHORT).show()
+                this@AccidentHistoryActivity.toast("갤러리에 저장되었습니다.")
             } catch (e: Exception) {
-                Toast.makeText(this@AccidentHistoryActivity, "저장에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                this@AccidentHistoryActivity.toast("저장에 실패했습니다.")
             }
         }
     }

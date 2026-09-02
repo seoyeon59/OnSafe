@@ -6,10 +6,10 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.MediaController
 import android.widget.ProgressBar
-import android.widget.Toast
 import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.on_safe.R
+import com.example.on_safe.util.toast
 
 // 낙상 이력 영상 재생 — 호출부에서 받은 signed URL(1시간 TTL) 스트리밍
 class VideoPlayerActivity : AppCompatActivity() {
@@ -22,7 +22,7 @@ class VideoPlayerActivity : AppCompatActivity() {
 
         val videoUrl = intent.getStringExtra(EXTRA_VIDEO_URL)
         if (videoUrl.isNullOrEmpty()) {
-            Toast.makeText(this, "재생할 영상이 없습니다.", Toast.LENGTH_SHORT).show()
+            toast("재생할 영상이 없습니다.")
             finish()
             return
         }
@@ -38,7 +38,7 @@ class VideoPlayerActivity : AppCompatActivity() {
         }
         videoView.setOnErrorListener { _, _, _ ->
             progressLoading.visibility = View.GONE
-            Toast.makeText(this, "영상을 재생할 수 없습니다.", Toast.LENGTH_SHORT).show()
+            toast("영상을 재생할 수 없습니다.")
             finish()
             true
         }

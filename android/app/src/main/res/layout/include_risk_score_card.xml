@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 위험 지수 점수 카드 — RiskScoreCardBinder가 코드로 바인딩 -->
+<!-- 같은 하위 id 구성이 bottom_sheet_fall_alert.xml에도 복제돼 있음 — id 변경 시 함께 맞출 것 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/riskScoreCard"

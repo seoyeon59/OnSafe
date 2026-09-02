@@ -1,6 +1,7 @@
 package com.example.on_safe.ui.camera
 
 import android.util.Log
+import com.example.on_safe.BuildConfig
 import com.example.on_safe.network.ApiClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -30,7 +31,8 @@ class FallVideoUploader {
             val uploadUrlBody = uploadUrlResponse.body()
             val uploadUrl = uploadUrlBody?.data?.get("upload_url")
             if (!uploadUrlResponse.isSuccessful || uploadUrlBody?.success != true || uploadUrl.isNullOrBlank()) {
-                Log.w(TAG, "업로드 URL 발급 실패 (logId=$logId): ${uploadUrlResponse.errorBody()?.string()}")
+                if (BuildConfig.DEBUG) Log.w(TAG, "업로드 URL 발급 실패 (logId=$logId): ${uploadUrlResponse.errorBody()?.string()}")
+                else Log.w(TAG, "업로드 URL 발급 실패 (logId=$logId)")
                 clipFile.delete()
                 return
             }
@@ -49,7 +51,8 @@ class FallVideoUploader {
                 }
             }
             if (!putResult.first) {
-                Log.w(TAG, "GCS 업로드 실패 (logId=$logId) code=${putResult.second} body=${putResult.third.take(300)}")
+                if (BuildConfig.DEBUG) Log.w(TAG, "GCS 업로드 실패 (logId=$logId) code=${putResult.second} body=${putResult.third.take(300)}")
+                else Log.w(TAG, "GCS 업로드 실패 (logId=$logId) code=${putResult.second}")
                 clipFile.delete()
                 return
             }
@@ -60,7 +63,8 @@ class FallVideoUploader {
             } else {
                 // GCS 업로드는 완료라 서버에 파일이 남아 있음 — 콜백만 실패한 상태이므로
                 // 로컬 클립 삭제는 데이터 유실이 아님. 재시도가 없어 정리.
-                Log.w(TAG, "업로드 완료 콜백 실패 (logId=$logId): ${completeResponse.errorBody()?.string()}")
+                if (BuildConfig.DEBUG) Log.w(TAG, "업로드 완료 콜백 실패 (logId=$logId): ${completeResponse.errorBody()?.string()}")
+                else Log.w(TAG, "업로드 완료 콜백 실패 (logId=$logId)")
                 clipFile.delete()
             }
         } catch (e: Exception) {

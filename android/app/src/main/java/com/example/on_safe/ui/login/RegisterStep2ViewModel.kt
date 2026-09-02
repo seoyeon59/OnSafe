@@ -4,7 +4,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.on_safe.FieldValidation
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.CheckIdRequest
 import com.example.on_safe.network.dto.RegisterRequest
@@ -13,6 +12,7 @@ import com.example.on_safe.network.dto.VerifyEmailCodeRequest
 import com.example.on_safe.network.errorMessage
 import com.example.on_safe.network.isOk
 import com.example.on_safe.util.EmailValidator
+import com.example.on_safe.util.FieldValidation
 import com.example.on_safe.util.PasswordValidator
 import com.example.on_safe.util.PhoneField
 import com.example.on_safe.util.VerificationCodeTimer

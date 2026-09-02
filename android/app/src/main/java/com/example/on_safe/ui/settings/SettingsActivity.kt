@@ -18,7 +18,6 @@ import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.activity.OnBackPressedCallback
@@ -32,6 +31,7 @@ import com.example.on_safe.ui.history.AccidentHistoryActivity
 import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.toast
 
 // 설정 화면 (알림 토글, 개인정보 수정, 비밀번호 변경, 로그아웃, 회원탈퇴)
 //
@@ -108,7 +108,7 @@ class SettingsActivity : AppCompatActivity() {
 
         viewModel.toastEvent.observe(this) { event ->
             if (event != null) {
-                Toast.makeText(this, event.message, Toast.LENGTH_SHORT).show()
+                toast(event.message)
                 viewModel.onToastHandled()
             }
         }
@@ -116,7 +116,7 @@ class SettingsActivity : AppCompatActivity() {
         viewModel.logoutEvent.observe(this) { fired ->
             if (fired == true) {
                 TokenManager.clearSession(this)
-                Toast.makeText(this, "로그아웃 되었습니다.", Toast.LENGTH_SHORT).show()
+                toast("로그아웃 되었습니다.")
                 goToLogin()
                 viewModel.onLogoutHandled()
             }
@@ -124,7 +124,7 @@ class SettingsActivity : AppCompatActivity() {
 
         viewModel.withdrawResult.observe(this) { result ->
             if (result != null) {
-                Toast.makeText(this, result.message, Toast.LENGTH_SHORT).show()
+                toast(result.message)
                 if (result.success) {
                     TokenManager.clearSession(this)
                     goToLogin()
@@ -326,7 +326,7 @@ class SettingsActivity : AppCompatActivity() {
         // (OnTouchListener는 isEnabled=false여도 호출됨)
         val disabledSwitchHint = View.OnTouchListener { view, event ->
             if (!view.isEnabled && event.action == MotionEvent.ACTION_UP) {
-                Toast.makeText(this, "먼저 알림을 켜주세요.", Toast.LENGTH_SHORT).show()
+                toast("먼저 알림을 켜주세요.")
             }
             !view.isEnabled
         }
@@ -345,8 +345,8 @@ class SettingsActivity : AppCompatActivity() {
         rowChangePassword.setOnClickListener {
             val userId = TokenManager.getUserId(this)
             val intent = Intent(this, ResetPasswordActivity::class.java).apply {
-                putExtra("mode", ResetPasswordActivity.MODE_SETTINGS)
-                putExtra("userId", userId)
+                putExtra(ResetPasswordActivity.EXTRA_MODE, ResetPasswordActivity.MODE_SETTINGS)
+                putExtra(ResetPasswordActivity.EXTRA_USER_ID, userId)
             }
             startActivity(intent)
             overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
@@ -354,12 +354,12 @@ class SettingsActivity : AppCompatActivity() {
 
         // TODO: 개인정보 처리방침 웹뷰 또는 브라우저 연동
         rowPrivacyPolicy.setOnClickListener {
-            Toast.makeText(this, "개인정보 처리방침 준비 중", Toast.LENGTH_SHORT).show()
+            toast("개인정보 처리방침 준비 중")
         }
 
         // TODO: FAQ 페이지 구현 (WebView 또는 전용 Activity)
         rowFaq.setOnClickListener {
-            Toast.makeText(this, "자주 묻는 질문 준비 중입니다.", Toast.LENGTH_SHORT).show()
+            toast("자주 묻는 질문 준비 중입니다.")
         }
 
         rowLogout.setOnClickListener {

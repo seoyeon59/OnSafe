@@ -9,7 +9,7 @@
     android:paddingTop="24dp"
     android:paddingBottom="24dp">
 
-    <!-- ============ 진행 표시줄 행 ============ -->
+    <!-- 진행 표시줄 행 -->
     <LinearLayout
         android:id="@+id/progressRow"
         android:layout_width="0dp"
@@ -54,7 +54,7 @@
 
     </LinearLayout>
 
-    <!-- ============ 이미지 영역 ============ -->
+    <!-- 이미지 영역 -->
     <FrameLayout
         android:id="@+id/pageImageArea"
         android:layout_width="0dp"
@@ -67,7 +67,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/progressRow">
 
-        <!-- 각 페이지 이미지. 나중에 이미지 리소스를 넣으면 여기에 표시됨 -->
+        <!-- 페이지 이미지 — TutorialActivity.pages에 리소스를 채우면 표시, 비어 있으면 gone -->
         <ImageView
             android:id="@+id/ivPageImage"
             android:layout_width="match_parent"
@@ -78,7 +78,7 @@
 
     </FrameLayout>
 
-    <!-- ============ 버튼 행 ============ -->
+    <!-- 버튼 행 -->
     <LinearLayout
         android:id="@+id/btnRow"
         android:layout_width="0dp"

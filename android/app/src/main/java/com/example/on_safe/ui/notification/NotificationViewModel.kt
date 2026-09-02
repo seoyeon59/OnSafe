@@ -11,7 +11,8 @@ import kotlinx.coroutines.launch
 
 // loadFailed로 "조회 실패"와 "알림 없음"을 구분해 빈 화면 문구를 다르게 보여준다 (사고이력과 동일 패턴)
 //
-// TODO: 화면 문구는 "최근 7일간"인데 실제 컷오프 로직이 없다 (서버 보관 정책은 30일). 처리 방향 결정 필요
+// TODO: 화면 문구는 "최근 7일간"인데 실제 컷오프 없음 (서버 보관 정책 30일).
+//       문구 수정 / 클라이언트 필터 / 서버 조회 파라미터 중 택일 — 기획·백엔드 확인 필요
 data class NotificationUiState(
     val items: List<NotificationItem> = emptyList(),
     val loadFailed: Boolean = false

@@ -58,7 +58,9 @@ class LandmarkStreamClient(private val listener: Listener) {
                 val message = try {
                     gson.fromJson(text, StreamServerMessage::class.java)
                 } catch (e: Exception) {
-                    Log.w(TAG, "서버 메시지 파싱 실패: $text", e)
+                    // 원문에는 서버 응답이 그대로 담겨 릴리즈 로그에는 남기지 않는다
+                    if (BuildConfig.DEBUG) Log.w(TAG, "서버 메시지 파싱 실패: $text", e)
+                    else Log.w(TAG, "서버 메시지 파싱 실패")
                     return
                 }
                 when (message.type) {

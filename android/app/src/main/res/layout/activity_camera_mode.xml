@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:background="#0D0F11">
 
-    <!-- ============ 좌측: 카메라 프리뷰 ============ -->
+    <!-- 좌측: 카메라 프리뷰 -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="0dp"
@@ -97,7 +97,7 @@
 
     </LinearLayout>
 
-    <!-- ============ 상단 로고 (항상 표시) ============ -->
+    <!-- 상단 로고 (항상 표시) -->
     <LinearLayout
         android:id="@+id/layoutLogo"
         android:layout_width="wrap_content"
@@ -185,7 +185,7 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- ============ 2e: 우하단 전체화면 버튼 ============ -->
+    <!-- 우하단 전체화면 버튼 -->
     <FrameLayout
         android:id="@+id/btnFullscreen"
         android:layout_width="40dp"
@@ -207,7 +207,7 @@
             app:tint="@color/surface_white" />
     </FrameLayout>
 
-    <!-- ============ 2e: 전체화면 복원 햄버거 버튼 (전체화면 모드에서만 표시) ============ -->
+    <!-- 전체화면 복원 햄버거 버튼 (전체화면 모드에서만 표시) -->
     <ImageButton
         android:id="@+id/btnHamburger"
         android:layout_width="40dp"
@@ -222,7 +222,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/surface_white" />
 
-    <!-- ============ 우측 사이드 패널 ============ -->
+    <!-- 우측 사이드 패널 -->
     <LinearLayout
         android:id="@+id/sidePanel"
         android:layout_width="240dp"
@@ -307,7 +307,7 @@
                     android:textColor="#4DFFFFFF"
                     android:textSize="12sp" />
 
-                <!-- 2c: 상태 뱃지 — cornerRadius=48 pill 유지 -->
+                <!-- 상태 뱃지 — cornerRadius=48 pill 유지 -->
                 <LinearLayout
                     android:id="@+id/layoutStatusBadge"
                     android:layout_width="match_parent"
@@ -448,7 +448,7 @@
                 android:layout_height="0dp"
                 android:layout_weight="1" />
 
-            <!-- ============ 버튼 영역 ============ -->
+            <!-- 버튼 영역 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -456,7 +456,7 @@
                 android:paddingEnd="12dp"
                 android:paddingStart="12dp">
 
-                <!-- 2c/2d: 촬영 시작/종료 버튼 — pill shape + icon -->
+                <!-- 촬영 시작/종료 버튼 — pill shape + icon -->
                 <LinearLayout
                     android:id="@+id/btnToggleRecording"
                     android:layout_width="match_parent"
@@ -487,7 +487,7 @@
                         android:textSize="14sp" />
                 </LinearLayout>
 
-                <!-- 2c/2d: 로그아웃 버튼 — pill outline + icon -->
+                <!-- 로그아웃 버튼 — pill outline + icon -->
                 <LinearLayout
                     android:id="@+id/btnLogout"
                     android:layout_width="match_parent"

@@ -2,25 +2,30 @@ package com.example.on_safe.ui.settings
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
-import com.example.on_safe.FieldValidation
+import androidx.core.view.isVisible
 import com.example.on_safe.R
 import com.example.on_safe.network.dto.UserResponse
 import com.example.on_safe.ui.login.AddressSearchActivity
 import com.example.on_safe.util.EmailValidator
+import com.example.on_safe.util.FieldValidation
+import com.example.on_safe.util.INPUT_BORDER_ERROR
+import com.example.on_safe.util.INPUT_BORDER_VALID
 import com.example.on_safe.util.PhoneField
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.bindPhoneFormatting
+import com.example.on_safe.util.clearInputBorder
 import com.example.on_safe.util.onTextChanged
+import com.example.on_safe.util.setInputBorder
+import com.example.on_safe.util.toast
 
 // 개인정보 수정 화면 — 진입 시 비밀번호 확인 후 폼 활성화
 class EditProfileActivity : AppCompatActivity() {
@@ -42,9 +47,6 @@ class EditProfileActivity : AppCompatActivity() {
     // 서버 값으로 스위치를 세팅할 때 리스너 재발화(재-PUT) 방지
     private var suppressMarketingListener = false
 
-    // 전화번호 자동 하이픈 처리 중 재귀 호출 방지
-    private var isFormattingPhone = false
-
     // 폼 자동 채움 중 검증 문구 억제 — 진입 즉시 전 칸이 초록으로 바뀌면
     // 사용자가 직접 입력한 것으로 오해
     private var isFillingForm = false
@@ -52,10 +54,6 @@ class EditProfileActivity : AppCompatActivity() {
     private lateinit var tvNameMessage: TextView
     private lateinit var tvPhoneMessage: TextView
     private lateinit var tvEmailMessage: TextView
-
-    private val COLOR_RED = 0xFFEF4444.toInt()
-    private val COLOR_GREEN = 0xFF22C55E.toInt()
-    private val COLOR_INPUT_BG = 0xFFF4F7FB.toInt()
 
     private val settingsPrefs by lazy {
         getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
@@ -93,11 +91,11 @@ class EditProfileActivity : AppCompatActivity() {
                     if (result.user != null) {
                         fillForm(result.user)
                     } else {
-                        Toast.makeText(this, "정보를 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
+                        toast("정보를 불러오지 못했습니다.")
                     }
                     viewModel.loadMarketingConsent(TokenManager.getUserId(this))
                 } else {
-                    Toast.makeText(this, result.message ?: "비밀번호가 올바르지 않습니다.", Toast.LENGTH_SHORT).show()
+                    toast(result.message ?: "비밀번호가 올바르지 않습니다.")
                     // 검증 실패 → 재입력용 확인 다이얼로그 재표시
                     showVerifyDialog()
                 }
@@ -107,7 +105,7 @@ class EditProfileActivity : AppCompatActivity() {
 
         viewModel.saveResult.observe(this) { result ->
             if (result != null) {
-                Toast.makeText(this, result.message, Toast.LENGTH_SHORT).show()
+                toast(result.message)
                 if (result.success) finish()
                 viewModel.onSaveResultHandled()
             }
@@ -145,17 +143,7 @@ class EditProfileActivity : AppCompatActivity() {
         }
 
         // 전화번호는 회원가입과 동일하게 하이픈 자동 삽입
-        etPhone.onTextChanged {
-            if (!isFormattingPhone) {
-                isFormattingPhone = true
-                val formatted = PhoneField.formatInput(it)
-                if (formatted != it) {
-                    etPhone.setText(formatted)
-                    etPhone.setSelection(formatted.length)
-                }
-                isFormattingPhone = false
-            }
-            val phone = etPhone.text.toString()
+        etPhone.bindPhoneFormatting { phone ->
             applyValidation(etPhone, tvPhoneMessage, when {
                 phone.isEmpty() -> FieldValidation.Empty
                 PhoneField.isValid(phone) -> FieldValidation.Valid(PhoneField.SUCCESS_MSG)
@@ -191,23 +179,19 @@ class EditProfileActivity : AppCompatActivity() {
         if (isFillingForm) return
         when (validation) {
             is FieldValidation.Empty -> {
-                tv.visibility = View.GONE
-                et.setBackgroundResource(R.drawable.bg_input_rounded)
+                tv.isVisible = false
+                et.clearInputBorder()
             }
-            is FieldValidation.Valid -> showFieldMessage(et, tv, validation.message, COLOR_GREEN)
-            is FieldValidation.Invalid -> showFieldMessage(et, tv, validation.message, COLOR_RED)
+            is FieldValidation.Valid -> showFieldMessage(et, tv, validation.message, INPUT_BORDER_VALID)
+            is FieldValidation.Invalid -> showFieldMessage(et, tv, validation.message, INPUT_BORDER_ERROR)
         }
     }
 
     private fun showFieldMessage(et: EditText, tv: TextView, msg: String, color: Int) {
         tv.text = msg
         tv.setTextColor(color)
-        tv.visibility = View.VISIBLE
-        et.background = GradientDrawable().apply {
-            setColor(COLOR_INPUT_BG)
-            cornerRadius = 48f * resources.displayMetrics.density
-            setStroke((2f * resources.displayMetrics.density).toInt(), color)
-        }
+        tv.isVisible = true
+        et.setInputBorder(color)
     }
 
     private fun initViews() {
@@ -267,13 +251,13 @@ class EditProfileActivity : AppCompatActivity() {
             // 형식 오류 시 저장 차단 — 잘못된 값의 서버 반영 방지
             val error = validateAll()
             if (error != null) {
-                Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
+                toast(error)
                 return@setOnClickListener
             }
 
             // 변경 없으면 서버 호출 생략
             if (!viewModel.hasChanges(name, phone, email, address1, address2)) {
-                Toast.makeText(this, "변경된 내용이 없습니다.", Toast.LENGTH_SHORT).show()
+                toast("변경된 내용이 없습니다.")
                 return@setOnClickListener
             }
 

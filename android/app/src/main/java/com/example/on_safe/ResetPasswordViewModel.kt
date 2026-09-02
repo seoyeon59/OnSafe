@@ -7,16 +7,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.ResetPasswordRequest
 import com.example.on_safe.network.dto.UserUpdateRequest
+import com.example.on_safe.util.FieldValidation
 import com.example.on_safe.util.PasswordValidator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-
-// 입력칸 검증 결과 — 메시지·색 판단은 뷰모델, Activity는 표시만
-sealed class FieldValidation {
-    object Empty : FieldValidation()
-    data class Valid(val message: String) : FieldValidation()
-    data class Invalid(val message: String) : FieldValidation()
-}
 
 data class ResetPasswordUiState(
     val isLoading: Boolean = false,

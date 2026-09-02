@@ -117,8 +117,8 @@ class FindPwActivity : AppCompatActivity() {
     private fun navigateToResetPassword() {
         startActivity(
             Intent(this, ResetPasswordActivity::class.java).apply {
-                putExtra("userId", etUserId.text.toString().trim())
-                putExtra("mode", ResetPasswordActivity.MODE_FIND_PW)
+                putExtra(ResetPasswordActivity.EXTRA_USER_ID, etUserId.text.toString().trim())
+                putExtra(ResetPasswordActivity.EXTRA_MODE, ResetPasswordActivity.MODE_FIND_PW)
             }
         )
         overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
