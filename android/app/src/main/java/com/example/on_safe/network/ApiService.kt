@@ -29,6 +29,9 @@ interface ApiService {
     @POST("api/auth/check-id")
     suspend fun checkId(@Body request: CheckIdRequest): Response<ApiResponse<Unit>>
 
+    @POST("api/auth/check-mail")
+    suspend fun checkMail(@Body request: CheckMailRequest): Response<ApiResponse<Unit>>
+
     @POST("api/auth/send-email-code")
     suspend fun sendEmailCode(@Body request: SendEmailCodeRequest): Response<ApiResponse<Unit>>
 

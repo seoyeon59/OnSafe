@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.CheckIdRequest
+import com.example.on_safe.network.dto.CheckMailRequest
 import com.example.on_safe.network.dto.RegisterRequest
 import com.example.on_safe.network.dto.SendEmailCodeRequest
 import com.example.on_safe.network.dto.VerifyEmailCodeRequest
@@ -205,7 +206,29 @@ class RegisterStep2ViewModel : ViewModel() {
             return
         }
         setState { copy(isEmailVerifyEnabled = false) }
-        sendEmailCode(isResend = false)
+        // 인증 메일 발송 전에 서버에 중복 여부 조회 — SES 비용/스팸 방지 및
+        // 이미 가입된 이메일이면 즉시 사용자에게 알림.
+        viewModelScope.launch {
+            try {
+                val response = ApiClient.api.checkMail(CheckMailRequest(mail = email))
+                if (response.isOk) {
+                    sendEmailCode(isResend = false)
+                } else {
+                    val msg = response.errorMessage("이미 사용 중인 이메일입니다.")
+                    setState {
+                        copy(
+                            emailValidation = FieldValidation.Invalid(msg),
+                            isEmailVerifyEnabled = true
+                        )
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _toastMessage.value = "네트워크 오류가 발생했습니다."
+                setState { copy(isEmailVerifyEnabled = true) }
+            }
+        }
     }
 
     fun resendEmailCode() {
