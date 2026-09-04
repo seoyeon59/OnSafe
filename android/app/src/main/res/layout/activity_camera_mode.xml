@@ -18,16 +18,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- 페어링 코드 오버레이 — 카메라 프리뷰 상단 중앙에 얹어 항상 보이도록 -->
-    <include
-        layout="@layout/view_pairing_code_overlay"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        app:layout_constraintEnd_toStartOf="@id/sidePanel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
     <!-- 대기 중 / 연결 중 오버레이 (촬영 전에만 표시) -->
     <LinearLayout
         android:id="@+id/layoutStandby"
@@ -106,6 +96,17 @@
         </LinearLayout>
 
     </LinearLayout>
+
+    <!-- 페어링 코드 오버레이 — 카메라 프리뷰 상단 중앙에 얹어 항상 보이도록.
+         STANDBY 상태에서도 대기 화면(layoutStandby) 위에 떠야 하므로 그 뒤에 선언한다. -->
+    <include
+        layout="@layout/view_pairing_code_overlay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toStartOf="@id/sidePanel"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- 상단 로고 (항상 표시) -->
     <LinearLayout
