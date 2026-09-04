@@ -76,6 +76,27 @@ interface ApiService {
     @DELETE("api/users/{userId}")
     suspend fun deleteUser(@Path("userId") userId: String): Response<ApiResponse<Unit>>
 
+    // ===== Guardian (보호자 페어링) =====
+
+    // 피보호자가 6자리 페어링 코드 발급 — 5분 TTL, 재발급 시 이전 코드는 즉시 무효화됨
+    @POST("api/guardian/{userId}/pairing-code")
+    suspend fun issuePairingCode(
+        @Path("userId") userId: String
+    ): Response<ApiResponse<PairingCodeResponse>>
+
+    // 보호자가 코드 입력해서 페어링 — 성공 시 연결된 피보호자 정보 반환
+    @POST("api/guardian/{userId}/pair")
+    suspend fun pairGuardian(
+        @Path("userId") userId: String,
+        @Body request: PairRequest
+    ): Response<ApiResponse<WardResponse>>
+
+    // 보호자가 자신에게 연결된 피보호자 목록 조회 — 진입 시 페어링 모달 표시 여부 판단용
+    @GET("api/guardian/{userId}/wards")
+    suspend fun getWards(
+        @Path("userId") userId: String
+    ): Response<ApiResponse<WardsWrapper>>
+
     // ===== Settings =====
 
     @GET("api/settings/notifications/{userId}")
