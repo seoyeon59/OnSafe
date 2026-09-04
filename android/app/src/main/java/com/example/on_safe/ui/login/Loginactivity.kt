@@ -22,13 +22,19 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
+import android.widget.Toast
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.R
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.isOk
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.DoubleBackToExit
 import com.example.on_safe.util.INPUT_BORDER_ERROR
 import com.example.on_safe.util.TermsLinks
 import com.example.on_safe.util.TokenManager
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import com.example.on_safe.util.bindPasswordToggle
 import com.example.on_safe.util.clearInputBorder
 import com.example.on_safe.util.onTextChanged
@@ -47,21 +53,29 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_login)
 
-        // 자동 로그인 — 토큰 유효 + 마지막 로그인 30일 이내면 로그인 화면 건너뜀
-        // TODO: 테스팅 완료 후 BuildConfig.DEBUG 조건 제거로 자동 로그인 활성화
-        if (!BuildConfig.DEBUG && TokenManager.isLoggedIn(this) && !TokenManager.isSessionExpired(this)) {
-            startOnboarding()
+        pbLoading = findViewById(R.id.pbLoading)
+
+        // 자동 로그인 — 로컬 토큰 유효 + 30일 이내이면 서버 세션 검증 후 진입.
+        // 로컬 만료만 보면 회원탈퇴/강제로그아웃 뒤에도 진입 가능하므로 서버 블랙리스트까지 확인한다.
+        if (TokenManager.isLoggedIn(this) && !TokenManager.isSessionExpired(this)) {
+            pbLoading.isVisible = true
+            tryAutoLogin()
             return
         }
 
-        setContentView(R.layout.activity_login)
+        setupLoginForm()
+    }
+
+    // 로그인 폼 초기화 — 신규 진입/자동 로그인 실패 양쪽에서 호출.
+    private fun setupLoginForm() {
+        pbLoading.isVisible = false
 
         etId = findViewById(R.id.etId)
         etPw = findViewById(R.id.etPw)
         btnLogin = findViewById(R.id.btnLogin)
         tvLoginError = findViewById(R.id.tvLoginError)
-        pbLoading = findViewById(R.id.pbLoading)
 
         if (BuildConfig.DEBUG) setupDebugLogin()
 
@@ -119,6 +133,32 @@ class LoginActivity : AppCompatActivity() {
             // 자기 자신을 카메라로 등록하게 됨 (CameraModeViewModel.registerDevice)
             startOnboarding()
             viewModel.onLoginHandled()
+        }
+    }
+
+    // 자동 로그인 진입 전 서버 세션 검증. 200 이면 온보딩으로, 401/네트워크 오류면 로컬 세션 정리 후 로그인 폼 노출.
+    private fun tryAutoLogin() {
+        val accessToken = TokenManager.getAccessToken(this)
+        if (accessToken.isNullOrBlank()) {
+            setupLoginForm()
+            return
+        }
+        lifecycleScope.launch {
+            val ok = try {
+                val response = ApiClient.api.validateToken("Bearer $accessToken")
+                response.isOk
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                false
+            }
+            if (ok) {
+                startOnboarding()
+            } else {
+                TokenManager.clearSession(this@LoginActivity)
+                Toast.makeText(this@LoginActivity, "세션이 만료되어 다시 로그인해주세요.", Toast.LENGTH_SHORT).show()
+                setupLoginForm()
+            }
         }
     }
 
