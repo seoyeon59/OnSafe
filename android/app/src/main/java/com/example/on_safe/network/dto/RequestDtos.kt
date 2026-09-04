@@ -25,6 +25,10 @@ data class CheckIdRequest(
     val userId: String
 )
 
+data class CheckMailRequest(
+    val mail: String
+)
+
 data class SendEmailCodeRequest(
     val mail: String
 )
