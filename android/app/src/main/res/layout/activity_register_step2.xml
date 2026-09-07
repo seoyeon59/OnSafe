@@ -199,10 +199,11 @@
 
                     <ImageButton
                         android:id="@+id/btnTogglePw"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="@dimen/touch_min"
+                        android:layout_height="@dimen/touch_min"
                         android:layout_gravity="center_vertical|end"
-                        android:layout_marginRight="12dp"
+                        android:padding="12dp"
+                        android:scaleType="fitCenter"
                         android:src="@drawable/ic_eye"
                         android:background="@null"
                         android:contentDescription="비밀번호 보기"
@@ -250,10 +251,11 @@
 
                     <ImageButton
                         android:id="@+id/btnTogglePwConfirm"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="@dimen/touch_min"
+                        android:layout_height="@dimen/touch_min"
                         android:layout_gravity="center_vertical|end"
-                        android:layout_marginRight="12dp"
+                        android:padding="12dp"
+                        android:scaleType="fitCenter"
                         android:src="@drawable/ic_eye"
                         android:background="@null"
                         android:contentDescription="비밀번호 확인 보기"

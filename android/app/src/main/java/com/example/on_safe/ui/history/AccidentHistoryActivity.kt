@@ -213,7 +213,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
         val inactiveColor = ContextCompat.getColor(this, R.color.ink_500)
         val white         = ContextCompat.getColor(this, R.color.surface_white)
         val grayBg        = 0xFFF1F1F3.toInt()
-        val pillRadius    = resources.getDimension(R.dimen.tab_pill_radius)
+        val pillRadius    = resources.getDimension(R.dimen.radius_pill)
 
         fun styleChip(chip: TextView, isActive: Boolean) {
             chip.background = GradientDrawable().apply {

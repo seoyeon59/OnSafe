@@ -22,10 +22,10 @@
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="@dimen/touch_min"
+            android:layout_height="@dimen/touch_min"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@null"
+            android:contentDescription="뒤로가기"
             android:src="@drawable/ic_arrow_back"
             app:tint="@color/primary_blue" />
 
@@ -36,13 +36,13 @@
             android:gravity="center"
             android:text="개인정보 수정"
             android:textColor="@color/ink_900"
-            android:textSize="20sp"
+            android:textSize="@dimen/text_title"
             android:textStyle="bold" />
 
         <!-- 오른쪽 자리 맞춤용 투명 플레이스홀더 -->
         <View
-            android:layout_width="40dp"
-            android:layout_height="40dp" />
+            android:layout_width="@dimen/touch_min"
+            android:layout_height="@dimen/touch_min" />
     </LinearLayout>
 
     <!-- 스크롤 콘텐츠 -->
@@ -91,7 +91,7 @@
                     android:layout_marginTop="4dp"
                     android:text="보호자 정보"
                     android:textColor="@color/ink_500"
-                    android:textSize="13sp" />
+                    android:textSize="@dimen/text_caption" />
             </LinearLayout>
 
             <!-- 입력 폼 카드 -->
@@ -115,8 +115,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="6dp"
                         android:text="보호자 이름"
-                        android:textColor="#6B7280"
-                        android:textSize="13sp"
+                        android:textColor="@color/ink_500"
+                        android:textSize="@dimen/text_caption"
                         android:textStyle="bold" />
 
                     <EditText
@@ -130,15 +130,16 @@
                         android:paddingHorizontal="16dp"
                         android:textColor="@color/ink_900"
                         android:textColorHint="@color/ink_500"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_body" />
 
                     <TextView
                         android:id="@+id/tvNameMessage"
+                        android:accessibilityLiveRegion="polite"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_marginTop="6dp"
-                        android:textSize="12sp"
+                        android:textSize="@dimen/text_tab"
                         android:visibility="gone" />
                 </LinearLayout>
 
@@ -154,8 +155,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="6dp"
                         android:text="전화번호"
-                        android:textColor="#6B7280"
-                        android:textSize="13sp"
+                        android:textColor="@color/ink_500"
+                        android:textSize="@dimen/text_caption"
                         android:textStyle="bold" />
 
                     <EditText
@@ -169,15 +170,16 @@
                         android:paddingHorizontal="16dp"
                         android:textColor="@color/ink_900"
                         android:textColorHint="@color/ink_500"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_body" />
 
                     <TextView
                         android:id="@+id/tvPhoneMessage"
+                        android:accessibilityLiveRegion="polite"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_marginTop="6dp"
-                        android:textSize="12sp"
+                        android:textSize="@dimen/text_tab"
                         android:visibility="gone" />
                 </LinearLayout>
 
@@ -193,8 +195,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="6dp"
                         android:text="이메일"
-                        android:textColor="#6B7280"
-                        android:textSize="13sp"
+                        android:textColor="@color/ink_500"
+                        android:textSize="@dimen/text_caption"
                         android:textStyle="bold" />
 
                     <EditText
@@ -208,15 +210,16 @@
                         android:paddingHorizontal="16dp"
                         android:textColor="@color/ink_900"
                         android:textColorHint="@color/ink_500"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_body" />
 
                     <TextView
                         android:id="@+id/tvEmailMessage"
+                        android:accessibilityLiveRegion="polite"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_marginTop="6dp"
-                        android:textSize="12sp"
+                        android:textSize="@dimen/text_tab"
                         android:visibility="gone" />
                 </LinearLayout>
 
@@ -232,8 +235,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="6dp"
                         android:text="주소"
-                        android:textColor="#6B7280"
-                        android:textSize="13sp"
+                        android:textColor="@color/ink_500"
+                        android:textSize="@dimen/text_caption"
                         android:textStyle="bold" />
 
                     <EditText
@@ -247,7 +250,7 @@
                         android:paddingHorizontal="16dp"
                         android:textColor="@color/ink_900"
                         android:textColorHint="@color/ink_500"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_body" />
 
                     <EditText
                         android:id="@+id/etAddress2"
@@ -261,7 +264,7 @@
                         android:paddingHorizontal="16dp"
                         android:textColor="@color/ink_900"
                         android:textColorHint="@color/ink_500"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_body" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -291,7 +294,7 @@
                     android:lineSpacingMultiplier="1.4"
                     android:text="입력하신 정보는 긴급 상황 시 연락처로 사용됩니다.\n정확한 정보를 입력해주세요."
                     android:textColor="@color/primary_blue"
-                    android:textSize="13sp" />
+                    android:textSize="@dimen/text_caption" />
             </LinearLayout>
 
             <!-- 마케팅 수신 동의 카드 -->
@@ -317,7 +320,7 @@
                         android:layout_height="wrap_content"
                         android:text="마케팅 정보 수신 동의"
                         android:textColor="@color/ink_900"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_body" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -325,7 +328,7 @@
                         android:layout_marginTop="2dp"
                         android:text="업데이트·이벤트 알림을 받습니다 (선택)"
                         android:textColor="@color/ink_500"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_caption" />
                 </LinearLayout>
 
                 <androidx.appcompat.widget.SwitchCompat
@@ -350,7 +353,7 @@
         android:background="@drawable/bg_button_blue"
         android:text="저장하기"
         android:textColor="@color/surface_white"
-        android:textSize="18sp"
+        android:textSize="@dimen/text_button"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

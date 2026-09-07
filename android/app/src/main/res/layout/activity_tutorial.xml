@@ -37,15 +37,15 @@
             android:id="@+id/tvPageCounter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#414752"
-            android:textSize="14sp"
+            android:textColor="@color/ink_700"
+            android:textSize="@dimen/text_body"
             android:textStyle="bold" />
 
         <!-- X 건너뛰기 버튼 (완료 전에 이탈) -->
         <ImageButton
             android:id="@+id/btnSkipTutorial"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="@dimen/touch_min"
+            android:layout_height="@dimen/touch_min"
             android:layout_marginStart="10dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="튜토리얼 건너뛰기"
@@ -61,7 +61,7 @@
         android:layout_height="0dp"
         android:layout_marginTop="28dp"
         android:layout_marginBottom="22dp"
-        android:background="#FAFAFA"
+        android:background="@color/surface_bg"
         app:layout_constraintBottom_toTopOf="@id/btnRow"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -99,7 +99,7 @@
             android:stateListAnimator="@null"
             android:text="이전"
             android:textColor="@color/primary_blue"
-            android:textSize="18sp"
+            android:textSize="@dimen/text_button"
             android:textStyle="bold"
             android:visibility="invisible" />
 
@@ -113,7 +113,7 @@
             android:stateListAnimator="@null"
             android:text="다음"
             android:textColor="@color/surface_white"
-            android:textSize="18sp"
+            android:textSize="@dimen/text_button"
             android:textStyle="bold" />
 
     </LinearLayout>

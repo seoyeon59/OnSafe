@@ -9,16 +9,16 @@
     <!-- mask: ripple이 번지는 영역의 경계 (버튼 둥근 모서리와 동일하게) -->
     <item android:id="@android:id/mask">
         <shape android:shape="rectangle">
-            <corners android:radius="48dp" />
-            <solid android:color="#FFFFFF" />
+            <corners android:radius="@dimen/radius_pill" />
+            <solid android:color="@color/white" />
         </shape>
     </item>
 
     <!-- 실제 버튼 배경 -->
     <item>
         <shape android:shape="rectangle">
-            <corners android:radius="48dp" />
-            <solid android:color="#4D80FF" />
+            <corners android:radius="@dimen/radius_pill" />
+            <solid android:color="@color/primary_blue" />
         </shape>
     </item>
 

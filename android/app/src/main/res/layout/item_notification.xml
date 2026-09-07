@@ -52,8 +52,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="낙상 위험 감지"
-                android:textColor="#1A1C1E"
-                android:textSize="15sp"
+                android:textColor="@color/ink_900"
+                android:textSize="@dimen/text_body"
                 android:textStyle="bold" />
 
             <!-- 읽지 않은 알림 파란 점 -->
@@ -81,8 +81,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="오늘 · 오후 02:23"
-                android:textColor="#9FA6AC"
-                android:textSize="13sp" />
+                android:textColor="@color/ink_500"
+                android:textSize="@dimen/text_caption" />
 
             <TextView
                 android:id="@+id/tv_risk_score"
@@ -90,8 +90,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:text="위험 지수 88"
-                android:textColor="#EF4444"
-                android:textSize="13sp"
+                android:textColor="@color/status_danger"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
 
         </LinearLayout>

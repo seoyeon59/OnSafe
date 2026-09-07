@@ -47,7 +47,7 @@
             android:includeFontPadding="false"
             android:text="늘봄"
             android:textColor="@color/primary_blue"
-            android:textSize="20sp" />
+            android:textSize="@dimen/text_title" />
 
         <View
             android:layout_width="0dp"
@@ -56,8 +56,8 @@
 
         <FrameLayout
             android:id="@+id/btnNotification"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="@dimen/touch_min"
+            android:layout_height="@dimen/touch_min"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true">
@@ -165,7 +165,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="5dp"
                             android:textColor="@color/status_normal"
-                            android:textSize="14sp"
+                            android:textSize="@dimen/text_body"
                             android:textStyle="bold"
                             tools:text="기기 연결됨" />
                     </LinearLayout>
@@ -178,7 +178,7 @@
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:textColor="@color/ink_500"
-                        android:textSize="12sp"
+                        android:textSize="@dimen/text_tab"
                         tools:text="기기 ID · a1b2c3d4e5f6a7b8" />
                 </LinearLayout>
             </LinearLayout>
@@ -217,14 +217,14 @@
                         android:layout_marginStart="4dp"
                         android:text="LIVE"
                         android:textColor="@color/surface_white"
-                        android:textSize="11sp"
+                        android:textSize="@dimen/text_tab"
                         android:textStyle="bold" />
                 </LinearLayout>
 
                 <FrameLayout
                     android:id="@+id/btnFullscreen"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="@dimen/touch_min"
+                    android:layout_height="@dimen/touch_min"
                     android:layout_gravity="bottom|end"
                     android:layout_margin="12dp"
                     android:background="@drawable/bg_circle"
@@ -277,7 +277,7 @@
                     android:layout_marginStart="8dp"
                     android:text="119 신고하기"
                     android:textColor="@color/surface_white"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/text_subtitle"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -305,7 +305,7 @@
                     android:layout_marginStart="10dp"
                     android:text="이상 감지 시 자동으로 알림이 발송됩니다.\n앱을 항상 백그라운드에 유지해주세요."
                     android:textColor="@color/ink_500"
-                    android:textSize="13sp" />
+                    android:textSize="@dimen/text_caption" />
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
@@ -351,7 +351,7 @@
                 android:layout_marginTop="2dp"
                 android:text="사고 이력"
                 android:textColor="@color/ink_500"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -387,7 +387,7 @@
                     android:layout_marginTop="2dp"
                     android:text="홈"
                     android:textColor="@color/primary_blue"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/text_tab"
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
@@ -417,7 +417,7 @@
                 android:layout_marginTop="2dp"
                 android:text="설정"
                 android:textColor="@color/ink_500"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>

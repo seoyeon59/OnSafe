@@ -183,11 +183,11 @@
 
                 <ImageView
                     android:id="@+id/btnViewAgree1"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="@dimen/touch_min"
+                    android:layout_height="@dimen/touch_min"
                     android:src="@drawable/ic_chevron_right"
                     android:contentDescription="약관 보기"
-                    android:padding="8dp"
+                    android:padding="16dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true" />
@@ -231,11 +231,11 @@
 
                 <ImageView
                     android:id="@+id/btnViewAgree2"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="@dimen/touch_min"
+                    android:layout_height="@dimen/touch_min"
                     android:src="@drawable/ic_chevron_right"
                     android:contentDescription="약관 보기"
-                    android:padding="8dp"
+                    android:padding="16dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true" />
@@ -279,11 +279,11 @@
 
                 <ImageView
                     android:id="@+id/btnViewAgree3"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="@dimen/touch_min"
+                    android:layout_height="@dimen/touch_min"
                     android:src="@drawable/ic_chevron_right"
                     android:contentDescription="약관 보기"
-                    android:padding="8dp"
+                    android:padding="16dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true" />
@@ -327,11 +327,11 @@
 
                 <ImageView
                     android:id="@+id/btnViewAgree5"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="@dimen/touch_min"
+                    android:layout_height="@dimen/touch_min"
                     android:src="@drawable/ic_chevron_right"
                     android:contentDescription="약관 보기"
-                    android:padding="8dp"
+                    android:padding="16dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true" />

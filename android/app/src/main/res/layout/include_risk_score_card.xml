@@ -26,7 +26,7 @@
             android:layout_gravity="center"
             tools:text="32"
             android:textColor="@color/status_normal"
-            android:textSize="40sp"
+            android:textSize="@dimen/text_display"
             android:textStyle="bold" />
     </FrameLayout>
 
@@ -53,7 +53,7 @@
                 android:paddingVertical="2dp"
                 tools:text="정상"
                 android:textColor="@color/surface_white"
-                android:textSize="14sp"
+                android:textSize="@dimen/text_body"
                 android:textStyle="bold" />
 
             <View
@@ -67,7 +67,7 @@
                 android:layout_height="wrap_content"
                 tools:text="정상 구간 0~50"
                 android:textColor="@color/ink_500"
-                android:textSize="13sp" />
+                android:textSize="@dimen/text_caption" />
         </LinearLayout>
 
         <FrameLayout
@@ -91,6 +91,6 @@
             android:layout_marginTop="8dp"
             tools:text="안정적인 상태입니다."
             android:textColor="@color/ink_900"
-            android:textSize="13sp" />
+            android:textSize="@dimen/text_caption" />
     </LinearLayout>
 </LinearLayout>

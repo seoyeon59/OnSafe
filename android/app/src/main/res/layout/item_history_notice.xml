@@ -27,6 +27,6 @@
         android:layout_marginStart="10dp"
         android:text="사고 이력은 발생일로부터 최대 30일간 보관됩니다."
         android:textColor="@color/ink_500"
-        android:textSize="13sp" />
+        android:textSize="@dimen/text_caption" />
 
 </LinearLayout>

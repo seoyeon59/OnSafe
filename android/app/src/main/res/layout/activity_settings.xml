@@ -34,17 +34,18 @@
             android:gravity="center"
             android:text="설정"
             android:textColor="@color/ink_900"
-            android:textSize="20sp"
+            android:textSize="@dimen/text_title"
             android:textStyle="bold" />
 
         <ImageView
             android:id="@+id/btnTutorial"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+            android:layout_width="@dimen/touch_min"
+            android:layout_height="@dimen/touch_min"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true"
-            android:contentDescription="@null"
+            android:contentDescription="튜토리얼 다시 보기"
+            android:padding="10dp"
             android:src="@drawable/ic_info"
             app:tint="@color/ink_500" />
     </LinearLayout>
@@ -99,8 +100,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     tools:text="홍길동 보호자님"
-                    android:textColor="#6B7280"
-                    android:textSize="15sp"
+                    android:textColor="@color/ink_500"
+                    android:textSize="@dimen/text_body"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -113,7 +114,7 @@
                 android:layout_marginBottom="8dp"
                 android:text="알림 설정"
                 android:textColor="@color/ink_500"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
 
             <LinearLayout
@@ -158,14 +159,14 @@
                             android:layout_height="wrap_content"
                             android:text="알림"
                             android:textColor="@color/ink_900"
-                            android:textSize="15sp" />
+                            android:textSize="@dimen/text_body" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="모든 알림을 켜고 끕니다"
                             android:textColor="@color/ink_500"
-                            android:textSize="13sp" />
+                            android:textSize="@dimen/text_caption" />
                     </LinearLayout>
 
                     <androidx.appcompat.widget.SwitchCompat
@@ -182,7 +183,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#F3F4F6"
+                    android:background="@color/border_subtle"
                     android:layout_marginHorizontal="8dp" />
 
                 <LinearLayout
@@ -229,14 +230,14 @@
                                 android:layout_height="wrap_content"
                                 android:text="소리"
                                 android:textColor="@color/ink_900"
-                                android:textSize="14sp" />
+                                android:textSize="@dimen/text_body" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="소리로 알림을 받습니다"
                                 android:textColor="@color/ink_500"
-                                android:textSize="13sp" />
+                                android:textSize="@dimen/text_caption" />
                         </LinearLayout>
 
                         <androidx.appcompat.widget.SwitchCompat
@@ -253,7 +254,7 @@
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="#F3F4F6" />
+                        android:background="@color/border_subtle" />
 
                     <!-- 진동 행 -->
                     <LinearLayout
@@ -291,14 +292,14 @@
                                 android:layout_height="wrap_content"
                                 android:text="진동"
                                 android:textColor="@color/ink_900"
-                                android:textSize="14sp" />
+                                android:textSize="@dimen/text_body" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="진동으로 알림을 받습니다"
                                 android:textColor="@color/ink_500"
-                                android:textSize="13sp" />
+                                android:textSize="@dimen/text_caption" />
                         </LinearLayout>
 
                         <androidx.appcompat.widget.SwitchCompat
@@ -322,7 +323,7 @@
                 android:layout_marginBottom="8dp"
                 android:text="개인정보 및 보안"
                 android:textColor="@color/ink_500"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
 
             <LinearLayout
@@ -365,7 +366,7 @@
                         android:layout_weight="1"
                         android:text="개인정보 수정"
                         android:textColor="@color/ink_900"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_body" />
 
                     <ImageView
                         android:layout_width="18dp"
@@ -377,7 +378,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#F3F4F6" />
+                    android:background="@color/border_subtle" />
 
                 <!-- 비밀번호 변경 행 -->
                 <LinearLayout
@@ -413,7 +414,7 @@
                         android:layout_weight="1"
                         android:text="비밀번호 변경"
                         android:textColor="@color/ink_900"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_body" />
 
                     <ImageView
                         android:layout_width="18dp"
@@ -425,7 +426,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#F3F4F6" />
+                    android:background="@color/border_subtle" />
 
                 <!-- 개인정보 처리방침 행 -->
                 <LinearLayout
@@ -461,7 +462,7 @@
                         android:layout_weight="1"
                         android:text="개인정보 처리방침"
                         android:textColor="@color/ink_900"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_body" />
 
                     <ImageView
                         android:layout_width="18dp"
@@ -482,7 +483,7 @@
                 android:layout_marginBottom="8dp"
                 android:text="고객지원"
                 android:textColor="@color/ink_500"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
 
             <LinearLayout
@@ -525,7 +526,7 @@
                         android:layout_weight="1"
                         android:text="자주 묻는 질문"
                         android:textColor="@color/ink_900"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_body" />
 
                     <ImageView
                         android:layout_width="18dp"
@@ -545,7 +546,7 @@
                 android:layout_marginBottom="8dp"
                 android:text="계정 관리"
                 android:textColor="@color/ink_500"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
 
             <LinearLayout
@@ -588,13 +589,13 @@
                         android:layout_weight="1"
                         android:text="로그아웃"
                         android:textColor="@color/ink_900"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_body" />
                 </LinearLayout>
 
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#F3F4F6" />
+                    android:background="@color/border_subtle" />
 
                 <!-- 회원탈퇴 행 -->
                 <LinearLayout
@@ -630,7 +631,7 @@
                         android:layout_weight="1"
                         android:text="회원 탈퇴"
                         android:textColor="@color/status_danger"
-                        android:textSize="14sp"
+                        android:textSize="@dimen/text_body"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -646,7 +647,7 @@
                 android:includeFontPadding="false"
                 android:text="늘봄 v1.0.0"
                 android:textColor="@color/ink_500"
-                android:textSize="13sp" />
+                android:textSize="@dimen/text_caption" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
@@ -692,7 +693,7 @@
                 android:layout_marginTop="2dp"
                 android:text="사고 이력"
                 android:textColor="@color/ink_500"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -721,7 +722,7 @@
                 android:layout_marginTop="2dp"
                 android:text="홈"
                 android:textColor="@color/ink_500"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -754,7 +755,7 @@
                     android:layout_marginTop="2dp"
                     android:text="설정"
                     android:textColor="@color/primary_blue"
-                    android:textSize="13sp"
+                    android:textSize="@dimen/text_caption"
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
