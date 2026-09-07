@@ -30,8 +30,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
-import com.example.on_safe.ui.settings.SettingsActivity
+import com.example.on_safe.util.NavTab
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.setupBottomNav
 import com.example.on_safe.util.toast
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -175,22 +176,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
     }
 
     private fun setupNavListeners() {
-        // 홈: 사고이력은 왼쪽 탭 → 오른쪽으로 슬라이드 아웃
-        // 탭 간 이동은 finish()로 이전 탭 정리 — 뒤로가기 시 탭 누적 방지
-        findViewById<View>(R.id.tabHome).setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            }
-            startActivity(intent)
-            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
-            finish()
-        }
-        // 설정: 홈을 건너뛰는 이동이라 더 빠른 전환
-        findViewById<View>(R.id.tabSettings).setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
-            overridePendingTransition(R.anim.slide_in_right_fast, R.anim.slide_out_left_fast)
-            finish()
-        }
+        setupBottomNav(NavTab.HISTORY)
     }
 
     // 빈 목록일 때 조회 실패와 "이력 없음"의 구분 — 미구분 시 실패를 이력 없음으로 오해

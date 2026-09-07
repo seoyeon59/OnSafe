@@ -12,10 +12,10 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.on_safe.ui.FullscreenActivity
-import com.example.on_safe.ui.history.AccidentHistoryActivity
 import com.example.on_safe.ui.notification.NotificationActivity
-import com.example.on_safe.ui.settings.SettingsActivity
 import com.example.on_safe.util.DisplayText
+import com.example.on_safe.util.NavTab
+import com.example.on_safe.util.setupBottomNav
 import com.example.on_safe.util.DoubleBackToExit
 import com.example.on_safe.util.NotificationPermissionBanner
 import com.example.on_safe.util.RiskScoreCardBinder
@@ -86,6 +86,10 @@ class MainActivity : AppCompatActivity() {
             if (state.riskScore != null) {
                 RiskScoreCardBinder.bind(card, state.riskScore)
             } else {
+                // TODO: [UI] 상태별 문구는 riskUnknownMessage가 구분하지만 시각적 로딩 표시가 없어,
+                //       최초 진입·네트워크 지연 시 화면이 멈춘 것처럼 보인다. 알림 기록·사고이력처럼
+                //       로딩 인디케이터와 빈 상태를 갖출 것. 페어링 방식 변경으로 이 화면의 표시
+                //       내용이 달라질 예정이라 그 정리 후 착수.
                 RiskScoreCardBinder.bindUnknown(card, riskUnknownMessage(state.connectionState))
             }
         }
@@ -113,17 +117,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, FullscreenActivity::class.java))
             overridePendingTransition(R.anim.fullscreen_enter, R.anim.fullscreen_exit)
         }
-        // 사고이력: 왼쪽 탭 → 왼쪽에서 슬라이드 인
-        // 홈은 finish() 없이 유지 — 사고이력·설정에서 뒤로가기 시 홈 복귀
-        findViewById<View>(R.id.tabHistory).setOnClickListener {
-            startActivity(Intent(this, AccidentHistoryActivity::class.java))
-            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
-        }
-        // 설정: 오른쪽 탭 → 오른쪽에서 슬라이드 인
-        findViewById<View>(R.id.tabSettings).setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
-            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
-        }
+        setupBottomNav(NavTab.HOME)
         findViewById<View>(R.id.btn119).setOnClickListener {
             startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:119")))
         }

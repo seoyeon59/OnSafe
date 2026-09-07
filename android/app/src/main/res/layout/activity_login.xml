@@ -268,6 +268,11 @@
                     android:layout_height="12dp"
                     android:background="@color/border_subtle" />
 
+                <!--
+                  TODO: [UX] 회원가입은 신규 사용자의 유일한 진입점인데 찾기 링크와 같은 위계로
+                        묻혀 있다. 터치 크기는 48dp로 보정했으나 위계 개선(별도 행 분리 등)은
+                        디자인 확정 후 결정할 것.
+                -->
                 <TextView
                     android:id="@+id/tvRegister"
                     android:layout_width="wrap_content"

@@ -173,117 +173,14 @@
 
     </LinearLayout>
 
-    <!-- 하단 네비게이션 -->
-    <LinearLayout
+    <!-- 하단 탭 바 — view_bottom_nav.xml 공유 -->
+    <include
         android:id="@+id/bottomNav"
+        layout="@layout/view_bottom_nav"
         android:layout_width="0dp"
         android:layout_height="85dp"
-        android:background="@drawable/bg_sheet_top_rounded"
-        android:elevation="4dp"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:paddingHorizontal="40dp"
-        android:paddingVertical="12dp"
-        android:weightSum="3"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <!-- 사고이력 탭 (active) -->
-        <LinearLayout
-            android:id="@+id/tabHistoryActive"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <LinearLayout
-                android:layout_width="64dp"
-                android:layout_height="match_parent"
-                android:background="@drawable/bg_tab_active"
-                android:gravity="center"
-                android:orientation="vertical">
-
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_history_filled"
-                    app:tint="@color/primary_blue" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="사고이력"
-                    android:textColor="@color/primary_blue"
-                    android:textSize="@dimen/text_tab"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- 홈 탭 -->
-        <LinearLayout
-            android:id="@+id/tabHome"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_home"
-                app:tint="@color/ink_500" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="홈"
-                android:textColor="@color/ink_500"
-                android:textSize="@dimen/text_tab"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- 설정 탭 -->
-        <LinearLayout
-            android:id="@+id/tabSettings"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_settings"
-                app:tint="@color/ink_500" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="설정"
-                android:textColor="@color/ink_500"
-                android:textSize="@dimen/text_tab"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-    </LinearLayout>
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
