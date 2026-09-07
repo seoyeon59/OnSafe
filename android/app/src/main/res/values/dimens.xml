@@ -6,4 +6,20 @@
     <dimen name="side_panel_width">200dp</dimen>
     <!-- 카메라 모드 (가로) 에서 로그아웃 모달 최대 너비 -->
     <dimen name="logout_dialog_max_width">280dp</dimen>
+
+    <!-- 타이포그래피 스케일 — 화면별로 제각각이던 12~28sp 7단계를 5단계로 정리 -->
+    <dimen name="text_brand">28sp</dimen>    <!-- 로그인 화면 앱 이름 전용 -->
+    <dimen name="text_title">20sp</dimen>    <!-- 화면 제목 -->
+    <dimen name="text_button">18sp</dimen>   <!-- 주요 버튼 -->
+    <dimen name="text_body">14sp</dimen>     <!-- 본문·입력 라벨·에러 문구 공통 -->
+    <dimen name="text_caption">13sp</dimen>  <!-- 약관 등 부가 설명 -->
+
+    <!-- 간격 스케일 -->
+    <dimen name="space_xs">4dp</dimen>
+    <dimen name="space_sm">8dp</dimen>
+    <dimen name="space_md">16dp</dimen>
+    <dimen name="space_lg">24dp</dimen>
+
+    <!-- 터치 대상 최소 크기 — Android 기준 48dp (iOS 44pt와 혼동 주의) -->
+    <dimen name="touch_min">48dp</dimen>
 </resources>

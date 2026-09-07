@@ -7,12 +7,18 @@
 
     <!-- 디자인 토큰: 텍스트/배경 -->
     <color name="ink_900">#1A1C1E</color>     <!-- 본문 검정 -->
-    <color name="ink_500">#9FA6AC</color>     <!-- 보조 텍스트, 대기중 -->
+    <color name="ink_700">#414752</color>     <!-- 진한 보조 텍스트 (단계 표시 등) -->
+    <!-- 이전 값 #9FA6AC는 흰 배경 대비 2.46:1로 WCAG 4.5:1 미달 — 4.83:1 확보 위해 조정.
+         배경색으로는 쓰이지 않아 모든 사용처에서 대비가 오르기만 함. -->
+    <color name="ink_500">#6B7280</color>     <!-- 보조 텍스트 -->
     <color name="surface_white">#FEFEFE</color>     <!-- 카드/시트 흰색 -->
     <color name="surface_bg">#F7F7F8</color>        <!-- 화면 배경, 점수 박스 -->
     <color name="surface_track">#F1F1F3</color>     <!-- 프로그레스 트랙 -->
     <color name="surface_tab_active">#F4F7FB</color> <!-- 하단 탭 active 배경 -->
     <color name="surface_icon_blue">#EEF0FF</color> <!-- 프로필 아이콘 원형 배경 -->
+
+    <!-- 경계선 — 앱 전역 구분선 표준. 기존 #D1D5DB·#F3F4F6 산재분을 이 값으로 통합. -->
+    <color name="border_subtle">#E5E7EB</color>
 
     <!-- 상태 색상 -->
     <color name="status_normal">#22C55E</color>   <!-- 정상/연결됨 (초록) -->

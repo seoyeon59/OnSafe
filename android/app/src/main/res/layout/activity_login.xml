@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F7F7F8"
+    android:background="@color/surface_bg"
     android:fillViewport="true">
 
     <LinearLayout
@@ -48,8 +48,8 @@
                 android:layout_height="wrap_content"
                 android:text="늘봄"
                 android:includeFontPadding="false"
-                android:textSize="28sp"
-                android:textColor="#4D80FF"
+                android:textSize="@dimen/text_brand"
+                android:textColor="@color/primary_blue"
                 android:fontFamily="@font/pretendard_bold"
                 android:layout_marginTop="10dp"
                 android:letterSpacing="-0.025" />
@@ -59,8 +59,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="가족의 안전을 언제나 함께 지켜드립니다"
-                android:textSize="14sp"
-                android:textColor="#6B7280"
+                android:textSize="@dimen/text_body"
+                android:textColor="@color/ink_500"
                 android:layout_marginTop="8dp" />
 
         </LinearLayout>
@@ -89,8 +89,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="아이디"
-                    android:textSize="13sp"
-                    android:textColor="#6B7280"
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/ink_500"
                     android:textStyle="bold"
                     android:layout_marginBottom="6dp" />
 
@@ -107,15 +107,15 @@
                         android:layout_marginLeft="16dp"
                         android:src="@drawable/ic_person"
                         android:contentDescription="아이디 아이콘"
-                        app:tint="#6B7280" />
+                        app:tint="@color/ink_500" />
 
                     <EditText
                         android:id="@+id/etId"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:hint="아이디 입력"
-                        android:textColor="#1A1C1E"
-                        android:textSize="14sp"
+                        android:textColor="@color/ink_900"
+                        android:textSize="@dimen/text_body"
                         android:paddingLeft="45dp"
                         android:paddingRight="17dp"
                         android:background="@null"
@@ -128,8 +128,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="비밀번호"
-                    android:textSize="13sp"
-                    android:textColor="#6B7280"
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/ink_500"
                     android:textStyle="bold"
                     android:layout_marginTop="16dp"
                     android:layout_marginBottom="6dp" />
@@ -147,15 +147,15 @@
                         android:layout_marginLeft="16dp"
                         android:src="@drawable/ic_lock"
                         android:contentDescription="비밀번호 아이콘"
-                        app:tint="#6B7280" />
+                        app:tint="@color/ink_500" />
 
                     <EditText
                         android:id="@+id/etPw"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:hint="비밀번호 입력"
-                        android:textColor="#1A1C1E"
-                        android:textSize="14sp"
+                        android:textColor="@color/ink_900"
+                        android:textSize="@dimen/text_body"
                         android:paddingLeft="45dp"
                         android:paddingRight="49dp"
                         android:background="@null"
@@ -163,25 +163,28 @@
                         android:singleLine="true" />
 
                     <!-- 비밀번호 표시/숨김 버튼 -->
+                    <!-- 아이콘은 24dp 그대로 보이되 padding으로 터치 영역만 48dp 확보 -->
                     <ImageButton
                         android:id="@+id/btnTogglePw"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="@dimen/touch_min"
+                        android:layout_height="@dimen/touch_min"
                         android:layout_gravity="center_vertical|end"
-                        android:layout_marginRight="12dp"
+                        android:padding="12dp"
+                        android:scaleType="fitCenter"
                         android:src="@drawable/ic_eye"
                         android:background="@null"
                         android:contentDescription="비밀번호 보기"
-                        app:tint="#6B7280" />
+                        app:tint="@color/ink_500" />
                 </FrameLayout>
 
                 <!-- 로그인 오류 메시지 -->
                 <TextView
                     android:id="@+id/tvLoginError"
+                    android:accessibilityLiveRegion="polite"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:textColor="#EF4444"
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/status_danger"
                     android:layout_marginTop="8dp"
                     android:visibility="gone" />
 
@@ -193,8 +196,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:text="로그인"
-                android:textColor="#FEFEFE"
-                android:textSize="18sp"
+                android:textColor="@color/surface_white"
+                android:textSize="@dimen/text_button"
                 android:textStyle="bold"
                 android:background="@drawable/bg_button_blue"
                 android:layout_marginTop="16dp" />
@@ -217,8 +220,8 @@
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_card"
                 android:text="[DEBUG] 로그인 건너뛰기"
-                android:textColor="#EF4444"
-                android:textSize="13sp"
+                android:textColor="@color/status_danger"
+                android:textSize="@dimen/text_caption"
                 android:textStyle="bold"
                 android:stateListAnimator="@null"
                 android:visibility="gone" />
@@ -235,43 +238,46 @@
                 <TextView
                     android:id="@+id/tvFindId"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="@dimen/touch_min"
+                    android:layout_marginHorizontal="@dimen/space_xs"
+                    android:gravity="center"
                     android:text="아이디 찾기"
-                    android:textSize="13sp"
-                    android:textColor="#6B7280"
-                    android:paddingLeft="8dp"
-                    android:paddingRight="8dp" />
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/ink_500"
+                    android:paddingHorizontal="@dimen/space_sm" />
 
                 <View
                     android:layout_width="1dp"
                     android:layout_height="12dp"
-                    android:background="#D1D5DB" />
+                    android:background="@color/border_subtle" />
 
                 <TextView
                     android:id="@+id/tvFindPw"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="@dimen/touch_min"
+                    android:layout_marginHorizontal="@dimen/space_xs"
+                    android:gravity="center"
                     android:text="비밀번호 찾기"
-                    android:textSize="13sp"
-                    android:textColor="#6B7280"
-                    android:paddingLeft="8dp"
-                    android:paddingRight="8dp" />
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/ink_500"
+                    android:paddingHorizontal="@dimen/space_sm" />
 
                 <View
                     android:layout_width="1dp"
                     android:layout_height="12dp"
-                    android:background="#D1D5DB" />
+                    android:background="@color/border_subtle" />
 
                 <TextView
                     android:id="@+id/tvRegister"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="@dimen/touch_min"
+                    android:layout_marginHorizontal="@dimen/space_xs"
+                    android:gravity="center"
                     android:text="회원가입"
-                    android:textSize="13sp"
-                    android:textColor="#4D80FF"
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/primary_blue"
                     android:textStyle="bold"
-                    android:paddingLeft="8dp"
-                    android:paddingRight="8dp" />
+                    android:paddingHorizontal="@dimen/space_sm" />
 
             </LinearLayout>
 
@@ -283,8 +289,8 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="12dp"
                 android:text="로그인 시 이용약관 및 개인정보 처리방침에 동의합니다."
-                android:textSize="12sp"
-                android:textColor="#9FA6AC"
+                android:textSize="@dimen/text_caption"
+                android:textColor="@color/ink_500"
                 android:gravity="center" />
 
         </LinearLayout>
