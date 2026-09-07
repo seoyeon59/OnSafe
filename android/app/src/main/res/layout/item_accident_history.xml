@@ -33,7 +33,7 @@
                 android:layout_height="24dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
-                android:src="@drawable/ic_camera"
+                android:src="@drawable/ic_play"
                 app:tint="@color/overlay_white_50" />
 
         </FrameLayout>

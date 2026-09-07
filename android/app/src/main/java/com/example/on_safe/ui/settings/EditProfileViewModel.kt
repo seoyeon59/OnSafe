@@ -29,6 +29,10 @@ class EditProfileViewModel : ViewModel() {
     private val _saveResult = MutableLiveData<SaveResult?>()
     val saveResult: LiveData<SaveResult?> = _saveResult
 
+    // 저장 진행 중 여부 — 버튼 비활성화와 연타로 인한 중복 PUT 방지에 함께 사용
+    private val _isSaving = MutableLiveData(false)
+    val isSaving: LiveData<Boolean> = _isSaving
+
     // 서버의 마케팅 동의 현재값 — 실패 시 null 유지로 Activity의 로컬 캐시 값 보존
     private val _marketingConsent = MutableLiveData<Boolean?>()
     val marketingConsent: LiveData<Boolean?> = _marketingConsent
@@ -96,6 +100,8 @@ class EditProfileViewModel : ViewModel() {
         address: String,
         addressDetail: String
     ) {
+        if (_isSaving.value == true) return
+        _isSaving.value = true
         viewModelScope.launch {
             try {
                 val response = ApiClient.api.updateUser(
@@ -120,6 +126,8 @@ class EditProfileViewModel : ViewModel() {
                 throw e
             } catch (e: Exception) {
                 _saveResult.value = SaveResult(false, "네트워크 오류로 저장에 실패했습니다.")
+            } finally {
+                _isSaving.value = false
             }
         }
     }
