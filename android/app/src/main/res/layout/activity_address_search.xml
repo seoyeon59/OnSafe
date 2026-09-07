@@ -98,6 +98,7 @@
             android:id="@+id/btnSearch"
             android:layout_width="80dp"
             android:layout_height="50dp"
+            android:includeFontPadding="false"
             android:layout_marginStart="8dp"
             android:background="@drawable/bg_button_blue"
             android:insetTop="0dp"

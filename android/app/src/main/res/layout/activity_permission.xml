@@ -294,6 +294,7 @@
             android:id="@+id/btnAllow"
             android:layout_width="match_parent"
             android:layout_height="54dp"
+            android:includeFontPadding="false"
             android:background="@drawable/bg_button_blue"
             android:stateListAnimator="@null"
             android:text="권한 허용하기"

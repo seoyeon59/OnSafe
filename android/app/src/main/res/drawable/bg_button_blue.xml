@@ -4,7 +4,7 @@
     minSdk 24 이상이므로 RippleDrawable 직접 사용 가능
 -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
-    android:color="#33FFFFFF">
+    android:color="@color/overlay_white_20">
 
     <!-- mask: ripple이 번지는 영역의 경계 (버튼 둥근 모서리와 동일하게) -->
     <item android:id="@android:id/mask">

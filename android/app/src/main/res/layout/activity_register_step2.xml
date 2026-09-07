@@ -547,6 +547,7 @@
                 android:id="@+id/btnComplete"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
+                android:includeFontPadding="false"
                 android:text="가입 완료"
                 android:textColor="@color/surface_white"
                 android:textSize="@dimen/text_button"

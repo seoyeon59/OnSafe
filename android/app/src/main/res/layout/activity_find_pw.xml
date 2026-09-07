@@ -252,6 +252,7 @@
             android:id="@+id/btnGoLogin"
             android:layout_width="match_parent"
             android:layout_height="54dp"
+            android:includeFontPadding="false"
             android:text="로그인으로 돌아가기"
             android:textColor="@color/surface_white"
             android:textSize="@dimen/text_button"

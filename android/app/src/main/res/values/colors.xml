@@ -17,8 +17,15 @@
     <color name="surface_tab_active">#F4F7FB</color> <!-- 하단 탭 active 배경 -->
     <color name="surface_icon_blue">#EEF0FF</color> <!-- 프로필 아이콘 원형 배경 -->
 
+    <color name="surface_subtle">#F9FAFB</color>    <!-- 카드보다 한 단계 옅은 내부 배경 -->
+
     <!-- 경계선 — 앱 전역 구분선 표준. 기존 #D1D5DB·#F3F4F6 산재분을 이 값으로 통합. -->
     <color name="border_subtle">#E5E7EB</color>
+    <color name="border_card">#EEF1F5</color>    <!-- 카드 미세 테두리 -->
+    <color name="border_input">#E2E8F0</color>   <!-- 입력칸 테두리 -->
+    <color name="border_danger">#FECACA</color>  <!-- 위험 아이콘 버튼 테두리 -->
+    <color name="border_accent">#C7D2FE</color>  <!-- 우편번호 배지 테두리 -->
+    <color name="track_off">#D1D5DB</color>      <!-- 스위치 OFF 트랙 -->
 
     <!-- 상태 색상 -->
     <color name="status_normal">#22C55E</color>   <!-- 정상/연결됨 (초록) -->
@@ -31,10 +38,23 @@
     <!-- 어두운 화면 — 화면보호기·전체화면·영상 재생 -->
     <color name="surface_dark">#0D0F11</color>
 
-    <!-- 반투명 오버레이 -->
-    <color name="overlay_white_50">#80FFFFFF</color> <!-- 어두운 배경 위 흐린 텍스트·아이콘 -->
+    <!-- 연한 원형/배지 틴트 -->
+    <color name="tint_neutral">#129FA6AC</color>  <!-- 회색 7% -->
+    <color name="tint_danger">#12EF4444</color>   <!-- 위험 7% -->
+    <color name="tint_standby">#269CA3AF</color>  <!-- 대기 15% -->
+
+    <!-- 흰색 오버레이 사다리 — 어두운/컬러 배경 위에 얹는 층 -->
+    <color name="overlay_white_05">#0DFFFFFF</color>
+    <color name="overlay_white_10">#1AFFFFFF</color>
+    <color name="overlay_white_15">#26FFFFFF</color>
+    <color name="overlay_white_20">#33FFFFFF</color>
     <color name="overlay_white_25">#40FFFFFF</color> <!-- 색 배경 위 옅은 칩 -->
-    <color name="primary_blue_tint">#1A4D80FF</color> <!-- 파랑 10% — 배너 배경 -->
+    <color name="overlay_white_50">#80FFFFFF</color> <!-- 어두운 배경 위 흐린 텍스트·아이콘 -->
+
+    <!-- 파랑 알파 사다리 -->
+    <color name="primary_blue_tint">#1A4D80FF</color>       <!-- 10% — 배너 배경 -->
+    <color name="ripple_primary">#334D80FF</color>          <!-- 20% — 터치 리플 -->
+    <color name="text_highlight_primary">#4D4D80FF</color>  <!-- 30% — 텍스트 선택 -->
 
     <!-- 모달 배경 딤 -->
     <color name="scrim_dim">#80000000</color>

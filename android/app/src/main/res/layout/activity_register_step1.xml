@@ -351,6 +351,7 @@
             android:id="@+id/btnNext"
             android:layout_width="match_parent"
             android:layout_height="52dp"
+            android:includeFontPadding="false"
             android:text="다음"
             android:textColor="@color/surface_white"
             android:textSize="@dimen/text_button"
