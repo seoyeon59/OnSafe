@@ -167,6 +167,7 @@
             android:fontFamily="@font/pretendard_semibold"
             android:background="@drawable/bg_outline_blue"
             android:visibility="gone"
+            android:foreground="?attr/selectableItemBackground"
             android:clickable="true"
             android:focusable="true" />
 

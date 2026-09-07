@@ -23,6 +23,7 @@
             android:layout_width="96dp"
             android:layout_height="96dp"
             android:background="@drawable/bg_circle_primary_outline"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true">
 

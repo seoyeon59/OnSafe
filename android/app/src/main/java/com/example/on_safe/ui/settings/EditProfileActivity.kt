@@ -1,5 +1,7 @@
 package com.example.on_safe.ui.settings
 
+import androidx.annotation.ColorRes
+import androidx.core.content.ContextCompat
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
@@ -187,11 +189,11 @@ class EditProfileActivity : AppCompatActivity() {
         }
     }
 
-    private fun showFieldMessage(et: EditText, tv: TextView, msg: String, color: Int) {
+    private fun showFieldMessage(et: EditText, tv: TextView, msg: String, @ColorRes colorRes: Int) {
         tv.text = msg
-        tv.setTextColor(color)
+        tv.setTextColor(ContextCompat.getColor(this, colorRes))
         tv.isVisible = true
-        et.setInputBorder(color)
+        et.setInputBorder(colorRes)
     }
 
     private fun initViews() {

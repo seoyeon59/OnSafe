@@ -6,8 +6,10 @@ import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.content.res.ColorStateList
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -212,15 +214,18 @@ class AccidentHistoryActivity : AppCompatActivity() {
         val activeColor   = ContextCompat.getColor(this, R.color.primary_blue)
         val inactiveColor = ContextCompat.getColor(this, R.color.ink_500)
         val white         = ContextCompat.getColor(this, R.color.surface_white)
-        val grayBg        = 0xFFF1F1F3.toInt()
+        val grayBg        = ContextCompat.getColor(this, R.color.surface_track)
+        val ripple        = ContextCompat.getColor(this, R.color.ripple_primary)
         val pillRadius    = resources.getDimension(R.dimen.radius_pill)
 
         fun styleChip(chip: TextView, isActive: Boolean) {
-            chip.background = GradientDrawable().apply {
+            val pill = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
                 cornerRadius = pillRadius
                 setColor(if (isActive) activeColor else grayBg)
             }
+            // mask를 null로 두면 리플이 content 도형(pill)에 맞춰 잘린다 — 사각 리플 방지
+            chip.background = RippleDrawable(ColorStateList.valueOf(ripple), pill, null)
             chip.setTextColor(if (isActive) white else inactiveColor)
         }
 

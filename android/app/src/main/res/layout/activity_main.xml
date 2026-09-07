@@ -229,6 +229,7 @@
                     android:layout_margin="12dp"
                     android:background="@drawable/bg_circle"
                     android:backgroundTint="@color/scrim_dim"
+                    android:foreground="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true">
 

@@ -97,7 +97,10 @@ class ModeSelectActivity : AppCompatActivity() {
     // FlexboxLayout 자식 TextView에 선택 상태별 pill 스타일 적용
     private fun applyTagStyle(container: ViewGroup, selected: Boolean) {
         val bgRes = if (selected) R.drawable.bg_pill_blue else R.drawable.bg_pill_gray
-        val textColor = if (selected) TAG_TEXT_SELECTED else TAG_TEXT_NORMAL
+        val textColor = ContextCompat.getColor(
+            this,
+            if (selected) R.color.primary_blue else R.color.ink_500
+        )
         for (i in 0 until container.childCount) {
             (container.getChildAt(i) as? TextView)?.apply {
                 setBackgroundResource(bgRes)
@@ -106,8 +109,4 @@ class ModeSelectActivity : AppCompatActivity() {
         }
     }
 
-    private companion object {
-        const val TAG_TEXT_SELECTED = 0xFF4D80FF.toInt()
-        const val TAG_TEXT_NORMAL = 0xFF6B7280.toInt()
-    }
 }

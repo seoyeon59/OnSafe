@@ -246,6 +246,7 @@
                         android:background="@drawable/bg_input_rounded"
                         android:hint="도로명 주소"
                         android:focusable="false"
+                        android:foreground="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:paddingHorizontal="16dp"
                         android:textColor="@color/ink_900"

@@ -1,5 +1,7 @@
 package com.example.on_safe
 
+import androidx.annotation.ColorRes
+import androidx.core.content.ContextCompat
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -128,11 +130,11 @@ class ResetPasswordActivity : AppCompatActivity() {
         }
     }
 
-    private fun showMessage(et: EditText, tv: TextView, msg: String, color: Int) {
+    private fun showMessage(et: EditText, tv: TextView, msg: String, @ColorRes colorRes: Int) {
         tv.text = msg
-        tv.setTextColor(color)
+        tv.setTextColor(ContextCompat.getColor(this, colorRes))
         tv.isVisible = true
-        et.setInputBorder(color)
+        et.setInputBorder(colorRes)
     }
 
     // 좌상단 뒤로가기 화면 공통 전환 — 알림 화면과 동일
