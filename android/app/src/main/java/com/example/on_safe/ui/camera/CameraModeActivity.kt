@@ -74,6 +74,8 @@ class CameraModeActivity : AppCompatActivity() {
     private lateinit var btnFullscreen: FrameLayout
     private lateinit var btnHamburger: ImageButton
     private lateinit var btnTutorial: ImageView
+    private lateinit var tvPairingCode: TextView
+    private lateinit var btnPairingCodeInfo: ImageButton
 
     // 화면보호기/번인방지/자동 dim — 카메라 로직과 독립적인 관심사라 별도 클래스로 분리
     private lateinit var screenSaverController: ScreenSaverController
@@ -160,6 +162,8 @@ class CameraModeActivity : AppCompatActivity() {
         viewModel.loadGuardianName(userId)
         // 이 폰이 곧 감시 카메라 — 보호자 홈 조회용 등록
         viewModel.registerDevice(userId, deviceId, Build.MODEL)
+        // 피보호자용 페어링 코드 발급 + 5분 TTL 만료 직전 자동 재발급 시작
+        viewModel.startPairingCodeAutoRefresh(userId)
 
         // 권한이 있으면 바로 카메라 켜고, 없으면 권한 요청
         if (areCameraPermissionsGranted()) {
@@ -237,6 +241,8 @@ class CameraModeActivity : AppCompatActivity() {
         btnFullscreen           = findViewById(R.id.btnFullscreen)
         btnHamburger            = findViewById(R.id.btnHamburger)
         btnTutorial             = findViewById(R.id.btnTutorial)
+        tvPairingCode           = findViewById(R.id.tvPairingCode)
+        btnPairingCodeInfo      = findViewById(R.id.btnPairingCodeInfo)
 
         layoutStatusBadge.background = statusBadgeBg
     }
@@ -246,6 +252,8 @@ class CameraModeActivity : AppCompatActivity() {
             // 레이아웃 예시 문구 잔존 방지용 무조건 대입
             tvGuardianName.text = DisplayText.loadingOrNone(state.guardianName)
             tvDeviceId.text = DisplayText.loadingOrNone(state.deviceId)
+            // 페어링 코드 — 발급 전에는 자리 표시자(------) 유지
+            tvPairingCode.text = state.pairingCode ?: "------"
         }
     }
 
@@ -271,6 +279,19 @@ class CameraModeActivity : AppCompatActivity() {
         btnTutorial.setOnClickListener {
             startActivity(TutorialActivity.intentFromSettings(this))
         }
+        btnPairingCodeInfo.setOnClickListener { showPairingCodeGuide() }
+    }
+
+    private fun showPairingCodeGuide() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("보호자 연결 코드")
+            .setMessage(
+                "이 6자리 코드를 보호자에게 알려주세요.\n" +
+                    "보호자가 앱에서 코드를 입력하면 연결됩니다.\n" +
+                    "코드는 5분마다 자동으로 갱신돼요."
+            )
+            .setPositiveButton("확인", null)
+            .show()
     }
 
     private fun toggleFullscreen() {

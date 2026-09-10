@@ -11,8 +11,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.isOk
 import com.example.on_safe.ui.FullscreenActivity
 import com.example.on_safe.ui.history.AccidentHistoryActivity
+import com.example.on_safe.ui.main.GuardianPairingDialogFragment
 import com.example.on_safe.ui.notification.NotificationActivity
 import com.example.on_safe.ui.settings.SettingsActivity
 import com.example.on_safe.util.DisplayText
@@ -21,6 +25,8 @@ import com.example.on_safe.util.NotificationPermissionBanner
 import com.example.on_safe.util.RiskScoreCardBinder
 import com.example.on_safe.util.TokenManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -64,6 +70,36 @@ class MainActivity : AppCompatActivity() {
         DoubleBackToExit.attach(this)
 
         observeViewModel()
+
+        // 보호자 모드 진입 시 아직 연결된 피보호자가 없으면 페어링 모달 표시.
+        // 이미 연결된 경우엔 조용히 통과 — 매 진입마다 다시 물어보지 않음.
+        // 최초 생성 시(savedInstanceState == null)만 체크해 화면 회전 시 중복 표시 방지.
+        if (savedInstanceState == null) checkGuardianPairingOnEntry()
+    }
+
+    private fun checkGuardianPairingOnEntry() {
+        val userId = TokenManager.getUserId(this)
+        if (userId.isBlank()) return
+        lifecycleScope.launch {
+            val hasWards = try {
+                val response = ApiClient.api.getWards(userId)
+                response.isOk && !response.body()?.data?.wards.isNullOrEmpty()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // 네트워크 오류 시엔 모달 강제 표시하지 않음 — 사용자가 오프라인 상태에서도
+                // 홈은 볼 수 있어야 함. 다음 진입에서 재판정.
+                true
+            }
+            if (!hasWards && !isFinishing) {
+                GuardianPairingDialogFragment().apply {
+                    onPaired = {
+                        // 페어링 성공 시 홈의 실시간 폴링을 재시작해 새 상태 즉시 반영
+                        viewModel.startPolling(TokenManager.getUserId(this@MainActivity))
+                    }
+                }.show(supportFragmentManager, "guardian_pair")
+            }
+        }
     }
 
     override fun onResume() {
