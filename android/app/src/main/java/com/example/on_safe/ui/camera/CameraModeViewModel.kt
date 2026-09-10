@@ -46,10 +46,8 @@ class CameraModeViewModel : ViewModel() {
         // 화면 재생성 시에도 onCreate에서 다시 호출된다. 그때마다 새로 시작하면 실패 횟수가
         // 0으로 돌아가 백오프가 풀리고, 한도가 소진된 상태에서 즉시 재요청하게 된다.
         if (pairingCodeJob?.isActive == true) return
-        // TODO: [페어링] 이미 보호자와 연결된 기기는 코드를 띄울 이유가 없는데도 계속 발급된다.
-        //       화면에 쓸모없는 코드가 노출되고 서버 발급 한도(시간당 5회)만 소진한다.
-        //       판정하려면 "이 피보호자에게 연결된 보호자" 조회 API가 필요하다 —
-        //       현재 서버에는 보호자→피보호자 방향(GET /api/guardian/{userId}/wards)만 있음.
+        // TODO: [백엔드] 피보호자가 자기 보호자를 조회하는 API 부재 — 이미 연결된 기기에도 코드가 계속 발급됨.
+        // TODO: [백엔드] 코드 TTL 5분 대비 발급 한도 5회/시간이 좁아 자동 갱신이 한도를 초과함.
         pairingCodeJob = viewModelScope.launch {
             var failures = 0
             while (isActive) {
