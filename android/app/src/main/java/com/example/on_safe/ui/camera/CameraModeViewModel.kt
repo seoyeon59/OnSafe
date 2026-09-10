@@ -57,6 +57,9 @@ class CameraModeViewModel : ViewModel() {
                     // TTL 만료 직전(-10초 안전 여유)에 재발급
                     (ttlSeconds - 10).coerceAtLeast(10) * 1000L
                 } else {
+                    // 재발급은 만료 10초 전에 돈다. 실패하면 화면의 코드도 곧 만료되므로 지운다 —
+                    // 남겨두면 어르신이 죽은 코드를 불러주고 보호자는 이유 없이 계속 실패한다.
+                    setState { copy(pairingCode = null) }
                     // 실패는 대개 발급 한도 초과다. 고정 간격으로 계속 두드리면 한도가 풀리지
                     // 않은 채 요청만 쌓이므로 간격을 늘려가며 재시도한다 (30초 → 최대 10분).
                     failures++

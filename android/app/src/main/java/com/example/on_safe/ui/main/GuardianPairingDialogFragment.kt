@@ -53,7 +53,7 @@ class GuardianPairingDialogFragment : DialogFragment() {
                 tvError.isVisible = true
                 return@setOnClickListener
             }
-            submitPairing(code, btnPair, pbLoading, tvError)
+            submitPairing(code, etCode, btnPair, pbLoading, tvError)
         }
 
         return AlertDialog.Builder(requireContext())
@@ -75,6 +75,7 @@ class GuardianPairingDialogFragment : DialogFragment() {
 
     private fun submitPairing(
         code: String,
+        etCode: EditText,
         btnPair: Button,
         pbLoading: ProgressBar,
         tvError: TextView
@@ -87,8 +88,12 @@ class GuardianPairingDialogFragment : DialogFragment() {
         }
 
         btnPair.isEnabled = false
+        etCode.isEnabled = false
         pbLoading.isVisible = true
         tvError.isVisible = false
+        // 요청 중에 바깥을 탭해 닫히면 onCancel이 "미룸"을 보내, 뒤이어 성공해도
+        // 홈은 미룬 상태로 남는다.
+        isCancelable = false
 
         lifecycleScope.launch {
             try {
@@ -108,6 +113,8 @@ class GuardianPairingDialogFragment : DialogFragment() {
                 tvError.text = "네트워크 오류가 발생했어요."
                 tvError.isVisible = true
             } finally {
+                isCancelable = true
+                etCode.isEnabled = true
                 btnPair.isEnabled = true
                 pbLoading.isVisible = false
             }
