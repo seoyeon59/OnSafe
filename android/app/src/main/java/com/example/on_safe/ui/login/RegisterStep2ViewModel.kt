@@ -18,6 +18,7 @@ import com.example.on_safe.util.PasswordValidator
 import com.example.on_safe.util.PhoneField
 import com.example.on_safe.util.VerificationCodeTimer
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 data class RegisterStep2UiState(
@@ -86,6 +87,9 @@ class RegisterStep2ViewModel : ViewModel() {
     private var nameText = ""
     private var addressText = ""
     private var email = ""
+
+    // 이메일 인증 요청 — 주소가 바뀌면 취소해 이전 주소의 응답이 새 주소에 적용되지 않게 한다
+    private var emailJob: Job? = null
 
     // ── 아이디 ──
     fun onIdChanged(id: String) {
@@ -184,6 +188,8 @@ class RegisterStep2ViewModel : ViewModel() {
         email = newEmail
         // 이메일 변경 시 인증 상태·타이머 초기화 — 뒤늦은 타이머 콜백 차단
         emailTimer.cancel()
+        // 주소가 바뀌면 진행 중이던 요청은 의미가 없다. 아래 setState가 버튼 상태도 함께 되돌린다.
+        emailJob?.cancel()
         val validation = when {
             newEmail.isEmpty() -> FieldValidation.Empty
             EmailValidator.isValid(newEmail) -> FieldValidation.Valid(EmailValidator.SUCCESS_MSG)
@@ -206,13 +212,17 @@ class RegisterStep2ViewModel : ViewModel() {
             return
         }
         setState { copy(isEmailVerifyEnabled = false) }
+        // 요청 시점의 주소로 고정 — 응답을 기다리는 사이 사용자가 주소를 바꿔도
+        // 중복확인을 통과한 주소로만 코드가 나가게 한다
+        val target = email
+        emailJob?.cancel()
         // 인증 메일 발송 전에 서버에 중복 여부 조회 — SES 비용/스팸 방지 및
         // 이미 가입된 이메일이면 즉시 사용자에게 알림.
-        viewModelScope.launch {
+        emailJob = viewModelScope.launch {
             try {
-                val response = ApiClient.api.checkMail(CheckMailRequest(mail = email))
+                val response = ApiClient.api.checkMail(CheckMailRequest(mail = target))
                 if (response.isOk) {
-                    sendEmailCode(isResend = false)
+                    sendEmailCode(target, isResend = false)
                 } else {
                     val msg = response.errorMessage("이미 사용 중인 이메일입니다.")
                     setState {
@@ -232,29 +242,32 @@ class RegisterStep2ViewModel : ViewModel() {
     }
 
     fun resendEmailCode() {
+        // 진행 중인 인증 요청은 취소하지 않는다 — 취소 경로에는 인증 버튼 복구가 없어
+        // 재전송까지 실패하면 버튼이 비활성으로 고착된다.
+        if (emailJob?.isActive == true) return
         setState { copy(isEmailResendVisible = false) }
-        sendEmailCode(isResend = true)
+        val target = email
+        emailJob = viewModelScope.launch { sendEmailCode(target, isResend = true) }
     }
 
-    // 발송·재발송 공통 — 안내 문구와 실패 시 복구 대상만 다름
-    private fun sendEmailCode(isResend: Boolean) {
-        viewModelScope.launch {
-            try {
-                val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = email))
-                if (response.isOk) {
-                    startEmailVerification(isResend)
-                } else {
-                    restoreSendButton(isResend)
-                    _toastMessage.value = response.errorMessage(
-                        if (isResend) "인증 메일 재발송에 실패했습니다." else "인증 메일 발송에 실패했습니다."
-                    )
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
+    // 발송·재발송 공통 — 안내 문구와 실패 시 복구 대상만 다름.
+    // 호출부의 코루틴 안에서 이어 실행돼 주소 변경 시 함께 취소된다.
+    private suspend fun sendEmailCode(target: String, isResend: Boolean) {
+        try {
+            val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = target))
+            if (response.isOk) {
+                startEmailVerification(isResend)
+            } else {
                 restoreSendButton(isResend)
-                _toastMessage.value = "네트워크 오류가 발생했습니다."
+                _toastMessage.value = response.errorMessage(
+                    if (isResend) "인증 메일 재발송에 실패했습니다." else "인증 메일 발송에 실패했습니다."
+                )
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            restoreSendButton(isResend)
+            _toastMessage.value = "네트워크 오류가 발생했습니다."
         }
     }
 
