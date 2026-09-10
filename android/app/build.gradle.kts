@@ -1,7 +1,17 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
 }
+
+// local.properties → BuildConfig 주입 (커밋 금지 파일에서 시크릿 로드)
+// 팀원별 로컬 값이 다를 수 있으므로 없어도 빌드는 통과시키고 빈 문자열로 폴백.
+val localProperties = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+val jusoApiKey: String = localProperties.getProperty("JUSO_API_KEY", "")
 
 android {
     namespace = "com.example.on_safe"
@@ -31,6 +41,7 @@ android {
             buildConfigField("String", "AI_WS_URL", "\"ws://10.0.2.2:8000/ws/stream\"")
             // devices API는 Python 서버 전용 — Kotlin 중복분은 스펙 v4.2에서 제거
             buildConfigField("String", "AI_BASE_URL", "\"http://10.0.2.2:8000/\"")
+            buildConfigField("String", "JUSO_API_KEY", "\"$jusoApiKey\"")
         }
         release {
             // TODO: 출시 전 백엔드 팀에서 제공한 실제 운영 서버 URL로 변경 필요
@@ -41,6 +52,7 @@ android {
             //       현재 BASE_URL과 동일한 값이라, 게이트웨이가 /api/devices/*를 Python으로
             //       프록시하지 않으면 404 → 보호자 홈 기기 ID가 공란이 된다 (앱은 실패를 무시).
             buildConfigField("String", "AI_BASE_URL", "\"https://api.neulbom.com/\"")
+            buildConfigField("String", "JUSO_API_KEY", "\"$jusoApiKey\"")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
