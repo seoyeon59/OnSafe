@@ -596,6 +596,9 @@ class CameraModeActivity : AppCompatActivity() {
     // 서버 응답을 기다리는 사이 화면이 사라지면 lifecycleScope가 취소되어
     // 토큰이 남은 채로 "로그아웃됨"이 되던 문제 때문.
     private fun handleLogout() {
+        // 로컬 정리 전에 두 토큰을 확보한다 — 정리 후에는 자동 부착이 비어 나가
+        // access 토큰이 서버 블랙리스트에 오르지 않는다.
+        val accessToken = TokenManager.getAccessToken(this)
         val refreshToken = TokenManager.getRefreshToken(this)
         TokenManager.clearSession(this)
         startActivity(Intent(this, LoginActivity::class.java).apply {
@@ -604,7 +607,7 @@ class CameraModeActivity : AppCompatActivity() {
         // 리프레시 토큰 블랙리스트 등록 — 실패해도 로컬은 이미 정리된 상태
         AppScope.launch {
             try {
-                ApiClient.api.logout(refreshToken)
+                ApiClient.api.logout(accessToken?.let { "Bearer $it" }, refreshToken)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

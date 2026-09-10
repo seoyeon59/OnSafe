@@ -48,7 +48,9 @@ object ApiClient {
         "api/auth/verify-reset-code",
         "api/auth/reset-password",
         // refresh는 Refresh-Token 헤더로 인증하므로 만료된 Bearer 첨부 방지
-        "api/auth/refresh"
+        "api/auth/refresh",
+        // logout은 두 토큰을 호출부가 직접 넘긴다 — 자동 부착이 겹치면 헤더가 두 개가 된다
+        "api/auth/logout"
     )
 
     // 인증이 필요한 요청에만 자동으로 Bearer 토큰 첨부.
@@ -111,7 +113,7 @@ object ApiClient {
             if (refreshResponse?.isSuccessful != true || body?.success != true || newTokens == null) {
                 // 리프레시 실패 → 세션 종료. 이후 요청은 401 그대로 반환됨.
                 if (BuildConfig.DEBUG) Log.w("ApiClient", "토큰 재발급 실패 — 로컬 세션 정리")
-                TokenManager.clear(appContext)
+                TokenManager.clearSession(appContext)
                 return@synchronized null
             }
 
