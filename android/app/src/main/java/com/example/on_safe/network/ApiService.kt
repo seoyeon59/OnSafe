@@ -62,8 +62,9 @@ interface ApiService {
     // 자동 로그인 진입 전 서버 세션 검증 — 로컬 만료 30일 제한만으로는 회원탈퇴/강제로그아웃 후
     // 로컬 토큰이 살아있으면 진입이 가능해지므로 서버 블랙리스트까지 확인한다.
     // 200 OK = 유효, 401 = 무효/블랙리스트.
+    // 토큰은 authInterceptor가 붙인다 — @Header로 또 지정하면 Authorization이 두 개가 된다.
     @POST("api/auth/validate")
-    suspend fun validateToken(@Header("Authorization") bearer: String): Response<ApiResponse<Unit>>
+    suspend fun validateToken(): Response<ApiResponse<Unit>>
 
     // ===== User =====
 
