@@ -2,7 +2,7 @@
 <!-- 우편번호 뱃지: 모서리가 많이 둥근 사각형 (pill 형태) -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#EEF2FF" />
-    <corners android:radius="6dp" />
-    <stroke android:width="1dp" android:color="#C7D2FE" />
+    <solid android:color="@color/surface_icon_blue" />
+    <corners android:radius="@dimen/radius_xs" />
+    <stroke android:width="1dp" android:color="@color/border_accent" />
 </shape>

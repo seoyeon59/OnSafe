@@ -48,7 +48,7 @@
             android:paddingHorizontal="6dp"
             android:paddingVertical="2dp"
             android:textColor="@color/primary_blue"
-            android:textSize="10sp"
+            android:textSize="@dimen/text_tab"
             android:textStyle="bold" />
 
         <!-- 도로명 주소 -->
@@ -57,7 +57,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/ink_900"
-            android:textSize="14sp"
+            android:textSize="@dimen/text_body"
             android:textStyle="bold" />
 
         <!-- 지번 주소 -->
@@ -67,7 +67,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:textColor="@color/ink_500"
-            android:textSize="12sp" />
+            android:textSize="@dimen/text_tab" />
 
     </LinearLayout>
 

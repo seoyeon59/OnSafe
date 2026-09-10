@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:background="#F7F7F8"
+    android:background="@color/surface_bg"
     android:clipChildren="false"
     android:clipToPadding="false"
     android:paddingLeft="16dp"
@@ -33,24 +33,24 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="사용 모드 선택"
-                android:textSize="24sp"
-                android:textColor="#1A1C1E"
+                android:textSize="@dimen/text_title"
+                android:textColor="@color/ink_900"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="이 기기의 역할을 선택해주세요."
-                android:textSize="13sp"
-                android:textColor="#6B7280"
+                android:textSize="@dimen/text_caption"
+                android:textColor="@color/ink_500"
                 android:layout_marginTop="4dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="변경하려면 로그아웃 후 다시 로그인해주세요."
-                android:textSize="13sp"
-                android:textColor="#6B7280" />
+                android:textSize="@dimen/text_caption"
+                android:textColor="@color/ink_500" />
 
         </LinearLayout>
 
@@ -106,8 +106,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="보호자 모드"
-                        android:textSize="17sp"
-                        android:textColor="#1A1C1E"
+                        android:textSize="@dimen/text_subtitle"
+                        android:textColor="@color/ink_900"
                         android:textStyle="bold"
                         android:layout_marginBottom="4dp" />
 
@@ -115,8 +115,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="피보호자의 낙상을 실시간으로 모니터링하고 긴급 알림을 받습니다."
-                        android:textSize="14sp"
-                        android:textColor="#6B7280"
+                        android:textSize="@dimen/text_body"
+                        android:textColor="@color/ink_500"
                         android:lineSpacingExtra="3dp" />
 
                     <!-- 태그 영역 -->
@@ -133,8 +133,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="실시간 영상 확인"
-                            android:textSize="12sp"
-                            android:textColor="#6B7280"
+                            android:textSize="@dimen/text_tab"
+                            android:textColor="@color/ink_500"
                             android:background="@drawable/bg_pill_gray"
                             android:paddingLeft="10dp"
                             android:paddingRight="10dp"
@@ -147,8 +147,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="위험 알림 수신"
-                            android:textSize="12sp"
-                            android:textColor="#6B7280"
+                            android:textSize="@dimen/text_tab"
+                            android:textColor="@color/ink_500"
                             android:background="@drawable/bg_pill_gray"
                             android:paddingLeft="10dp"
                             android:paddingRight="10dp"
@@ -161,8 +161,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="사고 이력 조회"
-                            android:textSize="12sp"
-                            android:textColor="#6B7280"
+                            android:textSize="@dimen/text_tab"
+                            android:textColor="@color/ink_500"
                             android:background="@drawable/bg_pill_gray"
                             android:paddingLeft="10dp"
                             android:paddingRight="10dp"
@@ -217,8 +217,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="카메라 모드"
-                        android:textSize="17sp"
-                        android:textColor="#1A1C1E"
+                        android:textSize="@dimen/text_subtitle"
+                        android:textColor="@color/ink_900"
                         android:textStyle="bold"
                         android:layout_marginBottom="4dp" />
 
@@ -226,8 +226,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="이 기기를 고정 카메라로 사용하여 영상을 보호자에게 전송합니다."
-                        android:textSize="14sp"
-                        android:textColor="#6B7280"
+                        android:textSize="@dimen/text_body"
+                        android:textColor="@color/ink_500"
                         android:lineSpacingExtra="3dp" />
 
                     <!-- 태그 영역 -->
@@ -243,8 +243,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="실시간 영상 전송"
-                            android:textSize="12sp"
-                            android:textColor="#6B7280"
+                            android:textSize="@dimen/text_tab"
+                            android:textColor="@color/ink_500"
                             android:background="@drawable/bg_pill_gray"
                             android:paddingLeft="10dp"
                             android:paddingRight="10dp"
@@ -257,8 +257,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="자동 낙상 감지"
-                            android:textSize="12sp"
-                            android:textColor="#6B7280"
+                            android:textSize="@dimen/text_tab"
+                            android:textColor="@color/ink_500"
                             android:background="@drawable/bg_pill_gray"
                             android:paddingLeft="10dp"
                             android:paddingRight="10dp"
@@ -271,8 +271,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="상시 모니터링"
-                            android:textSize="12sp"
-                            android:textColor="#6B7280"
+                            android:textSize="@dimen/text_tab"
+                            android:textColor="@color/ink_500"
                             android:background="@drawable/bg_pill_gray"
                             android:paddingLeft="10dp"
                             android:paddingRight="10dp"
@@ -295,9 +295,10 @@
         android:id="@+id/btnNext"
         android:layout_width="match_parent"
         android:layout_height="52dp"
+        android:includeFontPadding="false"
         android:text="다음"
-        android:textColor="#FEFEFE"
-        android:textSize="18sp"
+        android:textColor="@color/surface_white"
+        android:textSize="@dimen/text_button"
         android:textStyle="bold"
         android:background="@drawable/bg_button_blue"
         android:alpha="0.4"

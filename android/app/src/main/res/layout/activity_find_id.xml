@@ -4,14 +4,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F7F7F8">
+    android:background="@color/surface_bg">
 
     <!-- 상단 네비게이션 바 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="64dp"
         android:orientation="horizontal"
-        android:background="#FEFEFE"
+        android:background="@color/surface_white"
         android:elevation="3dp"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
@@ -19,8 +19,8 @@
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="@dimen/touch_min"
+            android:layout_height="@dimen/touch_min"
             android:src="@drawable/ic_arrow_back"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="뒤로가기"
@@ -31,14 +31,14 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="아이디 찾기"
-            android:textSize="20sp"
-            android:textColor="#1A1C1E"
+            android:textSize="@dimen/text_title"
+            android:textColor="@color/ink_900"
             android:textStyle="bold"
             android:gravity="center" />
 
         <View
-            android:layout_width="40dp"
-            android:layout_height="40dp" />
+            android:layout_width="@dimen/touch_min"
+            android:layout_height="@dimen/touch_min" />
 
     </LinearLayout>
 
@@ -68,8 +68,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="가입 시 등록한 이름과 이메일로 아이디를 확인할 수 있습니다."
-                android:textSize="13sp"
-                android:textColor="#6B7280"
+                android:textSize="@dimen/text_caption"
+                android:textColor="@color/ink_500"
                 android:layout_marginBottom="24dp" />
 
             <!-- 이름 라벨 -->
@@ -77,8 +77,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="이름"
-                android:textSize="12sp"
-                android:textColor="#6B7280"
+                android:textSize="@dimen/text_body"
+                android:textColor="@color/ink_500"
                 android:textStyle="bold"
                 android:layout_marginBottom="6dp" />
 
@@ -88,8 +88,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:hint="홍길동"
-                android:textColor="#1A1C1E"
-                android:textSize="14sp"
+                android:textColor="@color/ink_900"
+                android:textSize="@dimen/text_body"
                 android:paddingLeft="16dp"
                 android:paddingRight="16dp"
                 android:background="@drawable/bg_input_rounded"
@@ -102,8 +102,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="이메일 주소"
-                android:textSize="12sp"
-                android:textColor="#6B7280"
+                android:textSize="@dimen/text_body"
+                android:textColor="@color/ink_500"
                 android:textStyle="bold"
                 android:layout_marginBottom="6dp" />
 
@@ -119,8 +119,8 @@
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:hint="example@email.com"
-                    android:textColor="#1A1C1E"
-                    android:textSize="14sp"
+                    android:textColor="@color/ink_900"
+                    android:textSize="@dimen/text_body"
                     android:paddingLeft="16dp"
                     android:paddingRight="16dp"
                     android:background="@drawable/bg_input_rounded"
@@ -132,8 +132,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:text="인증 요청"
-                    android:textSize="14sp"
-                    android:textColor="#FEFEFE"
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/surface_white"
                     android:textStyle="bold"
                     android:background="@drawable/bg_button_blue"
                     android:layout_marginLeft="8dp"
@@ -167,8 +167,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:hint="인증코드 6자리"
-                            android:textColor="#1A1C1E"
-                            android:textSize="14sp"
+                            android:textColor="@color/ink_900"
+                            android:textSize="@dimen/text_body"
                             android:paddingLeft="16dp"
                             android:paddingRight="72dp"
                             android:background="@drawable/bg_input_rounded"
@@ -184,8 +184,8 @@
                             android:layout_gravity="center_vertical|end"
                             android:layout_marginEnd="12dp"
                             android:text="3:00"
-                            android:textSize="13sp"
-                            android:textColor="#EF4444" />
+                            android:textSize="@dimen/text_body"
+                            android:textColor="@color/status_danger" />
 
                     </FrameLayout>
 
@@ -194,8 +194,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:text="확인"
-                        android:textSize="14sp"
-                        android:textColor="#FEFEFE"
+                        android:textSize="@dimen/text_body"
+                        android:textColor="@color/surface_white"
                         android:textStyle="bold"
                         android:background="@drawable/bg_button_blue"
                         android:layout_marginLeft="8dp"
@@ -207,11 +207,13 @@
                 <!-- 재전송 버튼 (만료 시 표시) -->
                 <TextView
                     android:id="@+id/tvResend"
+                    android:minHeight="@dimen/touch_min"
+                    android:gravity="center"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="인증코드를 다시 받기"
-                    android:textSize="12sp"
-                    android:textColor="#4D80FF"
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/primary_blue"
                     android:layout_marginTop="6dp"
                     android:visibility="gone" />
 
@@ -237,8 +239,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="찾은 아이디"
-                android:textSize="12sp"
-                android:textColor="#6B7280"
+                android:textSize="@dimen/text_body"
+                android:textColor="@color/ink_500"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />
 
@@ -247,8 +249,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text=""
-                android:textSize="18sp"
-                android:textColor="#1A1C1E"
+                android:textSize="@dimen/text_button"
+                android:textColor="@color/ink_900"
                 android:textStyle="bold" />
 
         </LinearLayout>
@@ -274,9 +276,10 @@
             android:id="@+id/btnGoLogin"
             android:layout_width="match_parent"
             android:layout_height="54dp"
+            android:includeFontPadding="false"
             android:text="로그인으로 돌아가기"
-            android:textColor="#FEFEFE"
-            android:textSize="18sp"
+            android:textColor="@color/surface_white"
+            android:textSize="@dimen/text_button"
             android:textStyle="bold"
             android:background="@drawable/bg_button_blue" />
 

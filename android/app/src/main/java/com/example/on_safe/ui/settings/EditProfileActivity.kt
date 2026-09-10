@@ -1,5 +1,7 @@
 package com.example.on_safe.ui.settings
 
+import androidx.annotation.ColorRes
+import androidx.core.content.ContextCompat
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
@@ -25,6 +27,7 @@ import com.example.on_safe.util.bindPhoneFormatting
 import com.example.on_safe.util.clearInputBorder
 import com.example.on_safe.util.onTextChanged
 import com.example.on_safe.util.setInputBorder
+import com.example.on_safe.util.setEnabledWithAlpha
 import com.example.on_safe.util.toast
 
 // 개인정보 수정 화면 — 진입 시 비밀번호 확인 후 폼 활성화
@@ -101,6 +104,11 @@ class EditProfileActivity : AppCompatActivity() {
                 }
                 viewModel.onVerifyResultHandled()
             }
+        }
+
+        // 저장 중에는 버튼을 비활성화 — 연타로 인한 중복 요청과 "눌러도 반응 없음" 방지
+        viewModel.isSaving.observe(this) { saving ->
+            btnSave.setEnabledWithAlpha(!saving)
         }
 
         viewModel.saveResult.observe(this) { result ->
@@ -187,11 +195,11 @@ class EditProfileActivity : AppCompatActivity() {
         }
     }
 
-    private fun showFieldMessage(et: EditText, tv: TextView, msg: String, color: Int) {
+    private fun showFieldMessage(et: EditText, tv: TextView, msg: String, @ColorRes colorRes: Int) {
         tv.text = msg
-        tv.setTextColor(color)
+        tv.setTextColor(ContextCompat.getColor(this, colorRes))
         tv.isVisible = true
-        et.setInputBorder(color)
+        et.setInputBorder(colorRes)
     }
 
     private fun initViews() {

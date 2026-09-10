@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    android:background="@color/black">
 
     <!-- TODO: 여기에 카메라 피드 뷰 연결 -->
     <TextView
@@ -11,14 +11,14 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:text="실시간 화면"
-        android:textColor="#FFFFFF"
-        android:textSize="20sp" />
+        android:textColor="@color/white"
+        android:textSize="@dimen/text_title" />
 
     <!-- 좌측 상단 뒤로가기 버튼 (투명 배경, 파란 아이콘) -->
     <ImageButton
         android:id="@+id/btnBackFullscreen"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
+        android:layout_width="@dimen/touch_min"
+        android:layout_height="@dimen/touch_min"
         android:layout_gravity="top|start"
         android:layout_margin="12dp"
         android:background="@android:color/transparent"

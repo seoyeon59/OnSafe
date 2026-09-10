@@ -28,7 +28,7 @@
             android:gravity="center"
             android:text="사고 이력"
             android:textColor="@color/ink_900"
-            android:textSize="20sp"
+            android:textSize="@dimen/text_title"
             android:textStyle="bold" />
 
     </LinearLayout>
@@ -61,7 +61,7 @@
                 android:layout_height="wrap_content"
                 android:text="위험 이력"
                 android:textColor="@color/ink_900"
-                android:textSize="18sp"
+                android:textSize="@dimen/text_button"
                 android:textStyle="bold" />
 
             <TextView
@@ -70,8 +70,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:text="0건"
-                android:textColor="#6B7280"
-                android:textSize="14sp" />
+                android:textColor="@color/ink_500"
+                android:textSize="@dimen/text_body" />
         </LinearLayout>
 
         <!-- 최신순 칩 -->
@@ -82,9 +82,10 @@
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
+            android:includeFontPadding="false"
             android:paddingHorizontal="12dp"
             android:text="최신순"
-            android:textSize="13sp"
+            android:textSize="@dimen/text_caption"
             android:textStyle="bold" />
 
         <!-- 오래된순 칩 -->
@@ -96,9 +97,10 @@
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
+            android:includeFontPadding="false"
             android:paddingHorizontal="12dp"
             android:text="오래된순"
-            android:textSize="13sp"
+            android:textSize="@dimen/text_caption"
             android:textStyle="bold" />
 
     </LinearLayout>
@@ -148,139 +150,37 @@
             android:layout_marginTop="12dp"
             android:text="사고 이력이 없습니다."
             android:textColor="@color/ink_500"
-            android:textSize="14sp"
+            android:textSize="@dimen/text_body"
             android:fontFamily="@font/pretendard_medium"
             android:gravity="center" />
 
         <TextView
             android:id="@+id/btnRetry"
             android:layout_width="wrap_content"
-            android:layout_height="36dp"
+            android:layout_height="@dimen/touch_min"
             android:layout_marginTop="16dp"
             android:paddingHorizontal="20dp"
             android:gravity="center"
             android:text="다시 시도"
             android:textColor="@color/primary_blue"
-            android:textSize="13sp"
+            android:textSize="@dimen/text_caption"
             android:fontFamily="@font/pretendard_semibold"
             android:background="@drawable/bg_outline_blue"
             android:visibility="gone"
+            android:foreground="?attr/selectableItemBackground"
             android:clickable="true"
             android:focusable="true" />
 
     </LinearLayout>
 
-    <!-- 하단 네비게이션 -->
-    <LinearLayout
+    <!-- 하단 탭 바 — view_bottom_nav.xml 공유 -->
+    <include
         android:id="@+id/bottomNav"
+        layout="@layout/view_bottom_nav"
         android:layout_width="0dp"
         android:layout_height="85dp"
-        android:background="@drawable/bg_sheet_top_rounded"
-        android:elevation="4dp"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:paddingHorizontal="40dp"
-        android:paddingVertical="12dp"
-        android:weightSum="3"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <!-- 사고이력 탭 (active) -->
-        <LinearLayout
-            android:id="@+id/tabHistoryActive"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <LinearLayout
-                android:layout_width="64dp"
-                android:layout_height="match_parent"
-                android:background="@drawable/bg_tab_active"
-                android:gravity="center"
-                android:orientation="vertical">
-
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_history_filled"
-                    app:tint="@color/primary_blue" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="사고이력"
-                    android:textColor="@color/primary_blue"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- 홈 탭 -->
-        <LinearLayout
-            android:id="@+id/tabHome"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_home"
-                app:tint="@color/ink_500" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="홈"
-                android:textColor="@color/ink_500"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- 설정 탭 -->
-        <LinearLayout
-            android:id="@+id/tabSettings"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_settings"
-                app:tint="@color/ink_500" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="설정"
-                android:textColor="@color/ink_500"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-    </LinearLayout>
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

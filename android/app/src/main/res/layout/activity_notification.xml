@@ -3,14 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F7F7F8"
+    android:background="@color/surface_bg"
     android:orientation="vertical">
 
     <!-- 상단 헤더 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="64dp"
-        android:background="#FEFEFE"
+        android:background="@color/surface_white"
         android:elevation="3dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -22,8 +22,8 @@
         <!-- 뒤로가기 버튼 -->
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="@dimen/touch_min"
+            android:layout_height="@dimen/touch_min"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="뒤로가기"
             android:src="@drawable/ic_arrow_back"
@@ -36,8 +36,8 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="알림 내역"
-            android:textColor="#1A1C1E"
-            android:textSize="20sp"
+            android:textColor="@color/ink_900"
+            android:textSize="@dimen/text_title"
             android:textStyle="bold" />
 
         <!-- 타이틀 가운데 정렬용 자리맞춤 (뒤로가기 버튼과 같은 폭) -->
@@ -94,14 +94,15 @@
                 android:fontFamily="@font/pretendard_medium"
                 android:text="최근 7일간 감지된 알림이 없습니다."
                 android:textColor="@color/ink_500"
-                android:textSize="14sp" />
+                android:textSize="@dimen/text_body" />
 
             <TextView
                 android:id="@+id/btnRetry"
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
+                android:layout_height="@dimen/touch_min"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/bg_outline_blue"
+                android:foreground="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
                 android:fontFamily="@font/pretendard_semibold"
@@ -109,7 +110,7 @@
                 android:paddingHorizontal="16dp"
                 android:text="다시 시도"
                 android:textColor="@color/primary_blue"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_caption"
                 android:visibility="gone" />
 
         </LinearLayout>
@@ -143,7 +144,7 @@
             android:layout_marginStart="10dp"
             android:text="알림 내역은 최근 7일간의 내역만 보관됩니다."
             android:textColor="@color/ink_500"
-            android:textSize="13sp" />
+            android:textSize="@dimen/text_caption" />
 
     </LinearLayout>
 

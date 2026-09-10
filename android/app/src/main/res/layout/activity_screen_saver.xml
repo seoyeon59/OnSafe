@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0D0F11">
+    android:background="@color/surface_dark">
 
     <!-- 중앙 콘텐츠 -->
     <LinearLayout
@@ -23,6 +23,7 @@
             android:layout_width="96dp"
             android:layout_height="96dp"
             android:background="@drawable/bg_circle_primary_outline"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true">
 
@@ -40,8 +41,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:text="촬영 중입니다..."
-            android:textSize="18sp"
-            android:textColor="#FEFEFE"
+            android:textSize="@dimen/text_button"
+            android:textColor="@color/surface_white"
             android:fontFamily="@font/pretendard_semibold" />
 
         <!-- 설명 -->
@@ -50,8 +51,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="배터리 절약과 화면 보호를 위해 화면 보호기가 실행 중입니다.\n해제하려면 위 버튼을 누르세요."
-            android:textSize="13sp"
-            android:textColor="#80FEFEFE"
+            android:textSize="@dimen/text_caption"
+            android:textColor="@color/overlay_white_50"
             android:fontFamily="@font/pretendard_regular"
             android:gravity="center"
             android:lineSpacingMultiplier="1.4" />
@@ -95,7 +96,7 @@
             android:includeFontPadding="false"
             android:text="늘봄"
             android:textColor="@color/primary_blue"
-            android:textSize="20sp" />
+            android:textSize="@dimen/text_title" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

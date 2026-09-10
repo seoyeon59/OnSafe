@@ -27,10 +27,11 @@ import androidx.core.content.ContextCompat
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
-import com.example.on_safe.ui.history.AccidentHistoryActivity
 import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.ui.tutorial.TutorialActivity
+import com.example.on_safe.util.NavTab
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.setupBottomNav
 import com.example.on_safe.util.toast
 
 // 설정 화면 (알림 토글, 개인정보 수정, 비밀번호 변경, 로그아웃, 회원탈퇴)
@@ -54,9 +55,6 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var rowWithdraw: LinearLayout
 
     private lateinit var btnTutorial: ImageView
-
-    private lateinit var tabHistory: LinearLayout
-    private lateinit var tabHome: LinearLayout
 
     private lateinit var tvUserName: TextView
 
@@ -166,8 +164,6 @@ class SettingsActivity : AppCompatActivity() {
         rowFaq             = findViewById(R.id.rowFaq)
         rowLogout          = findViewById(R.id.rowLogout)
         rowWithdraw        = findViewById(R.id.rowWithdraw)
-        tabHistory         = findViewById(R.id.tabHistory)
-        tabHome            = findViewById(R.id.tabHome)
         tvUserName         = findViewById(R.id.tvUserName)
         btnTutorial        = findViewById(R.id.btnTutorial)
 
@@ -373,23 +369,7 @@ class SettingsActivity : AppCompatActivity() {
             }.show()
         }
 
-        // 바텀 네비: 홈 (설정은 오른쪽 탭 → 홈 복귀 시 왼쪽으로 슬라이드 아웃)
-        tabHome.setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            }
-            startActivity(intent)
-            overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
-            finish()
-        }
-
-        // 바텀 네비: 사고 이력 — 홈을 건너뛰는 이동이라 더 빠른 전환
-        // 탭 간 이동은 finish()로 이전 탭 정리 — 뒤로가기 시 탭 누적 방지
-        tabHistory.setOnClickListener {
-            startActivity(Intent(this, AccidentHistoryActivity::class.java))
-            overridePendingTransition(R.anim.slide_in_left_fast, R.anim.slide_out_right_fast)
-            finish()
-        }
+        setupBottomNav(NavTab.SETTINGS)
 
         // 헤더 튜토리얼 버튼 — 온보딩 완료 후에도 상시 진입
         btnTutorial.setOnClickListener {

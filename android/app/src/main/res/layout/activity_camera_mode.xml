@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  TODO: [UI] 이 파일만 디자인 토큰 미적용 상태 — 하드코딩 색상 9종·sp 리터럴 15개 잔존.
+        PR #37이 같은 파일을 수정 중이라 충돌을 피해 전역 토큰화에서 제외했다. 머지 직후 정리할 것.
+        #0D0F11은 이미 surface_dark와 같은 값이라 바로 흡수 가능.
+-->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"

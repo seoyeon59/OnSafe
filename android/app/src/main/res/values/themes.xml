@@ -1,14 +1,23 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+      values-night 오버라이드는 두지 않는다 — 템플릿 그대로 비어 있어 다크 모드에서
+      아래 지정이 전부 무효화되고 있었다(폰트 미적용·컨트롤 기본색 복귀·
+      edge-to-edge 옵트아웃 누락으로 targetSdk 35에서 시스템 바 겹침).
+      모든 화면이 배경을 직접 지정하는 라이트 기준 디자인이므로 이 테마를 양쪽에 공통 적용한다.
+
+      TODO: [UI] 다크 모드를 정식 지원하려면 색 토큰의 다크 팔레트(values-night/colors.xml)와
+            전 화면 대비 검증이 함께 필요하다. 지원 여부부터 결정할 것.
+    -->
     <!-- Base application theme. -->
     <style name="Base.Theme.OnSafe" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:windowBackground">#F7F7F8</item>
+        <item name="android:windowBackground">@color/surface_bg</item>
         <item name="colorPrimary">@color/primary_blue</item>
         <item name="colorPrimaryVariant">@color/primary_blue</item>
         <item name="colorOnPrimary">@color/white</item>
         <!-- 커서·텍스트 선택 핸들·체크박스 등 입력 관련 강조색 — 미지정 시 시스템 기본(보라)이 나온다 -->
         <item name="colorControlActivated">@color/primary_blue</item>
-        <item name="colorControlHighlight">#334D80FF</item>
-        <item name="android:textColorHighlight">#4D4D80FF</item>
+        <item name="colorControlHighlight">@color/ripple_primary</item>
+        <item name="android:textColorHighlight">@color/text_highlight_primary</item>
         <!-- 자동완성 강조 배경 — 기본 사각형이 둥근 입력칸을 벗어나는 문제 해결 -->
         <item name="android:autofilledHighlight">@drawable/bg_autofill_highlight</item>
         <!-- 앱 전체 기본 폰트: Pretendard (400/500/600/700 자동 매핑) -->
