@@ -29,6 +29,9 @@ interface ApiService {
     @POST("api/auth/check-id")
     suspend fun checkId(@Body request: CheckIdRequest): Response<ApiResponse<Unit>>
 
+    @POST("api/auth/check-mail")
+    suspend fun checkMail(@Body request: CheckMailRequest): Response<ApiResponse<Unit>>
+
     @POST("api/auth/send-email-code")
     suspend fun sendEmailCode(@Body request: SendEmailCodeRequest): Response<ApiResponse<Unit>>
 
@@ -56,6 +59,12 @@ interface ApiService {
     @POST("api/auth/refresh")
     suspend fun refresh(@Header("Refresh-Token") refreshToken: String): Response<ApiResponse<TokenResponse>>
 
+    // 자동 로그인 진입 전 서버 세션 검증 — 로컬 만료 30일 제한만으로는 회원탈퇴/강제로그아웃 후
+    // 로컬 토큰이 살아있으면 진입이 가능해지므로 서버 블랙리스트까지 확인한다.
+    // 200 OK = 유효, 401 = 무효/블랙리스트.
+    @POST("api/auth/validate")
+    suspend fun validateToken(@Header("Authorization") bearer: String): Response<ApiResponse<Unit>>
+
     // ===== User =====
 
     @GET("api/users/{userId}")
@@ -75,6 +84,27 @@ interface ApiService {
 
     @DELETE("api/users/{userId}")
     suspend fun deleteUser(@Path("userId") userId: String): Response<ApiResponse<Unit>>
+
+    // ===== Guardian (보호자 페어링) =====
+
+    // 피보호자가 6자리 페어링 코드 발급 — 5분 TTL, 재발급 시 이전 코드는 즉시 무효화됨
+    @POST("api/guardian/{userId}/pairing-code")
+    suspend fun issuePairingCode(
+        @Path("userId") userId: String
+    ): Response<ApiResponse<PairingCodeResponse>>
+
+    // 보호자가 코드 입력해서 페어링 — 성공 시 연결된 피보호자 정보 반환
+    @POST("api/guardian/{userId}/pair")
+    suspend fun pairGuardian(
+        @Path("userId") userId: String,
+        @Body request: PairRequest
+    ): Response<ApiResponse<WardResponse>>
+
+    // 보호자가 자신에게 연결된 피보호자 목록 조회 — 진입 시 페어링 모달 표시 여부 판단용
+    @GET("api/guardian/{userId}/wards")
+    suspend fun getWards(
+        @Path("userId") userId: String
+    ): Response<ApiResponse<WardsWrapper>>
 
     // ===== Settings =====
 
