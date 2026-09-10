@@ -43,16 +43,32 @@ class CameraModeViewModel : ViewModel() {
     // 재진입 시 중복 루프 방지를 위해 기존 Job은 취소하고 재시작.
     fun startPairingCodeAutoRefresh(userId: String) {
         if (userId.isBlank()) return
-        pairingCodeJob?.cancel()
+        // 화면 재생성 시에도 onCreate에서 다시 호출된다. 그때마다 새로 시작하면 실패 횟수가
+        // 0으로 돌아가 백오프가 풀리고, 한도가 소진된 상태에서 즉시 재요청하게 된다.
+        if (pairingCodeJob?.isActive == true) return
+        // TODO: [페어링] 이미 보호자와 연결된 기기는 코드를 띄울 이유가 없는데도 계속 발급된다.
+        //       화면에 쓸모없는 코드가 노출되고 서버 발급 한도(시간당 5회)만 소진한다.
+        //       판정하려면 "이 피보호자에게 연결된 보호자" 조회 API가 필요하다 —
+        //       현재 서버에는 보호자→피보호자 방향(GET /api/guardian/{userId}/wards)만 있음.
         pairingCodeJob = viewModelScope.launch {
+            var failures = 0
             while (isActive) {
                 val ttlSeconds = fetchAndUpdatePairingCode(userId)
-                // 발급 실패(음수) 시엔 30초 뒤 재시도, 성공 시엔 TTL 만료 직전(-10초 안전 여유)에 재발급
-                val delayMs = if (ttlSeconds > 0) (ttlSeconds - 10).coerceAtLeast(10) * 1000L else 30_000L
+                val delayMs = if (ttlSeconds > 0) {
+                    failures = 0
+                    // TTL 만료 직전(-10초 안전 여유)에 재발급
+                    (ttlSeconds - 10).coerceAtLeast(10) * 1000L
+                } else {
+                    // 실패는 대개 발급 한도 초과다. 고정 간격으로 계속 두드리면 한도가 풀리지
+                    // 않은 채 요청만 쌓이므로 간격을 늘려가며 재시도한다 (30초 → 최대 10분).
+                    failures++
+                    (RETRY_BASE_MS * (1L shl (failures - 1).coerceAtMost(5))).coerceAtMost(RETRY_MAX_MS)
+                }
                 delay(delayMs)
             }
         }
     }
+
 
     // 한 번의 코드 발급 요청 — TTL 초 반환, 실패 시 -1
     private suspend fun fetchAndUpdatePairingCode(userId: String): Long {
@@ -114,5 +130,10 @@ class CameraModeViewModel : ViewModel() {
 
     private inline fun setState(update: CameraModeUiState.() -> CameraModeUiState) {
         _uiState.value = (_uiState.value ?: CameraModeUiState()).update()
+    }
+
+    private companion object {
+        const val RETRY_BASE_MS = 30_000L
+        const val RETRY_MAX_MS = 600_000L
     }
 }

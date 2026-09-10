@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:text="보호자 연결"
         android:textColor="@color/ink_900"
-        android:textSize="20sp"
+        android:textSize="@dimen/text_title"
         android:textStyle="bold" />
 
     <TextView
@@ -22,7 +22,7 @@
         android:layout_marginTop="8dp"
         android:text="피보호자 화면에 표시된 6자리 코드를 입력해주세요."
         android:textColor="@color/ink_500"
-        android:textSize="14sp" />
+        android:textSize="@dimen/text_body" />
 
     <EditText
         android:id="@+id/etPairingCode"
@@ -38,7 +38,7 @@
         android:padding="16dp"
         android:textColor="@color/ink_900"
         android:textColorHint="@color/ink_500"
-        android:textSize="24sp"
+        android:textSize="@dimen/text_code"
         android:textStyle="bold" />
 
     <TextView
@@ -47,7 +47,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:textColor="@color/status_danger"
-        android:textSize="12sp"
+        android:textSize="@dimen/text_tab"
         android:visibility="gone" />
 
     <ProgressBar
@@ -67,7 +67,20 @@
         android:stateListAnimator="@null"
         android:text="연결하기"
         android:textColor="@color/white"
-        android:textSize="16sp"
+        android:textSize="@dimen/text_subtitle"
         android:textStyle="bold" />
+
+    <!-- 코드를 아직 못 받은 보호자가 홈으로 빠져나갈 수 있는 유일한 경로 -->
+    <TextView
+        android:id="@+id/btnPairLater"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/touch_min"
+        android:layout_marginTop="@dimen/space_sm"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:text="나중에 하기"
+        android:textColor="@color/ink_500"
+        android:textSize="@dimen/text_body" />
 
 </LinearLayout>

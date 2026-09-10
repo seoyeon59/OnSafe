@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.isOk
@@ -26,10 +27,15 @@ import com.example.on_safe.util.RiskScoreCardBinder
 import com.example.on_safe.util.TokenManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+private const val PAIRING_TAG = "guardian_pair"
+private const val STATE_PAIRED = "paired"
+private const val STATE_PAIRING_DEFERRED = "pairing_deferred"
 
 class MainActivity : AppCompatActivity() {
 
@@ -71,33 +77,70 @@ class MainActivity : AppCompatActivity() {
 
         observeViewModel()
 
-        // 보호자 모드 진입 시 아직 연결된 피보호자가 없으면 페어링 모달 표시.
-        // 이미 연결된 경우엔 조용히 통과 — 매 진입마다 다시 물어보지 않음.
-        // 최초 생성 시(savedInstanceState == null)만 체크해 화면 회전 시 중복 표시 방지.
-        if (savedInstanceState == null) checkGuardianPairingOnEntry()
+        savedInstanceState?.let {
+            isPaired = it.getBoolean(STATE_PAIRED)
+            pairingDeferred = it.getBoolean(STATE_PAIRING_DEFERRED)
+        }
+
+        // 모달이 화면 재생성 뒤에 결과를 돌려줘도 받을 수 있도록 항상 등록한다.
+        supportFragmentManager.setFragmentResultListener(
+            GuardianPairingDialogFragment.REQUEST_KEY, this
+        ) { _, result ->
+            if (result.getBoolean(GuardianPairingDialogFragment.RESULT_PAIRED)) {
+                isPaired = true
+                // 페어링 성공 시 홈의 실시간 폴링을 재시작해 새 상태 즉시 반영
+                viewModel.startPolling(TokenManager.getUserId(this))
+            } else {
+                // "나중에 하기" — 이번 방문 동안은 다시 묻지 않는다
+                pairingDeferred = true
+            }
+        }
     }
 
+    // 연결이 확인됐거나 사용자가 미룬 상태 — 홈에 머무는 동안 재확인·재표시를 막는다.
+    // 화면 재생성에도 유지돼야 미뤄둔 모달이 다시 뜨지 않는다(onSaveInstanceState 참고).
+    private var isPaired = false
+    private var pairingDeferred = false
+
+    // 조회가 날아가 있는 동안 다시 부르면 같은 모달이 두 개 뜰 수 있다
+    private var pairingCheckJob: Job? = null
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(STATE_PAIRED, isPaired)
+        outState.putBoolean(STATE_PAIRING_DEFERRED, pairingDeferred)
+    }
+
+    // 진입 시 한 번만이 아니라 홈이 다시 보일 때마다 확인한다 — 오프라인으로 판정을
+    // 건너뛴 뒤 통신이 회복돼도 앱을 껐다 켜야만 모달이 뜨던 문제 때문.
     private fun checkGuardianPairingOnEntry() {
+        if (isPaired || pairingDeferred) return
+        if (pairingCheckJob?.isActive == true) return
+        if (supportFragmentManager.findFragmentByTag(PAIRING_TAG) != null) return
         val userId = TokenManager.getUserId(this)
         if (userId.isBlank()) return
-        lifecycleScope.launch {
+        pairingCheckJob = lifecycleScope.launch {
             val hasWards = try {
                 val response = ApiClient.api.getWards(userId)
-                response.isOk && !response.body()?.data?.wards.isNullOrEmpty()
+                // 서버가 답을 주지 못한 경우(401·5xx)도 판정 불가로 본다 — 세션이 끊긴
+                // 상태에서 모달을 띄우면 코드를 넣어도 계속 실패한다.
+                if (!response.isOk) return@launch
+                !response.body()?.data?.wards.isNullOrEmpty()
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
                 // 네트워크 오류 시엔 모달 강제 표시하지 않음 — 사용자가 오프라인 상태에서도
-                // 홈은 볼 수 있어야 함. 다음 진입에서 재판정.
-                true
+                // 홈은 볼 수 있어야 함. 통신이 회복되면 다음 onResume에서 재판정.
+                return@launch
             }
-            if (!hasWards && !isFinishing) {
-                GuardianPairingDialogFragment().apply {
-                    onPaired = {
-                        // 페어링 성공 시 홈의 실시간 폴링을 재시작해 새 상태 즉시 반영
-                        viewModel.startPolling(TokenManager.getUserId(this@MainActivity))
-                    }
-                }.show(supportFragmentManager, "guardian_pair")
+            if (hasWards) {
+                isPaired = true
+                return@launch
+            }
+            // 응답이 늦게 오면 이미 onSaveInstanceState를 지났을 수 있다.
+            // 그 상태에서 show()는 commit이라 IllegalStateException으로 죽는다.
+            if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                GuardianPairingDialogFragment().show(supportFragmentManager, PAIRING_TAG)
             }
         }
     }
@@ -106,6 +149,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         NotificationPermissionBanner.refresh(this)
         viewModel.startPolling(TokenManager.getUserId(this))
+        checkGuardianPairingOnEntry()
     }
 
     override fun onPause() {
