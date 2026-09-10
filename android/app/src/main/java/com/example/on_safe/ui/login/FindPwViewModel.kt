@@ -33,8 +33,10 @@ class FindPwViewModel : ViewModel() {
     val toastMessage: LiveData<String?> = _toastMessage
 
     // 재설정 화면 이동 1회성 신호 — Activity가 소비 후 onNavigated()로 리셋
-    private val _navigateToReset = MutableLiveData(false)
-    val navigateToReset: LiveData<Boolean> = _navigateToReset
+    // 검증에 성공한 아이디를 그대로 넘긴다 — 화면에서 다시 읽으면 응답을 기다리는 사이
+    // 사용자가 입력칸을 고친 경우 다른 계정으로 넘어간다
+    private val _navigateToReset = MutableLiveData<String?>(null)
+    val navigateToReset: LiveData<String?> = _navigateToReset
 
     private val timer = VerificationCodeTimer(
         onTick = { text -> setState { copy(timerText = text) } },
@@ -104,6 +106,7 @@ class FindPwViewModel : ViewModel() {
     }
 
     // 재설정 코드 확인
+    // TODO: [백엔드] sendResetCode가 USER_NOT_FOUND와 MAIL_NOT_MATCH를 구분해 아이디 존재 여부가 노출됨.
     fun confirmCode(userId: String, code: String) {
         setState { copy(isConfirmEnabled = false, isLoading = true) }
         viewModelScope.launch {
@@ -111,7 +114,7 @@ class FindPwViewModel : ViewModel() {
                 val response = ApiClient.api.verifyResetCode(VerifyResetCodeRequest(userId = userId, code = code))
                 if (response.isOk) {
                     timer.cancel()
-                    _navigateToReset.value = true
+                    _navigateToReset.value = userId
                 } else {
                     _toastMessage.value = response.errorMessage("코드가 올바르지 않습니다.")
                     setState { copy(isConfirmEnabled = true) }
@@ -132,7 +135,7 @@ class FindPwViewModel : ViewModel() {
     }
 
     fun onNavigated() {
-        _navigateToReset.value = false
+        _navigateToReset.value = null
     }
 
     private inline fun setState(update: FindPwUiState.() -> FindPwUiState) {

@@ -50,6 +50,7 @@ class FindIdViewModel : ViewModel() {
     )
 
     // 인증코드 발송 — name은 Activity 검증용일 뿐 요청에 불필요해 파라미터 제외
+    // TODO: [백엔드] findId에 rate limit이 없어 이름+이메일만으로 아이디 조회가 반복 가능.
     fun requestCode(email: String) {
         setState { copy(isRequestCodeEnabled = false, isLoading = true) }
         sendCode(email, isResend = false)
