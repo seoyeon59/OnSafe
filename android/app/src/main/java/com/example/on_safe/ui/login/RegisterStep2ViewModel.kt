@@ -21,6 +21,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
+// Step1 동의 화면의 체크값 묶음 — 서버가 동의 이력을 남기므로 실제 값을 그대로 전달한다
+data class ConsentChoices(
+    val terms: Boolean,
+    val privacy: Boolean,
+    val sensitive: Boolean,
+    val marketing: Boolean
+)
+
 data class RegisterStep2UiState(
     // 아이디
     val isIdCheckEnabled: Boolean = true,
@@ -320,7 +328,8 @@ class RegisterStep2ViewModel : ViewModel() {
 
     // ── 최종 회원가입 ──
     // marketingConsent: Step1 화면의 마케팅 정보 수신 체크박스 값을 그대로 서버에 반영
-    fun register(password: String, phone: String, addressDetail: String, marketingConsent: Boolean) {
+    // TODO: [백엔드] 만 14세 미만 가입 제한 도입 시 생년월일 입력란과 birthDate 필드 추가 필요.
+    fun register(password: String, phone: String, addressDetail: String, consents: ConsentChoices) {
         setState { copy(isLoading = true) }
         viewModelScope.launch {
             try {
@@ -333,7 +342,10 @@ class RegisterStep2ViewModel : ViewModel() {
                         phone = phone.trim(),
                         address = addressText.trim().ifEmpty { null },
                         addressDetail = addressDetail.trim().ifEmpty { null },
-                        marketingConsent = marketingConsent
+                        termsAgreed = consents.terms,
+                        privacyPolicyAgreed = consents.privacy,
+                        sensitiveInfoAgreed = consents.sensitive,
+                        marketingConsent = consents.marketing
                     )
                 )
                 if (response.isOk) {

@@ -61,7 +61,7 @@ class RegisterStep2Activity : AppCompatActivity() {
     private var isCompleteReady = false
 
     // Step1에서 전달된 마케팅 수신 동의 (미전달 대비 기본 false)
-    private var marketingConsent = false
+    private lateinit var consents: ConsentChoices
 
     // 주소 검색 결과 수신 런처
     private val addressLauncher = registerForActivityResult(
@@ -80,7 +80,12 @@ class RegisterStep2Activity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register_step2)
 
-        marketingConsent = intent.getBooleanExtra(EXTRA_MARKETING_CONSENT, false)
+        consents = ConsentChoices(
+            terms = intent.getBooleanExtra(EXTRA_TERMS_AGREED, false),
+            privacy = intent.getBooleanExtra(EXTRA_PRIVACY_AGREED, false),
+            sensitive = intent.getBooleanExtra(EXTRA_SENSITIVE_AGREED, false),
+            marketing = intent.getBooleanExtra(EXTRA_MARKETING_CONSENT, false)
+        )
 
         etId = findViewById(R.id.etId)
         etPw = findViewById(R.id.etPw)
@@ -163,7 +168,7 @@ class RegisterStep2Activity : AppCompatActivity() {
                 password = etPw.text.toString(),
                 phone = etPhone.text.toString(),
                 addressDetail = etAddressDetail.text.toString(),
-                marketingConsent = marketingConsent
+                consents = consents
             )
         }
 
@@ -243,6 +248,9 @@ class RegisterStep2Activity : AppCompatActivity() {
     }
 
     companion object {
+        const val EXTRA_TERMS_AGREED = "extra_terms_agreed"
+        const val EXTRA_PRIVACY_AGREED = "extra_privacy_agreed"
+        const val EXTRA_SENSITIVE_AGREED = "extra_sensitive_agreed"
         const val EXTRA_MARKETING_CONSENT = "extra_marketing_consent"
     }
 }

@@ -37,13 +37,11 @@ class RegisterStep1Activity : AppCompatActivity() {
         checkAll = findViewById(R.id.checkAll)
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
 
+        val terms = agreeItem(R.id.layoutAgree1, R.id.check1, R.id.btnViewAgree1, TermsLinks.SERVICE, required = true)
+        val privacy = agreeItem(R.id.layoutAgree2, R.id.check2, R.id.btnViewAgree2, TermsLinks.PRIVACY, required = true)
+        val sensitive = agreeItem(R.id.layoutAgree3, R.id.check3, R.id.btnViewAgree3, TermsLinks.SENSITIVE, required = true)
         val marketing = agreeItem(R.id.layoutAgree5, R.id.check5, R.id.btnViewAgree5, TermsLinks.MARKETING, required = false)
-        items = listOf(
-            agreeItem(R.id.layoutAgree1, R.id.check1, R.id.btnViewAgree1, TermsLinks.SERVICE, required = true),
-            agreeItem(R.id.layoutAgree2, R.id.check2, R.id.btnViewAgree2, TermsLinks.PRIVACY, required = true),
-            agreeItem(R.id.layoutAgree3, R.id.check3, R.id.btnViewAgree3, TermsLinks.SENSITIVE, required = true),
-            marketing
-        )
+        items = listOf(terms, privacy, sensitive, marketing)
 
         items.forEach { item ->
             item.row.setOnClickListener { setChecked(item, !item.checked) }
@@ -61,7 +59,10 @@ class RegisterStep1Activity : AppCompatActivity() {
         btnNext.setOnClickListener {
             startActivity(
                 Intent(this, RegisterStep2Activity::class.java).apply {
-                    // 마케팅 수신 동의(선택)는 필수 항목과 별개로 Step2 → 서버까지 전달
+                    // 동의 체크값은 Step2를 거쳐 서버까지 전달된다 — 서버가 동의 이력을 남긴다
+                    putExtra(RegisterStep2Activity.EXTRA_TERMS_AGREED, terms.checked)
+                    putExtra(RegisterStep2Activity.EXTRA_PRIVACY_AGREED, privacy.checked)
+                    putExtra(RegisterStep2Activity.EXTRA_SENSITIVE_AGREED, sensitive.checked)
                     putExtra(RegisterStep2Activity.EXTRA_MARKETING_CONSENT, marketing.checked)
                 }
             )
