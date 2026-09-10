@@ -99,21 +99,29 @@ class RegisterStep2ViewModel : ViewModel() {
     // 이메일 인증 요청 — 주소가 바뀌면 취소해 이전 주소의 응답이 새 주소에 적용되지 않게 한다
     private var emailJob: Job? = null
 
+    // 아이디 중복확인 요청 — 같은 이유로 아이디가 바뀌면 취소한다
+    private var idJob: Job? = null
+
     // ── 아이디 ──
     fun onIdChanged(id: String) {
         idText = id
         // 아이디 변경 시 이전 중복확인 결과 무효화
+        idJob?.cancel()
         setState { copy(isIdCheckEnabled = true, isIdChecked = false, idValidation = FieldValidation.Empty) }
         recomputeComplete()
     }
 
+    // TODO: [백엔드] userId 길이·문자셋 서버 검증 부재 — 앱 외 클라이언트로 임의 아이디 등록 가능.
+    // TODO: [백엔드] 전화번호를 정규화 없이 저장·비교해 하이픈 유무로 중복 검사 우회 가능.
     fun checkId(id: String) {
         if (!ID_REGEX.matches(id)) {
             setState { copy(idValidation = FieldValidation.Invalid("영문/숫자 6~12자로 입력해주세요.")) }
             return
         }
         setState { copy(isIdCheckEnabled = false) }
-        viewModelScope.launch {
+        // 응답 대기 중 아이디가 바뀌면 뒤늦은 성공이 무효화된 확인 결과를 되살린다
+        idJob?.cancel()
+        idJob = viewModelScope.launch {
             try {
                 val response = ApiClient.api.checkId(CheckIdRequest(userId = id))
                 if (response.isOk) {
@@ -180,7 +188,7 @@ class RegisterStep2ViewModel : ViewModel() {
     // ── 이름 ──
     fun onNameChanged(name: String) {
         nameText = name
-        setState { copy(isNameFilled = name.isNotEmpty()) }
+        setState { copy(isNameFilled = name.isNotBlank()) }
         recomputeComplete()
     }
 
@@ -299,9 +307,13 @@ class RegisterStep2ViewModel : ViewModel() {
 
     fun confirmEmailCode(code: String) {
         setState { copy(isConfirmCodeEnabled = false) }
-        viewModelScope.launch {
+        // 인증 확인도 emailJob으로 관리한다 — 응답 대기 중 주소가 바뀌면 뒤늦게 도착한 성공이
+        // isEmailVerified를 되살려, 인증하지 않은 새 주소로 가입이 나갈 수 있다.
+        val target = email
+        emailJob?.cancel()
+        emailJob = viewModelScope.launch {
             try {
-                val response = ApiClient.api.verifyEmailCode(VerifyEmailCodeRequest(mail = email, code = code))
+                val response = ApiClient.api.verifyEmailCode(VerifyEmailCodeRequest(mail = target, code = code))
                 if (response.isOk) {
                     emailTimer.cancel()
                     // 인증 완료 후에도 "재전송"이 남아 있던 문제 — 함께 숨김
