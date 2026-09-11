@@ -47,7 +47,7 @@ class CameraModeViewModel : ViewModel() {
         // 0으로 돌아가 백오프가 풀리고, 한도가 소진된 상태에서 즉시 재요청하게 된다.
         if (pairingCodeJob?.isActive == true) return
         // TODO: [백엔드] 피보호자가 자기 보호자를 조회하는 API 부재 — 이미 연결된 기기에도 코드가 계속 발급됨.
-        // TODO: [백엔드] 코드 TTL 5분 대비 발급 한도 5회/시간이 좁아 자동 갱신이 한도를 초과함.
+        // TODO: [백엔드] TTL 10분 확정 후에도 자동 갱신이 시간당 7회 — 발급 한도 5회/시간 상향 필요.
         pairingCodeJob = viewModelScope.launch {
             var failures = 0
             while (isActive) {
