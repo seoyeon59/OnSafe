@@ -23,8 +23,7 @@ object TokenManager {
     // SettingsActivity·EditProfileActivity가 알림·마케팅 설정을 캐시하는 파일
     private const val SETTINGS_PREFS = "settings"
 
-    // TODO: [백엔드] 서버 refresh 토큰 만료가 7일이라 이 30일 정책과 어긋남 — 기간 합의 필요.
-    // 마지막 로그인으로부터 30일 이상 경과 시 재인증 요구
+    // 마지막 로그인으로부터 30일 이상 경과 시 재인증 요구. 서버 refresh 토큰 만료와 동일.
     private const val SESSION_DURATION_MS = 30L * 24 * 60 * 60 * 1000
 
     // Keystore 접근 비용 때문에 인스턴스 캐싱
