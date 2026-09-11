@@ -184,10 +184,22 @@ object ApiClient {
             // "password: 비밀번호는 8자 이상…"처럼 필드명이 앞에 붙어 오는 경우가 있다.
             // 접두사만 떼면 뒤 문장은 그대로 사용자에게 보여줄 수 있는 안내다.
             val cleaned = message.replace(fieldPrefixRegex, "").trim()
-            if (cleaned.isBlank() || !isUserFacing(cleaned)) fallback else cleaned
+            if (isUserFacing(cleaned)) cleaned else fallback
         } catch (_: Exception) {
             fallback
         }
+    }
+
+    /**
+     * 서버 메시지를 사용자에게 보여줄 형태로 다듬는다. 보여줄 수 없으면 [fallback].
+     * errorBody 경로와 본문 message 경로가 같은 규칙을 쓰도록 공용으로 둔다.
+     */
+    fun sanitizeMessage(message: String?, fallback: String): String {
+        if (message.isNullOrBlank()) return fallback
+        // "password: 비밀번호는 8자 이상…"처럼 필드명이 앞에 붙어 오는 경우가 있다.
+        // 접두사만 떼면 뒤 문장은 그대로 사용자에게 보여줄 수 있는 안내다.
+        val cleaned = message.replace(fieldPrefixRegex, "").trim()
+        return if (isUserFacing(cleaned)) cleaned else fallback
     }
 
     // "fieldName: ..." 형태의 서버 검증 오류 접두사
@@ -201,7 +213,12 @@ object ApiClient {
         "서버 내부 오류"
     )
 
-    // 개발자용 문구(snake_case 안내 등)가 섞인 메시지는 사용자에게 노출하지 않는다
-    private fun isUserFacing(message: String): Boolean =
-        developerPhrases.none { message.contains(it) }
+    // 사용자에게 보여도 되는 문구인지 판정.
+    // 이 앱의 사용자 대상 문구는 모두 한국어다. 한글이 없으면 서버 프레임워크가 낸
+    // 영문 검증 메시지(예: "must contain at least one digit")일 가능성이 높아 걸러낸다.
+    private fun isUserFacing(message: String): Boolean {
+        if (message.isBlank()) return false
+        if (message.none { it in '가'..'힣' }) return false
+        return developerPhrases.none { message.contains(it) }
+    }
 }

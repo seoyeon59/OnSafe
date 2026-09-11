@@ -12,7 +12,10 @@ import retrofit2.Response
 val <T> Response<ApiResponse<T>>.isOk: Boolean
     get() = isSuccessful && body()?.success == true
 
-/** 실패 문구 — 본문 message 우선, 없으면 errorBody 파싱, 그래도 없으면 fallback */
+/**
+ * 실패 문구 — 본문 message 우선, 없으면 errorBody 파싱, 그래도 없으면 fallback.
+ * 서버가 200 + success:false 로 검증 오류를 줄 수도 있어 본문 경로도 같은 정제를 거친다.
+ */
 fun <T> Response<ApiResponse<T>>.errorMessage(fallback: String): String =
-    body()?.message?.takeIf { it.isNotBlank() }
+    body()?.message?.let { ApiClient.sanitizeMessage(it, fallback) }
         ?: ApiClient.parseErrorMessage(errorBody(), fallback)

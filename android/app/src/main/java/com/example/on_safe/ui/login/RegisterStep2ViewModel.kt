@@ -99,6 +99,9 @@ class RegisterStep2ViewModel : ViewModel() {
     // 이메일 인증 요청 — 주소가 바뀌면 취소해 이전 주소의 응답이 새 주소에 적용되지 않게 한다
     private var emailJob: Job? = null
 
+    // 인증번호 확인 요청 — 발송/재발송과 서로 취소하지 않도록 따로 둔다
+    private var verifyJob: Job? = null
+
     // 아이디 중복확인 요청 — 같은 이유로 아이디가 바뀌면 취소한다
     private var idJob: Job? = null
 
@@ -147,10 +150,12 @@ class RegisterStep2ViewModel : ViewModel() {
 
     // ── 비밀번호 / 비밀번호 확인 ──
     fun onPwChanged(pw: String) {
-        pwText = pw
+        // 전송할 때 trim하므로 검증도 같은 값으로 한다. 원본으로 검증하면
+        // 끝에 공백이 붙은 8자가 앱은 통과하고 서버 @Size(min=8)에서 거부된다.
+        pwText = pw.trim()
         val validation = when {
-            pw.isEmpty() -> FieldValidation.Empty
-            PasswordValidator.isValid(pw) -> FieldValidation.Valid(PasswordValidator.SUCCESS_MSG)
+            pwText.isEmpty() -> FieldValidation.Empty
+            PasswordValidator.isValid(pwText) -> FieldValidation.Valid(PasswordValidator.SUCCESS_MSG)
             else -> FieldValidation.Invalid(PasswordValidator.ERROR_MSG)
         }
         setState { copy(pwValidation = validation) }
@@ -160,7 +165,7 @@ class RegisterStep2ViewModel : ViewModel() {
     }
 
     fun onPwConfirmChanged(confirm: String) {
-        pwConfirmText = confirm
+        pwConfirmText = confirm.trim()
         recomputePwConfirm()
         recomputeComplete()
     }
@@ -206,6 +211,7 @@ class RegisterStep2ViewModel : ViewModel() {
         emailTimer.cancel()
         // 주소가 바뀌면 진행 중이던 요청은 의미가 없다. 아래 setState가 버튼 상태도 함께 되돌린다.
         emailJob?.cancel()
+        verifyJob?.cancel()
         val validation = when {
             newEmail.isEmpty() -> FieldValidation.Empty
             EmailValidator.isValid(newEmail) -> FieldValidation.Valid(EmailValidator.SUCCESS_MSG)
@@ -307,11 +313,13 @@ class RegisterStep2ViewModel : ViewModel() {
 
     fun confirmEmailCode(code: String) {
         setState { copy(isConfirmCodeEnabled = false) }
-        // 인증 확인도 emailJob으로 관리한다 — 응답 대기 중 주소가 바뀌면 뒤늦게 도착한 성공이
-        // isEmailVerified를 되살려, 인증하지 않은 새 주소로 가입이 나갈 수 있다.
+        // 주소가 바뀌면 취소한다 — 뒤늦게 도착한 성공이 isEmailVerified를 되살려
+        // 인증하지 않은 새 주소로 가입이 나갈 수 있다.
+        // 발송/재발송(emailJob)과 분리한다. 같이 묶으면 확인 요청이 진행 중인 재발송을
+        // 취소하고, 취소 경로엔 재전송 링크 복구가 없어 링크가 영구히 사라진다.
         val target = email
-        emailJob?.cancel()
-        emailJob = viewModelScope.launch {
+        verifyJob?.cancel()
+        verifyJob = viewModelScope.launch {
             try {
                 val response = ApiClient.api.verifyEmailCode(VerifyEmailCodeRequest(mail = target, code = code))
                 if (response.isOk) {
