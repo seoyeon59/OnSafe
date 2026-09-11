@@ -40,7 +40,7 @@ class CameraModeViewModel : ViewModel() {
 
     // 피보호자용 페어링 코드 자동 발급/재발급 루프.
     // 서버 TTL(5분)에 맞춰 만료 직전에 새 코드로 교체하므로 사용자 조작 없이 항상 유효한 코드 유지.
-    // 재진입 시 중복 루프 방지를 위해 기존 Job은 취소하고 재시작.
+    // 이미 도는 루프가 있으면 그대로 둔다 — 재시작하면 백오프가 풀린다(아래 참고).
     fun startPairingCodeAutoRefresh(userId: String) {
         if (userId.isBlank()) return
         // 화면 재생성 시에도 onCreate에서 다시 호출된다. 그때마다 새로 시작하면 실패 횟수가
@@ -69,7 +69,6 @@ class CameraModeViewModel : ViewModel() {
             }
         }
     }
-
 
     // 한 번의 코드 발급 요청 — TTL 초 반환, 실패 시 -1
     private suspend fun fetchAndUpdatePairingCode(userId: String): Long {

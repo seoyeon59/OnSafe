@@ -43,6 +43,13 @@ class MainActivity : AppCompatActivity() {
 
     private var alertDialog: BottomSheetDialog? = null
 
+    // 연결이 확인됐거나 사용자가 미룬 상태 — 홈에 머무는 동안 재확인·재표시를 막는다.
+    // 화면 재생성에도 유지돼야 미뤄둔 모달이 다시 뜨지 않는다(onSaveInstanceState 참고).
+    private var isPaired = false
+    private var pairingDeferred = false
+
+    // 조회가 날아가 있는 동안 다시 부르면 같은 모달이 두 개 뜰 수 있다
+    private var pairingCheckJob: Job? = null
 
     // 알림 화면 복귀 시 네트워크 왕복 없는 즉시 반영
     // (뒤이어 onResume의 refreshUnreadBadge가 서버 값으로 재동기화)
@@ -96,14 +103,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    // 연결이 확인됐거나 사용자가 미룬 상태 — 홈에 머무는 동안 재확인·재표시를 막는다.
-    // 화면 재생성에도 유지돼야 미뤄둔 모달이 다시 뜨지 않는다(onSaveInstanceState 참고).
-    private var isPaired = false
-    private var pairingDeferred = false
-
-    // 조회가 날아가 있는 동안 다시 부르면 같은 모달이 두 개 뜰 수 있다
-    private var pairingCheckJob: Job? = null
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)

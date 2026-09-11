@@ -47,7 +47,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:textColor="@color/status_danger"
-        android:textSize="@dimen/text_tab"
+        android:textSize="@dimen/text_body"
         android:visibility="gone" />
 
     <ProgressBar
