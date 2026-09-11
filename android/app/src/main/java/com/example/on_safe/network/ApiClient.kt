@@ -179,12 +179,7 @@ object ApiClient {
     fun parseErrorMessage(errorBody: ResponseBody?, fallback: String): String {
         return try {
             val json = errorBody?.string() ?: return fallback
-            val message = gson.fromJson(json, ApiResponse::class.java)?.message
-            if (message.isNullOrBlank()) return fallback
-            // "password: 비밀번호는 8자 이상…"처럼 필드명이 앞에 붙어 오는 경우가 있다.
-            // 접두사만 떼면 뒤 문장은 그대로 사용자에게 보여줄 수 있는 안내다.
-            val cleaned = message.replace(fieldPrefixRegex, "").trim()
-            if (isUserFacing(cleaned)) cleaned else fallback
+            sanitizeMessage(gson.fromJson(json, ApiResponse::class.java)?.message, fallback)
         } catch (_: Exception) {
             fallback
         }
