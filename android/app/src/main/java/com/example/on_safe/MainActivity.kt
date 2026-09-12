@@ -48,6 +48,10 @@ class MainActivity : AppCompatActivity() {
     private var isPaired = false
     private var pairingDeferred = false
 
+    // 페어링된 피보호자의 userId — 해제 API 호출에 필요. isPaired=true 인 동안만 유효.
+    private var pairedWardUserId: String? = null
+    private var pairedWardName: String? = null
+
     // 조회가 날아가 있는 동안 다시 부르면 같은 모달이 두 개 뜰 수 있다
     private var pairingCheckJob: Job? = null
 
@@ -93,13 +97,19 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.setFragmentResultListener(
             GuardianPairingDialogFragment.REQUEST_KEY, this
         ) { _, result ->
-            if (result.getBoolean(GuardianPairingDialogFragment.RESULT_PAIRED)) {
-                isPaired = true
-                // 페어링 성공 시 홈의 실시간 폴링을 재시작해 새 상태 즉시 반영
-                viewModel.startPolling(TokenManager.getUserId(this))
-            } else {
+            when {
+                // 실제 관계 성립 완료(FCM pairing_approved 이후 리트리거되는 경로).
+                result.getBoolean(GuardianPairingDialogFragment.RESULT_PAIRED) -> {
+                    isPaired = true
+                    viewModel.startPolling(TokenManager.getUserId(this))
+                }
+                // 요청 전송됨 — 승인 대기 상태. 이번 방문 동안은 모달 재표시 안 하되, 다음 진입에서
+                // getWards 로 성립 여부 재판정한다(승인되면 hasWards=true 로 자동 반영).
+                result.getBoolean(GuardianPairingDialogFragment.RESULT_REQUEST_SENT) -> {
+                    pairingDeferred = true
+                }
                 // "나중에 하기" — 이번 방문 동안은 다시 묻지 않는다
-                pairingDeferred = true
+                else -> pairingDeferred = true
             }
         }
     }
@@ -119,12 +129,12 @@ class MainActivity : AppCompatActivity() {
         val userId = TokenManager.getUserId(this)
         if (userId.isBlank()) return
         pairingCheckJob = lifecycleScope.launch {
-            val hasWards = try {
+            val wards = try {
                 val response = ApiClient.api.getWards(userId)
                 // 서버가 답을 주지 못한 경우(401·5xx)도 판정 불가로 본다 — 세션이 끊긴
                 // 상태에서 모달을 띄우면 코드를 넣어도 계속 실패한다.
                 if (!response.isOk) return@launch
-                !response.body()?.data?.wards.isNullOrEmpty()
+                response.body()?.data?.wards.orEmpty()
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -132,8 +142,12 @@ class MainActivity : AppCompatActivity() {
                 // 홈은 볼 수 있어야 함. 통신이 회복되면 다음 onResume에서 재판정.
                 return@launch
             }
-            if (hasWards) {
+            if (wards.isNotEmpty()) {
                 isPaired = true
+                // 1:1 정책상 최대 1건. 해제 버튼에서 counterpart 로 쓴다.
+                pairedWardUserId = wards.first().userId
+                pairedWardName = wards.first().name
+                findViewById<View>(R.id.btnUnpairMain).visibility = View.VISIBLE
                 return@launch
             }
             // 응답이 늦게 오면 이미 onSaveInstanceState를 지났을 수 있다.
@@ -199,6 +213,52 @@ class MainActivity : AppCompatActivity() {
         setupBottomNav(NavTab.HOME)
         findViewById<View>(R.id.btn119).setOnClickListener {
             startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:119")))
+        }
+        findViewById<View>(R.id.btnUnpairMain).setOnClickListener { showUnpairDialog() }
+    }
+
+    private fun showUnpairDialog() {
+        val counterpart = pairedWardUserId
+        if (counterpart.isNullOrBlank()) {
+            android.widget.Toast.makeText(this, "연결 정보를 확인할 수 없어요.", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        val view = layoutInflater.inflate(R.layout.dialog_unpair, null, false)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(view)
+            .create()
+        view.findViewById<View>(R.id.btnUnpairCancel).setOnClickListener { dialog.dismiss() }
+        view.findViewById<View>(R.id.btnUnpairConfirm).setOnClickListener {
+            dialog.dismiss()
+            performUnpair(counterpart)
+        }
+        dialog.show()
+    }
+
+    private fun performUnpair(counterpartUserId: String) {
+        val userId = TokenManager.getUserId(this)
+        if (userId.isBlank()) return
+        lifecycleScope.launch {
+            try {
+                val response = ApiClient.api.unpair(userId, counterpartUserId)
+                if (response.isOk) {
+                    // 해제 성공 — 로컬 상태 초기화, 홈 재조회로 모달 재표시 유도.
+                    isPaired = false
+                    pairedWardUserId = null
+                    pairedWardName = null
+                    findViewById<View>(R.id.btnUnpairMain).visibility = View.GONE
+                    android.widget.Toast.makeText(this@MainActivity, "피보호자 연결이 해제되었어요.", android.widget.Toast.LENGTH_SHORT).show()
+                    // pairingDeferred 는 이번 방문 동안 재확인만 억제하는 값이라 그대로 두면 홈에 계속 남는다.
+                    // 명시 해제 후엔 다음 진입 때 페어링 모달이 다시 뜨도록 리셋.
+                    pairingDeferred = false
+                } else {
+                    android.widget.Toast.makeText(this@MainActivity, "연결 해제에 실패했어요.", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                android.widget.Toast.makeText(this@MainActivity, "네트워크 오류가 발생했어요.", android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
