@@ -289,6 +289,18 @@
                 android:padding="2dp"
                 app:tint="@color/overlay_white_50" />
 
+            <!-- 보호자 연결 해제 버튼 — 이미 페어링된 상태에서만 표시 (ViewModel.isPaired 관찰) -->
+            <ImageView
+                android:id="@+id/btnUnpairCamera"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="4dp"
+                android:contentDescription="보호자 연결 해제"
+                android:src="@drawable/ic_person_remove"
+                android:padding="2dp"
+                android:visibility="gone"
+                app:tint="#80FEFEFE" />
+
         </LinearLayout>
 
         <!-- 패널 본문 -->

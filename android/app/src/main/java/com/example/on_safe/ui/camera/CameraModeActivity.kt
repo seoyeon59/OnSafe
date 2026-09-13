@@ -10,6 +10,7 @@ import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
 import android.view.View
@@ -74,6 +75,7 @@ class CameraModeActivity : AppCompatActivity() {
     private lateinit var btnFullscreen: FrameLayout
     private lateinit var btnHamburger: ImageButton
     private lateinit var btnTutorial: ImageView
+    private lateinit var btnUnpairCamera: ImageView
     private lateinit var tvPairingCode: TextView
     private lateinit var btnPairingCodeInfo: ImageButton
 
@@ -162,8 +164,12 @@ class CameraModeActivity : AppCompatActivity() {
         viewModel.loadGuardianName(userId)
         // 이 폰이 곧 감시 카메라 — 보호자 홈 조회용 등록
         viewModel.registerDevice(userId, deviceId, Build.MODEL)
-        // 피보호자용 페어링 코드 발급 + 5분 TTL 만료 직전 자동 재발급 시작
+        // 피보호자용 페어링 코드 발급 + 15분 TTL 만료 직전 자동 재발급 시작.
+        // 이미 페어링됐으면 ViewModel 이 my-guardian 조회 후 발급을 스킵한다.
         viewModel.startPairingCodeAutoRefresh(userId)
+        // 앱 heartbeat 2분 주기 시작 — PowerManager 로 절전모드 여부도 함께 전송.
+        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+        viewModel.startHeartbeat { powerManager.isPowerSaveMode }
 
         // 권한이 있으면 바로 카메라 켜고, 없으면 권한 요청
         if (areCameraPermissionsGranted()) {
@@ -211,6 +217,10 @@ class CameraModeActivity : AppCompatActivity() {
         poseLandmarkerHelper?.stop()
         landmarkStreamClient?.close()
         rollingVideoBufferManager?.stop()
+        // heartbeat 루프 명시적 정리 — ViewModel 이 configuration change 로 살아남는 경우에도 카메라
+        // 화면을 벗어나면 하트비트는 멈춰야 함(다른 화면에서 카메라 없는 상태로 heartbeat 보내면
+        // 서버가 "카메라 살아있음"으로 오판할 수 있음).
+        viewModel.stopHeartbeat()
     }
 
     override fun onUserInteraction() {
@@ -241,6 +251,7 @@ class CameraModeActivity : AppCompatActivity() {
         btnFullscreen           = findViewById(R.id.btnFullscreen)
         btnHamburger            = findViewById(R.id.btnHamburger)
         btnTutorial             = findViewById(R.id.btnTutorial)
+        btnUnpairCamera         = findViewById(R.id.btnUnpairCamera)
         tvPairingCode           = findViewById(R.id.tvPairingCode)
         btnPairingCodeInfo      = findViewById(R.id.btnPairingCodeInfo)
 
@@ -252,8 +263,17 @@ class CameraModeActivity : AppCompatActivity() {
             // 레이아웃 예시 문구 잔존 방지용 무조건 대입
             tvGuardianName.text = DisplayText.loadingOrNone(state.guardianName)
             tvDeviceId.text = DisplayText.loadingOrNone(state.deviceId)
-            // 페어링 코드 — 발급 전에는 자리 표시자(------) 유지
-            tvPairingCode.text = state.pairingCode ?: "------"
+            // 페어링 상태에 따라 코드 오버레이 문구 결정:
+            //  - 이미 연결됨: "○○님과 연결됨"
+            //  - 발급됨: 6자리 코드
+            //  - 발급 전/실패: 자리 표시자 "------"
+            tvPairingCode.text = when {
+                state.isPaired -> "${state.pairedGuardianName ?: "보호자"}님과 연결됨"
+                state.pairingCode != null -> state.pairingCode
+                else -> "------"
+            }
+            // 페어링된 상태에서만 해제 버튼 노출 — 미연결 상태에선 해제할 대상이 없다.
+            btnUnpairCamera.visibility = if (state.isPaired) View.VISIBLE else View.GONE
         }
     }
 
@@ -280,6 +300,14 @@ class CameraModeActivity : AppCompatActivity() {
             startActivity(TutorialActivity.intentFromSettings(this))
         }
         btnPairingCodeInfo.setOnClickListener { showPairingCodeGuide() }
+        btnUnpairCamera.setOnClickListener {
+            // 촬영 중에 해제하면 실시간 감지가 무의미해지므로 로그아웃과 동일하게 상태 가드.
+            if (currentState == CameraState.STREAMING || currentState == CameraState.CONNECTING) {
+                toast("촬영 종료 후 연결을 해제해주세요.")
+                return@setOnClickListener
+            }
+            showUnpairDialog()
+        }
     }
 
     private fun showPairingCodeGuide() {
@@ -653,6 +681,27 @@ class CameraModeActivity : AppCompatActivity() {
             confirmId = R.id.btnLogoutConfirm,
             onConfirm = ::handleLogout
         )
+    }
+
+    private fun showUnpairDialog() {
+        showConfirmDialog(
+            layoutRes = R.layout.dialog_unpair,
+            cancelId = R.id.btnUnpairCancel,
+            confirmId = R.id.btnUnpairConfirm,
+            onConfirm = ::handleUnpair
+        )
+    }
+
+    private fun handleUnpair() {
+        val userId = TokenManager.getUserId(this)
+        val counterpart = viewModel.uiState.value?.pairedGuardianUserId
+        if (userId.isBlank() || counterpart.isNullOrBlank()) {
+            toast("연결 정보를 확인할 수 없어요.")
+            return
+        }
+        viewModel.unpair(userId, counterpart) { success, message ->
+            toast(if (success) "보호자 연결이 해제되었어요." else (message ?: "연결 해제에 실패했어요."))
+        }
     }
 
     // 권한 완전 거부 ('다시 묻지 않음') → 설정 화면으로 안내

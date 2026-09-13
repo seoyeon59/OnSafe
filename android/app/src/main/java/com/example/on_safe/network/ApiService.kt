@@ -96,18 +96,50 @@ interface ApiService {
         @Path("userId") userId: String
     ): Response<ApiResponse<PairingCodeResponse>>
 
-    // 보호자가 코드 입력해서 페어링 — 성공 시 연결된 피보호자 정보 반환
+    // 보호자가 코드 입력해서 페어링 요청 — "승인 대기" 상태로 시작한다.
+    // 실제 관계 성립은 피보호자가 approve 하거나 reject 해야 결정되며, 결과는 FCM(event=
+    // pairing_approved/rejected)으로 통지된다. 응답에는 요청 식별자와 만료 시각(30분)만 포함.
     @POST("api/guardian/{userId}/pair")
     suspend fun pairGuardian(
         @Path("userId") userId: String,
         @Body request: PairRequest
+    ): Response<ApiResponse<PairingRequestResponse>>
+
+    // 피보호자가 승인 요청을 승인 — 이 시점에 실제 guardian_links 관계가 생성된다.
+    // 기존 관계(피보호자의 기존 보호자, 보호자의 기존 피보호자)가 있으면 자동으로 해제되고
+    // 옛 파트너에게는 pairing_displaced FCM 이 발송된다.
+    @POST("api/guardian/{userId}/pairing-requests/{requestId}/approve")
+    suspend fun approvePairingRequest(
+        @Path("userId") userId: String,
+        @Path("requestId") requestId: String
     ): Response<ApiResponse<WardResponse>>
 
-    // 보호자가 자신에게 연결된 피보호자 목록 조회 — 진입 시 페어링 모달 표시 여부 판단용
+    // 피보호자가 승인 요청을 거부 — Redis 요청이 소비되고 보호자에게 pairing_rejected FCM 발송.
+    @POST("api/guardian/{userId}/pairing-requests/{requestId}/reject")
+    suspend fun rejectPairingRequest(
+        @Path("userId") userId: String,
+        @Path("requestId") requestId: String
+    ): Response<ApiResponse<Unit>>
+
+    // 보호자가 자신에게 연결된 피보호자 목록 조회 — 진입 시 페어링 모달 표시 여부 판단용.
+    // 1:1 정책상 최대 1건.
     @GET("api/guardian/{userId}/wards")
     suspend fun getWards(
         @Path("userId") userId: String
     ): Response<ApiResponse<WardsWrapper>>
+
+    // 피보호자가 자기 보호자 정보를 조회 — 감시받는 사람이 감시자를 감사할 수 있게. 없으면 null.
+    @GET("api/guardian/{userId}/my-guardian")
+    suspend fun getMyGuardian(
+        @Path("userId") userId: String
+    ): Response<ApiResponse<GuardianResponse?>>
+
+    // 보호자·피보호자 어느 쪽에서 호출해도 관계가 해제됨. 상대방에게 pairing_unpaired FCM 발송.
+    @DELETE("api/guardian/{userId}/pair/{counterpartUserId}")
+    suspend fun unpair(
+        @Path("userId") userId: String,
+        @Path("counterpartUserId") counterpartUserId: String
+    ): Response<ApiResponse<Unit>>
 
     // ===== Settings =====
 
@@ -140,6 +172,11 @@ interface ApiService {
 
     @GET("api/camera/status/{userId}")
     suspend fun getRiskStatus(@Path("userId") userId: String): Response<ApiResponse<RiskStatusResponse>>
+
+    // 피보호자 앱 heartbeat — 카메라 모드 켜져 있는 동안 2분 주기로 호출.
+    // 서버는 이 호출을 근거로 6분 이상 미수신 시 오프라인 판정 후 보호자에게 통지한다.
+    @POST("api/camera/heartbeat")
+    suspend fun heartbeat(@Body request: HeartbeatRequest): Response<ApiResponse<Unit>>
 
     // ===== Fall Logs (사고 이력) =====
 

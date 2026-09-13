@@ -82,6 +82,25 @@
                 android:backgroundTint="@color/status_danger"
                 android:visibility="gone" />
         </FrameLayout>
+
+        <!-- 피보호자 연결 해제 버튼 — 페어링된 상태에서만 표시 (MainActivity 에서 visibility 제어) -->
+        <FrameLayout
+            android:id="@+id/btnUnpairMain"
+            android:layout_width="@dimen/touch_min"
+            android:layout_height="@dimen/touch_min"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:contentDescription="피보호자 연결 해제"
+                android:src="@drawable/ic_person_remove"
+                app:tint="@color/primary_blue" />
+        </FrameLayout>
     </LinearLayout>
 
     <!-- 알림 권한 미동의 배너 -->
