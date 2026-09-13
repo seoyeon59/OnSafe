@@ -41,6 +41,12 @@ import com.example.on_safe.util.onTextChanged
 import com.example.on_safe.util.openTermsUrl
 import com.example.on_safe.util.setInputBorder
 
+// 디버그 로그인 버튼이 저장하는 가짜 토큰 — 자동 로그인 건너뛰기 판정에도 같은 값을 쓴다
+private const val DEBUG_TOKEN = "debug_token"
+
+// 세션 검증 결과 — 유효/무효/판정 불가를 구분해야 통신 장애로 로그아웃되는 일을 막는다
+private enum class SessionCheck { VALID, INVALID, UNKNOWN }
+
 class LoginActivity : AppCompatActivity() {
 
     private val viewModel: LoginViewModel by viewModels()
@@ -136,28 +142,39 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    // 자동 로그인 진입 전 서버 세션 검증. 200 이면 온보딩으로, 401/네트워크 오류면 로컬 세션 정리 후 로그인 폼 노출.
+    // 자동 로그인 진입 전 서버 세션 검증.
+    // 200이면 온보딩으로, 401이면 세션 정리 후 로그인 폼. 통신 자체가 안 되면 세션을 유지한다 —
+    // 로그인에도 통신이 필요하므로 지워버리면 오프라인 사용자는 앱에 들어올 방법이 없다.
     private fun tryAutoLogin() {
         val accessToken = TokenManager.getAccessToken(this)
-        if (accessToken.isNullOrBlank()) {
+        // 디버그 로그인 버튼이 심어둔 가짜 토큰은 서버가 반드시 거부한다 — 앱을 켤 때마다
+        // 로딩과 "세션 만료" 안내를 거쳐 로그인 화면으로 돌아오는 낭비를 막는다.
+        if (accessToken.isNullOrBlank() || (BuildConfig.DEBUG && accessToken == DEBUG_TOKEN)) {
             setupLoginForm()
             return
         }
         lifecycleScope.launch {
-            val ok = try {
-                val response = ApiClient.api.validateToken("Bearer $accessToken")
-                response.isOk
+            val result = try {
+                val response = ApiClient.api.validateToken()
+                when {
+                    response.isOk -> SessionCheck.VALID
+                    response.code() == 401 -> SessionCheck.INVALID
+                    // 서버 장애(5xx)는 세션 무효의 근거가 아니다
+                    else -> SessionCheck.UNKNOWN
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                false
+                SessionCheck.UNKNOWN
             }
-            if (ok) {
-                startOnboarding()
-            } else {
-                TokenManager.clearSession(this@LoginActivity)
-                Toast.makeText(this@LoginActivity, "세션이 만료되어 다시 로그인해주세요.", Toast.LENGTH_SHORT).show()
-                setupLoginForm()
+            when (result) {
+                // 판정 불가일 땐 통과시킨다. 개별 요청이 401을 받으면 그때 정리된다.
+                SessionCheck.VALID, SessionCheck.UNKNOWN -> startOnboarding()
+                SessionCheck.INVALID -> {
+                    TokenManager.clearSession(this@LoginActivity)
+                    Toast.makeText(this@LoginActivity, "세션이 만료되어 다시 로그인해주세요.", Toast.LENGTH_SHORT).show()
+                    setupLoginForm()
+                }
             }
         }
     }
@@ -179,7 +196,7 @@ class LoginActivity : AppCompatActivity() {
         val btnDebugLogin = findViewById<Button>(R.id.btnDebugLogin)
         btnDebugLogin.isVisible = true
         btnDebugLogin.setOnClickListener {
-            TokenManager.saveTokens(this, "debug_token", "debug_refresh", "debug_user")
+            TokenManager.saveTokens(this, DEBUG_TOKEN, "debug_refresh", "debug_user")
             // 튜토리얼 표시 여부 초기화 — 항상 온보딩 첫 화면부터 시작
             TutorialActivity.resetShownFlag(this)
             startActivity(

@@ -134,10 +134,10 @@ class SettingsViewModel : ViewModel() {
     }
 
     // 서버 호출 실패와 무관하게 로컬 로그아웃은 항상 진행
-    fun logout(refreshToken: String?) {
+    fun logout(accessToken: String?, refreshToken: String?) {
         viewModelScope.launch {
             try {
-                ApiClient.api.logout(refreshToken)
+                ApiClient.api.logout(accessToken?.let { "Bearer $it" }, refreshToken)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

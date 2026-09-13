@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.ResetPasswordRequest
 import com.example.on_safe.network.dto.UserUpdateRequest
+import com.example.on_safe.network.errorMessage
+import com.example.on_safe.network.isOk
 import com.example.on_safe.util.FieldValidation
 import com.example.on_safe.util.PasswordValidator
 import kotlinx.coroutines.CancellationException
@@ -45,18 +47,20 @@ class ResetPasswordViewModel : ViewModel() {
         this.userId = userId
     }
 
+    // 전송 직전이 아니라 입력 시점에 trim한다 — 회원가입·로그인이 모두 trim한 값을 쓰므로
+    // 여기서만 원본을 보내면 끝에 공백이 붙은 비밀번호로 바뀌어 로그인이 영영 안 된다.
     fun onNewPasswordChanged(pw: String) {
-        newPw = pw
+        newPw = pw.trim()
         recompute()
     }
 
     fun onConfirmChanged(confirm: String) {
-        newPwConfirm = confirm
+        newPwConfirm = confirm.trim()
         recompute()
     }
 
     fun onCurrentPasswordChanged(password: String) {
-        currentPw = password
+        currentPw = password.trim()
         recompute()
     }
 
@@ -88,6 +92,11 @@ class ResetPasswordViewModel : ViewModel() {
 
     // 진입 경로별 엔드포인트 상이 — reset-password는 이메일 코드 인증 선행 필수
     fun save() {
+        // 아이디가 없으면 요청 경로가 깨져 "현재 비밀번호가 올바르지 않습니다"로 잘못 안내된다
+        if (userId.isBlank()) {
+            _toastMessage.value = "로그인 정보가 없습니다. 다시 로그인해주세요."
+            return
+        }
         setState { copy(isLoading = true) }
         viewModelScope.launch {
             try {
@@ -112,12 +121,10 @@ class ResetPasswordViewModel : ViewModel() {
             userId,
             UserUpdateRequest(currentPassword = currentPw, password = newPw)
         )
-        if (response.isSuccessful && response.body()?.success == true) {
+        if (response.isOk) {
             onSaveSucceeded()
         } else {
-            _toastMessage.value = ApiClient.parseErrorMessage(
-                response.errorBody(), "현재 비밀번호가 올바르지 않습니다."
-            )
+            _toastMessage.value = response.errorMessage("현재 비밀번호가 올바르지 않습니다.")
         }
     }
 
@@ -126,11 +133,11 @@ class ResetPasswordViewModel : ViewModel() {
         val response = ApiClient.api.resetPassword(
             ResetPasswordRequest(userId = userId, newPassword = newPw)
         )
-        if (response.isSuccessful && response.body()?.success == true) {
+        if (response.isOk) {
             onSaveSucceeded()
         } else {
-            _toastMessage.value = response.body()?.message
-                ?: ApiClient.parseErrorMessage(response.errorBody(), "비밀번호 변경에 실패했습니다.")
+            // 서버 원문을 그대로 쓰지 않는다 — 영문 검증 메시지가 섞여 오면 걸러진다
+            _toastMessage.value = response.errorMessage("비밀번호 변경에 실패했습니다.")
         }
     }
 
