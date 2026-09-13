@@ -100,7 +100,13 @@ class MainActivity : AppCompatActivity() {
             when {
                 // 실제 관계 성립 완료(FCM pairing_approved 이후 리트리거되는 경로).
                 result.getBoolean(GuardianPairingDialogFragment.RESULT_PAIRED) -> {
-                    isPaired = true
+                    // 이 시점엔 성립 사실만 알고 pairedWardUserId 는 비어 있어 해제 버튼이 동작 못한다.
+                    // 서버에서 wards 를 다시 조회해 상세를 채운 뒤 라벨을 갱신.
+                    isPaired = false
+                    pairingDeferred = false
+                    pairingCheckJob?.cancel()
+                    pairingCheckJob = null
+                    checkGuardianPairingOnEntry()
                     viewModel.startPolling(TokenManager.getUserId(this))
                 }
                 // 요청 전송됨 — 승인 대기 상태. 이번 방문 동안은 모달 재표시 안 하되, 다음 진입에서
@@ -147,7 +153,7 @@ class MainActivity : AppCompatActivity() {
                 // 1:1 정책상 최대 1건. 해제 버튼에서 counterpart 로 쓴다.
                 pairedWardUserId = wards.first().userId
                 pairedWardName = wards.first().name
-                findViewById<View>(R.id.btnUnpairMain).visibility = View.VISIBLE
+                renderPairingAction()
                 return@launch
             }
             // 응답이 늦게 오면 이미 onSaveInstanceState를 지났을 수 있다.
@@ -214,7 +220,26 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btn119).setOnClickListener {
             startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:119")))
         }
-        findViewById<View>(R.id.btnUnpairMain).setOnClickListener { showUnpairDialog() }
+        findViewById<View>(R.id.btnPairingAction).setOnClickListener { onPairingActionClick() }
+        renderPairingAction()
+    }
+
+    // 헤더의 페어링 버튼 라벨은 항상 isPaired 상태를 그대로 반영한다.
+    // 상태 판정은 checkGuardianPairingOnEntry / performUnpair / pair 결과 리스너에서 갱신 후 호출.
+    private fun renderPairingAction() {
+        val label = findViewById<TextView>(R.id.tvPairingActionLabel) ?: return
+        label.text = if (isPaired) "연결 해제" else "연결 시작"
+    }
+
+    private fun onPairingActionClick() {
+        if (isPaired) {
+            showUnpairDialog()
+        } else {
+            // 자동 팝업이 pairingDeferred=true 로 억제된 뒤에도 여기로 다시 진입할 수 있어야 한다.
+            if (supportFragmentManager.findFragmentByTag(PAIRING_TAG) == null) {
+                GuardianPairingDialogFragment().show(supportFragmentManager, PAIRING_TAG)
+            }
+        }
     }
 
     private fun showUnpairDialog() {
@@ -246,7 +271,7 @@ class MainActivity : AppCompatActivity() {
                     isPaired = false
                     pairedWardUserId = null
                     pairedWardName = null
-                    findViewById<View>(R.id.btnUnpairMain).visibility = View.GONE
+                    renderPairingAction()
                     android.widget.Toast.makeText(this@MainActivity, "피보호자 연결이 해제되었어요.", android.widget.Toast.LENGTH_SHORT).show()
                     // pairingDeferred 는 이번 방문 동안 재확인만 억제하는 값이라 그대로 두면 홈에 계속 남는다.
                     // 명시 해제 후엔 다음 진입 때 페어링 모달이 다시 뜨도록 리셋.

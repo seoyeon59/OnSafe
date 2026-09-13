@@ -83,24 +83,33 @@
                 android:visibility="gone" />
         </FrameLayout>
 
-        <!-- 피보호자 연결 해제 버튼 — 페어링된 상태에서만 표시 (MainActivity 에서 visibility 제어) -->
-        <FrameLayout
-            android:id="@+id/btnUnpairMain"
-            android:layout_width="@dimen/touch_min"
-            android:layout_height="@dimen/touch_min"
-            android:background="?attr/selectableItemBackgroundBorderless"
+        <!-- 페어링 진입점 — 상태에 따라 라벨/동작 토글 (MainActivity.renderPairingAction 참고).
+             페어링 안됨: "연결 시작" → 코드 입력 모달
+             페어링됨:   "연결 해제" → 해제 확인 모달 -->
+        <LinearLayout
+            android:id="@+id/btnPairingAction"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_pill"
+            android:backgroundTint="@color/primary_blue"
             android:clickable="true"
             android:focusable="true"
-            android:visibility="gone">
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp">
 
-            <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_gravity="center"
-                android:contentDescription="피보호자 연결 해제"
-                android:src="@drawable/ic_person_remove"
-                app:tint="@color/primary_blue" />
-        </FrameLayout>
+            <TextView
+                android:id="@+id/tvPairingActionLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/pretendard_bold"
+                android:includeFontPadding="false"
+                android:text="연결 시작"
+                android:textColor="@color/surface_white"
+                android:textSize="@dimen/text_body" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- 알림 권한 미동의 배너 -->
