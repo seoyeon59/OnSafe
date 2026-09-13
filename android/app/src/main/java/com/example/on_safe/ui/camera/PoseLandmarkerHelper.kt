@@ -9,7 +9,6 @@ import android.os.SystemClock
 import androidx.camera.core.ImageProxy
 import com.example.on_safe.network.dto.LandmarkPoint
 import com.google.mediapipe.framework.image.BitmapImageBuilder
-import com.google.mediapipe.framework.image.MPImage
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
@@ -20,7 +19,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * On-device MediaPipe Pose Landmarker(LIVE_STREAM) 래퍼.
+ * On-device MediaPipe Pose Landmarker(IMAGE) 래퍼.
+ * 학습 파이프라인과 동일하게 프레임별 독립 detect()로 좌표를 추출한다(추적/스무딩 없음).
  * 카메라 바인딩은 [CameraModeActivity] 소유 — 여기서는 추론과 [analyze] 콜백만 담당.
  */
 class PoseLandmarkerHelper(private val context: Context, private val listener: Listener) {
@@ -55,11 +55,17 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
                     .setModelAssetPath(MODEL_ASSET_PATH)
                     .build()
 
+                // 학습 파이프라인(2.MediaPipe_Pose.ipynb)과 동일하게 IMAGE 모드로 추출한다.
+                // 학습은 detect()(프레임 독립, 추적/스무딩 없음)로 좌표를 뽑았으므로, 추론도
+                // LIVE_STREAM(추적 적용) 대신 IMAGE 로 맞춰야 좌표 분포가 학습과 일치한다.
+                // 신뢰도(0.5)·num_poses(1)도 학습과 동일하게 명시.
                 val options = PoseLandmarker.PoseLandmarkerOptions.builder()
                     .setBaseOptions(baseOptions)
-                    .setRunningMode(RunningMode.LIVE_STREAM)
-                    .setResultListener(::onLivestreamResult)
-                    .setErrorListener { error -> listener.onError(error.message ?: "MediaPipe 오류") }
+                    .setRunningMode(RunningMode.IMAGE)
+                    .setNumPoses(1)
+                    .setMinPoseDetectionConfidence(0.5f)
+                    .setMinPosePresenceConfidence(0.5f)
+                    .setMinTrackingConfidence(0.5f)
                     .build()
 
                 poseLandmarker = PoseLandmarker.createFromOptions(context, options)
@@ -91,12 +97,16 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
         )
 
         val mpImage = BitmapImageBuilder(rotatedBitmap).build()
-        landmarker.detectAsync(mpImage, SystemClock.uptimeMillis())
+        // IMAGE 모드 동기 추론 — analyze()는 단일 스레드 executor에서 호출되고 CameraX는
+        // KEEP_ONLY_LATEST로 중간 프레임을 버리므로, 프레임별 독립 detect()가 학습과 일치한다.
+        try {
+            handleResult(landmarker.detect(mpImage))
+        } catch (e: Exception) {
+            listener.onError("포즈 추론 실패: ${e.message}")
+        }
     }
 
-    // input은 MediaPipe 콜백 시그니처상 필수 — 사용하지 않음
-    @Suppress("UNUSED_PARAMETER")
-    private fun onLivestreamResult(result: PoseLandmarkerResult, input: MPImage) {
+    private fun handleResult(result: PoseLandmarkerResult) {
         val poses = result.landmarks()
         if (poses.isEmpty()) return
 
