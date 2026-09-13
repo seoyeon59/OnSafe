@@ -50,6 +50,9 @@ data class RegisterStep2UiState(
     val isConfirmCodeEnabled: Boolean = false,
     val isEmailResendVisible: Boolean = false,
     val emailTimerText: String = "",
+    // verifyEmailCode 성공 시 서버가 발급한 1회용 티켓. register 요청 시 함께 전송해야 통과된다.
+    // 이메일 재인증(같은 mail 로 verifyEmailCode 를 다시 성공)하면 새 티켓으로 덮어씀.
+    val emailVerifyTicket: String? = null,
 
     // 이름 / 주소 (별도 유효성 없이 비어있는지만 확인)
     val isNameFilled: Boolean = false,
@@ -222,7 +225,10 @@ class RegisterStep2ViewModel : ViewModel() {
                 emailValidation = validation,
                 isEmailVerified = false,
                 isEmailCodeLayoutVisible = false,
-                isEmailVerifyEnabled = true
+                isEmailVerifyEnabled = true,
+                // 주소가 바뀌면 기존 티켓도 무효 — register 시점에 이 티켓이 남아 있으면
+                // 서버가 mail 대조에서 거부하지만 프론트에서도 미리 정리해 UI 상태 일관성 유지.
+                emailVerifyTicket = null,
             )
         }
         recomputeComplete()
@@ -324,12 +330,22 @@ class RegisterStep2ViewModel : ViewModel() {
                 val response = ApiClient.api.verifyEmailCode(VerifyEmailCodeRequest(mail = target, code = code))
                 if (response.isOk) {
                     emailTimer.cancel()
+                    // 서버가 발급한 1회용 티켓을 저장 — register 시 함께 실어 인증 소유권 증명.
+                    // 서버 응답 data 가 (뭔가 이유로) 없으면 서버 스펙 불일치 상황이라 인증 실패 처리.
+                    val ticket = response.body()?.data?.emailVerifyTicket
+                    if (ticket.isNullOrBlank()) {
+                        _toastMessage.value = "인증 확인에 실패했습니다. 다시 시도해주세요."
+                        setState { copy(isConfirmCodeEnabled = true) }
+                        recomputeComplete()
+                        return@launch
+                    }
                     // 인증 완료 후에도 "재전송"이 남아 있던 문제 — 함께 숨김
                     setState {
                         copy(
                             isEmailVerified = true,
                             isEmailCodeLayoutVisible = false,
-                            isEmailResendVisible = false
+                            isEmailResendVisible = false,
+                            emailVerifyTicket = ticket,
                         )
                     }
                 } else {
@@ -350,6 +366,13 @@ class RegisterStep2ViewModel : ViewModel() {
     // marketingConsent: Step1 화면의 마케팅 정보 수신 체크박스 값을 그대로 서버에 반영
     // TODO: [백엔드] 만 14세 미만 가입 제한 도입 시 생년월일 입력란과 birthDate 필드 추가 필요.
     fun register(password: String, phone: String, addressDetail: String, consents: ConsentChoices) {
+        // 티켓이 없다면 이메일 인증이 미완료 상태 — completeReady 판정에서 이미 걸러지지만
+        // 방어적으로 한 번 더 확인해 부분 검증 상태로 서버까지 보내지 않게 한다.
+        val ticket = state.emailVerifyTicket
+        if (ticket.isNullOrBlank()) {
+            _toastMessage.value = "이메일 인증을 먼저 완료해주세요."
+            return
+        }
         setState { copy(isLoading = true) }
         viewModelScope.launch {
             try {
@@ -365,7 +388,8 @@ class RegisterStep2ViewModel : ViewModel() {
                         termsAgreed = consents.terms,
                         privacyPolicyAgreed = consents.privacy,
                         sensitiveInfoAgreed = consents.sensitive,
-                        marketingConsent = consents.marketing
+                        marketingConsent = consents.marketing,
+                        emailVerifyTicket = ticket
                     )
                 )
                 if (response.isOk) {

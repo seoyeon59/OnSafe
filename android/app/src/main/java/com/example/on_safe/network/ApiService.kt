@@ -36,7 +36,7 @@ interface ApiService {
     suspend fun sendEmailCode(@Body request: SendEmailCodeRequest): Response<ApiResponse<Unit>>
 
     @POST("api/auth/verify-email-code")
-    suspend fun verifyEmailCode(@Body request: VerifyEmailCodeRequest): Response<ApiResponse<Unit>>
+    suspend fun verifyEmailCode(@Body request: VerifyEmailCodeRequest): Response<ApiResponse<VerifyEmailCodeResponse>>
 
     @POST("api/auth/find-id")
     suspend fun findId(@Body request: FindIdRequest): Response<ApiResponse<FindIdResponse>>
