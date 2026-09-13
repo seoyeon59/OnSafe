@@ -37,6 +37,8 @@
 
     <!-- 어두운 화면 — 화면보호기·전체화면·영상 재생 -->
     <color name="surface_dark">#0D0F11</color>
+    <color name="surface_dark_panel">#202327</color>  <!-- 카메라 모드 사이드 패널 -->
+    <color name="surface_dark_veil">#EB0F1216</color> <!-- 영상 위에 얹는 반투명 패널 -->
 
     <!-- 연한 원형/배지 틴트 -->
     <color name="tint_neutral">#129FA6AC</color>  <!-- 회색 7% -->
@@ -49,7 +51,8 @@
     <color name="overlay_white_15">#26FFFFFF</color>
     <color name="overlay_white_20">#33FFFFFF</color>
     <color name="overlay_white_25">#40FFFFFF</color> <!-- 색 배경 위 옅은 칩 -->
-    <color name="overlay_white_50">#80FFFFFF</color> <!-- 어두운 배경 위 흐린 텍스트·아이콘 -->
+    <color name="overlay_white_50">#80FFFFFF</color>
+    <color name="overlay_white_75">#BFFFFFFF</color> <!-- 어두운 배경 위 흐린 텍스트·아이콘 -->
 
     <!-- 파랑 알파 사다리 -->
     <color name="primary_blue_tint">#1A4D80FF</color>       <!-- 10% — 배너 배경 -->
