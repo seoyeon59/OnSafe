@@ -18,7 +18,16 @@ import com.example.on_safe.util.PasswordValidator
 import com.example.on_safe.util.PhoneField
 import com.example.on_safe.util.VerificationCodeTimer
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+
+// Step1 동의 화면의 체크값 묶음 — 서버가 동의 이력을 남기므로 실제 값을 그대로 전달한다
+data class ConsentChoices(
+    val terms: Boolean,
+    val privacy: Boolean,
+    val sensitive: Boolean,
+    val marketing: Boolean
+)
 
 data class RegisterStep2UiState(
     // 아이디
@@ -41,6 +50,9 @@ data class RegisterStep2UiState(
     val isConfirmCodeEnabled: Boolean = false,
     val isEmailResendVisible: Boolean = false,
     val emailTimerText: String = "",
+    // verifyEmailCode 성공 시 서버가 발급한 1회용 티켓. register 요청 시 함께 전송해야 통과된다.
+    // 이메일 재인증(같은 mail 로 verifyEmailCode 를 다시 성공)하면 새 티켓으로 덮어씀.
+    val emailVerifyTicket: String? = null,
 
     // 이름 / 주소 (별도 유효성 없이 비어있는지만 확인)
     val isNameFilled: Boolean = false,
@@ -87,21 +99,35 @@ class RegisterStep2ViewModel : ViewModel() {
     private var addressText = ""
     private var email = ""
 
+    // 이메일 인증 요청 — 주소가 바뀌면 취소해 이전 주소의 응답이 새 주소에 적용되지 않게 한다
+    private var emailJob: Job? = null
+
+    // 인증번호 확인 요청 — 발송/재발송과 서로 취소하지 않도록 따로 둔다
+    private var verifyJob: Job? = null
+
+    // 아이디 중복확인 요청 — 같은 이유로 아이디가 바뀌면 취소한다
+    private var idJob: Job? = null
+
     // ── 아이디 ──
     fun onIdChanged(id: String) {
         idText = id
         // 아이디 변경 시 이전 중복확인 결과 무효화
+        idJob?.cancel()
         setState { copy(isIdCheckEnabled = true, isIdChecked = false, idValidation = FieldValidation.Empty) }
         recomputeComplete()
     }
 
+    // TODO: [백엔드] userId 길이·문자셋 서버 검증 부재 — 앱 외 클라이언트로 임의 아이디 등록 가능.
+    // TODO: [백엔드] 전화번호를 정규화 없이 저장·비교해 하이픈 유무로 중복 검사 우회 가능.
     fun checkId(id: String) {
         if (!ID_REGEX.matches(id)) {
             setState { copy(idValidation = FieldValidation.Invalid("영문/숫자 6~12자로 입력해주세요.")) }
             return
         }
         setState { copy(isIdCheckEnabled = false) }
-        viewModelScope.launch {
+        // 응답 대기 중 아이디가 바뀌면 뒤늦은 성공이 무효화된 확인 결과를 되살린다
+        idJob?.cancel()
+        idJob = viewModelScope.launch {
             try {
                 val response = ApiClient.api.checkId(CheckIdRequest(userId = id))
                 if (response.isOk) {
@@ -127,10 +153,12 @@ class RegisterStep2ViewModel : ViewModel() {
 
     // ── 비밀번호 / 비밀번호 확인 ──
     fun onPwChanged(pw: String) {
-        pwText = pw
+        // 전송할 때 trim하므로 검증도 같은 값으로 한다. 원본으로 검증하면
+        // 끝에 공백이 붙은 8자가 앱은 통과하고 서버 @Size(min=8)에서 거부된다.
+        pwText = pw.trim()
         val validation = when {
-            pw.isEmpty() -> FieldValidation.Empty
-            PasswordValidator.isValid(pw) -> FieldValidation.Valid(PasswordValidator.SUCCESS_MSG)
+            pwText.isEmpty() -> FieldValidation.Empty
+            PasswordValidator.isValid(pwText) -> FieldValidation.Valid(PasswordValidator.SUCCESS_MSG)
             else -> FieldValidation.Invalid(PasswordValidator.ERROR_MSG)
         }
         setState { copy(pwValidation = validation) }
@@ -140,7 +168,7 @@ class RegisterStep2ViewModel : ViewModel() {
     }
 
     fun onPwConfirmChanged(confirm: String) {
-        pwConfirmText = confirm
+        pwConfirmText = confirm.trim()
         recomputePwConfirm()
         recomputeComplete()
     }
@@ -168,7 +196,7 @@ class RegisterStep2ViewModel : ViewModel() {
     // ── 이름 ──
     fun onNameChanged(name: String) {
         nameText = name
-        setState { copy(isNameFilled = name.isNotEmpty()) }
+        setState { copy(isNameFilled = name.isNotBlank()) }
         recomputeComplete()
     }
 
@@ -184,6 +212,9 @@ class RegisterStep2ViewModel : ViewModel() {
         email = newEmail
         // 이메일 변경 시 인증 상태·타이머 초기화 — 뒤늦은 타이머 콜백 차단
         emailTimer.cancel()
+        // 주소가 바뀌면 진행 중이던 요청은 의미가 없다. 아래 setState가 버튼 상태도 함께 되돌린다.
+        emailJob?.cancel()
+        verifyJob?.cancel()
         val validation = when {
             newEmail.isEmpty() -> FieldValidation.Empty
             EmailValidator.isValid(newEmail) -> FieldValidation.Valid(EmailValidator.SUCCESS_MSG)
@@ -194,7 +225,10 @@ class RegisterStep2ViewModel : ViewModel() {
                 emailValidation = validation,
                 isEmailVerified = false,
                 isEmailCodeLayoutVisible = false,
-                isEmailVerifyEnabled = true
+                isEmailVerifyEnabled = true,
+                // 주소가 바뀌면 기존 티켓도 무효 — register 시점에 이 티켓이 남아 있으면
+                // 서버가 mail 대조에서 거부하지만 프론트에서도 미리 정리해 UI 상태 일관성 유지.
+                emailVerifyTicket = null,
             )
         }
         recomputeComplete()
@@ -206,13 +240,17 @@ class RegisterStep2ViewModel : ViewModel() {
             return
         }
         setState { copy(isEmailVerifyEnabled = false) }
+        // 요청 시점의 주소로 고정 — 응답을 기다리는 사이 사용자가 주소를 바꿔도
+        // 중복확인을 통과한 주소로만 코드가 나가게 한다
+        val target = email
+        emailJob?.cancel()
         // 인증 메일 발송 전에 서버에 중복 여부 조회 — SES 비용/스팸 방지 및
         // 이미 가입된 이메일이면 즉시 사용자에게 알림.
-        viewModelScope.launch {
+        emailJob = viewModelScope.launch {
             try {
-                val response = ApiClient.api.checkMail(CheckMailRequest(mail = email))
+                val response = ApiClient.api.checkMail(CheckMailRequest(mail = target))
                 if (response.isOk) {
-                    sendEmailCode(isResend = false)
+                    sendEmailCode(target, isResend = false)
                 } else {
                     val msg = response.errorMessage("이미 사용 중인 이메일입니다.")
                     setState {
@@ -232,29 +270,32 @@ class RegisterStep2ViewModel : ViewModel() {
     }
 
     fun resendEmailCode() {
+        // 진행 중인 인증 요청은 취소하지 않는다 — 취소 경로에는 인증 버튼 복구가 없어
+        // 재전송까지 실패하면 버튼이 비활성으로 고착된다.
+        if (emailJob?.isActive == true) return
         setState { copy(isEmailResendVisible = false) }
-        sendEmailCode(isResend = true)
+        val target = email
+        emailJob = viewModelScope.launch { sendEmailCode(target, isResend = true) }
     }
 
-    // 발송·재발송 공통 — 안내 문구와 실패 시 복구 대상만 다름
-    private fun sendEmailCode(isResend: Boolean) {
-        viewModelScope.launch {
-            try {
-                val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = email))
-                if (response.isOk) {
-                    startEmailVerification(isResend)
-                } else {
-                    restoreSendButton(isResend)
-                    _toastMessage.value = response.errorMessage(
-                        if (isResend) "인증 메일 재발송에 실패했습니다." else "인증 메일 발송에 실패했습니다."
-                    )
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
+    // 발송·재발송 공통 — 안내 문구와 실패 시 복구 대상만 다름.
+    // 호출부의 코루틴 안에서 이어 실행돼 주소 변경 시 함께 취소된다.
+    private suspend fun sendEmailCode(target: String, isResend: Boolean) {
+        try {
+            val response = ApiClient.api.sendEmailCode(SendEmailCodeRequest(mail = target))
+            if (response.isOk) {
+                startEmailVerification(isResend)
+            } else {
                 restoreSendButton(isResend)
-                _toastMessage.value = "네트워크 오류가 발생했습니다."
+                _toastMessage.value = response.errorMessage(
+                    if (isResend) "인증 메일 재발송에 실패했습니다." else "인증 메일 발송에 실패했습니다."
+                )
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            restoreSendButton(isResend)
+            _toastMessage.value = "네트워크 오류가 발생했습니다."
         }
     }
 
@@ -278,17 +319,33 @@ class RegisterStep2ViewModel : ViewModel() {
 
     fun confirmEmailCode(code: String) {
         setState { copy(isConfirmCodeEnabled = false) }
-        viewModelScope.launch {
+        // 주소가 바뀌면 취소한다 — 뒤늦게 도착한 성공이 isEmailVerified를 되살려
+        // 인증하지 않은 새 주소로 가입이 나갈 수 있다.
+        // 발송/재발송(emailJob)과 분리한다. 같이 묶으면 확인 요청이 진행 중인 재발송을
+        // 취소하고, 취소 경로엔 재전송 링크 복구가 없어 링크가 영구히 사라진다.
+        val target = email
+        verifyJob?.cancel()
+        verifyJob = viewModelScope.launch {
             try {
-                val response = ApiClient.api.verifyEmailCode(VerifyEmailCodeRequest(mail = email, code = code))
+                val response = ApiClient.api.verifyEmailCode(VerifyEmailCodeRequest(mail = target, code = code))
                 if (response.isOk) {
                     emailTimer.cancel()
+                    // 서버가 발급한 1회용 티켓을 저장 — register 시 함께 실어 인증 소유권 증명.
+                    // 서버 응답 data 가 (뭔가 이유로) 없으면 서버 스펙 불일치 상황이라 인증 실패 처리.
+                    val ticket = response.body()?.data?.emailVerifyTicket
+                    if (ticket.isNullOrBlank()) {
+                        _toastMessage.value = "인증 확인에 실패했습니다. 다시 시도해주세요."
+                        setState { copy(isConfirmCodeEnabled = true) }
+                        recomputeComplete()
+                        return@launch
+                    }
                     // 인증 완료 후에도 "재전송"이 남아 있던 문제 — 함께 숨김
                     setState {
                         copy(
                             isEmailVerified = true,
                             isEmailCodeLayoutVisible = false,
-                            isEmailResendVisible = false
+                            isEmailResendVisible = false,
+                            emailVerifyTicket = ticket,
                         )
                     }
                 } else {
@@ -307,7 +364,15 @@ class RegisterStep2ViewModel : ViewModel() {
 
     // ── 최종 회원가입 ──
     // marketingConsent: Step1 화면의 마케팅 정보 수신 체크박스 값을 그대로 서버에 반영
-    fun register(password: String, phone: String, addressDetail: String, marketingConsent: Boolean) {
+    // TODO: [백엔드] 만 14세 미만 가입 제한 도입 시 생년월일 입력란과 birthDate 필드 추가 필요.
+    fun register(password: String, phone: String, addressDetail: String, consents: ConsentChoices) {
+        // 티켓이 없다면 이메일 인증이 미완료 상태 — completeReady 판정에서 이미 걸러지지만
+        // 방어적으로 한 번 더 확인해 부분 검증 상태로 서버까지 보내지 않게 한다.
+        val ticket = state.emailVerifyTicket
+        if (ticket.isNullOrBlank()) {
+            _toastMessage.value = "이메일 인증을 먼저 완료해주세요."
+            return
+        }
         setState { copy(isLoading = true) }
         viewModelScope.launch {
             try {
@@ -320,7 +385,11 @@ class RegisterStep2ViewModel : ViewModel() {
                         phone = phone.trim(),
                         address = addressText.trim().ifEmpty { null },
                         addressDetail = addressDetail.trim().ifEmpty { null },
-                        marketingConsent = marketingConsent
+                        termsAgreed = consents.terms,
+                        privacyPolicyAgreed = consents.privacy,
+                        sensitiveInfoAgreed = consents.sensitive,
+                        marketingConsent = consents.marketing,
+                        emailVerifyTicket = ticket
                     )
                 )
                 if (response.isOk) {

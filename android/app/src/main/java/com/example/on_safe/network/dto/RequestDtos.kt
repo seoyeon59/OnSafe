@@ -16,9 +16,17 @@ data class RegisterRequest(
     val phone: String,
     val address: String? = null,
     val addressDetail: String? = null,
+    // 필수 동의 3종 — 서버가 동의 이력(consents)을 남기므로 실제 체크값을 그대로 보낸다.
+    // Step1에서 셋 다 체크해야 다음으로 넘어가지만, 값을 고정하면 이력의 의미가 없어진다.
+    val termsAgreed: Boolean,
+    val privacyPolicyAgreed: Boolean,
+    val sensitiveInfoAgreed: Boolean,
     // 서버(users.marketing_consent)가 동의·철회 시점을 함께 기록하기 위한 신호.
     // Step1 동의 화면의 선택 항목 체크값이 Step2를 거쳐 그대로 전달된다.
-    val marketingConsent: Boolean = false
+    val marketingConsent: Boolean = false,
+    // verifyEmailCode 응답에서 받은 1회용 티켓. 서버가 이 티켓과 함께 온 register 요청만 통과시켜,
+    // 인증만 마친 다른 사용자의 이메일을 도용해 자기 계정에 붙이는 이메일 선점(squatting) 시나리오를 차단한다.
+    val emailVerifyTicket: String
 )
 
 data class CheckIdRequest(

@@ -13,9 +13,9 @@ object PasswordValidator {
     // (?s) DOTALL — "."이 개행(\n)도 매치. 클립보드 붙여넣기·IME 이슈로 개행이 섞여도
     //             필수 3종 충족하면 통과시킨다 (서버 로직과 일치).
     // 허용 문자 세트는 제한하지 않음 → 하이픈·언더스코어·공백 등도 통과.
-    private val REGEX = Regex("""(?s)^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$""")
+    private val REGEX = Regex("""(?s)^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&]).{8,64}$""")
 
-    const val ERROR_MSG = "영문, 숫자, 특수문자(@\$!%*#?&) 포함 8자 이상 입력해주세요."
+    const val ERROR_MSG = "영문, 숫자, 특수문자(@\$!%*#?&) 포함 8~64자로 입력해주세요."
     const val SUCCESS_MSG = "✓ 사용 가능한 비밀번호입니다."
     const val MATCH_MSG = "✓ 비밀번호가 일치합니다."
     const val MISMATCH_MSG = "비밀번호가 일치하지 않습니다."
