@@ -30,7 +30,9 @@ import com.example.on_safe.ResetPasswordActivity
 import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.NavTab
+import com.example.on_safe.util.TermsLinks
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.openTermsUrl
 import com.example.on_safe.util.setupBottomNav
 import com.example.on_safe.util.toast
 
@@ -348,9 +350,9 @@ class SettingsActivity : AppCompatActivity() {
             overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
 
-        // TODO: 개인정보 처리방침 웹뷰 또는 브라우저 연동
+        // 개인정보 처리방침 - 약관 페이지 열기
         rowPrivacyPolicy.setOnClickListener {
-            toast("개인정보 처리방침 준비 중")
+            openTermsUrl(TermsLinks.ALL)
         }
 
         // TODO: FAQ 페이지 구현 (WebView 또는 전용 Activity)
