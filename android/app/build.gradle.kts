@@ -5,6 +5,16 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
 }
 
+// FCM: google-services.json 이 app 모듈에 있을 때만 플러그인을 적용한다.
+//  - 이 파일은 Firebase 콘솔에서 앱(applicationId=com.example.on_safe) 등록 후 내려받아
+//    android/app/ 에 두어야 하며, 프로젝트 시크릿이므로 저장소에 커밋하지 않는다(.gitignore).
+//  - 파일이 없으면(미설정 팀원·CI) 플러그인을 건너뛰어 빌드가 깨지지 않게 한다.
+//    이 경우 Firebase 는 초기화되지 않고 푸시 수신·토큰 발급은 모두 no-op 으로 안전하게 비활성.
+//  - 파일을 넣는 순간 플러그인이 적용돼 FCM 이 켜진다. (별도 코드 변경 불필요)
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 // local.properties → BuildConfig 주입 (커밋 금지 파일에서 시크릿 로드)
 // 팀원별 로컬 값이 다를 수 있으므로 없어도 빌드는 통과시키고 빈 문자열로 폴백.
 val localProperties = Properties().apply {
@@ -18,7 +28,10 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.on_safe"
+        // 설치/스토어 식별자 — 제품명(늘봄)과 Firebase 등록 패키지에 맞춰 neulbom 사용.
+        // namespace(com.example.on_safe)와 달라도 무방하며, 코드 패키지·R 클래스는 namespace 기준이다.
+        // FCM: google-services.json 의 package_name 과 반드시 일치해야 플러그인이 매칭한다.
+        applicationId = "com.example.neulbom"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
@@ -100,6 +113,10 @@ dependencies {
 
     // 보안: 토큰 암호화 저장 (EncryptedSharedPreferences)
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // FCM (푸시 알림) — 개별 라이브러리 버전은 BoM 이 통일 관리
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

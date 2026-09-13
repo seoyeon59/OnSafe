@@ -4,4 +4,8 @@
     <!-- 튜토리얼 버튼 텍스트 -->
     <string name="tutorial_btn_next">다음</string>
     <string name="tutorial_btn_complete">완료</string>
+
+    <!-- FCM: notification 페이로드가 채널 없이 올 때 시스템이 참조하는 기본 채널.
+         PushNotifications.CHANNEL_ALERTS 와 반드시 같은 값이어야 한다. -->
+    <string name="fcm_default_channel_id" translatable="false">onsafe_alerts</string>
 </resources>
