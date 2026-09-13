@@ -26,6 +26,7 @@ import androidx.lifecycle.lifecycleScope
 import android.widget.Toast
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.R
+import com.example.on_safe.messaging.FcmTokenRegistrar
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.isOk
 import com.example.on_safe.ui.tutorial.TutorialActivity
@@ -135,6 +136,9 @@ class LoginActivity : AppCompatActivity() {
             if (success == null) return@observe
             TokenManager.saveTokens(this, success.accessToken, success.refreshToken, success.userId)
             if (BuildConfig.DEBUG) Log.d("Login", "저장 완료 — userId=${success.userId}")
+            // FCM 토큰을 서버에 등록 — 이제 로그인 상태(토큰·userId 저장 완료)라 곧바로 동기화된다.
+            // 승인/거부/오프라인 등 실시간 이벤트 수신 준비. (미설정 환경이면 내부에서 no-op)
+            FcmTokenRegistrar.registerIfLoggedIn(this)
             // 기기 등록은 카메라 모드 진입 시 수행 — 여기서 하면 보호자 폰이
             // 자기 자신을 카메라로 등록하게 됨 (CameraModeViewModel.registerDevice)
             startOnboarding()

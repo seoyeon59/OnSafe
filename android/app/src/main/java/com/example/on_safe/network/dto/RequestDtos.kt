@@ -65,3 +65,11 @@ data class ResetPasswordRequest(
     val userId: String,
     val newPassword: String
 )
+
+// FCM 푸시 토큰 등록/해제 요청.
+// 서버는 이 토큰으로 승인·거부·오프라인 등 실시간 이벤트를 발송한다.
+// deviceId 를 함께 보내 같은 계정의 여러 기기를 구분 — LoginRequest 와 동일한 ANDROID_ID.
+data class FcmTokenRequest(
+    val fcmToken: String,
+    val deviceId: String
+)
