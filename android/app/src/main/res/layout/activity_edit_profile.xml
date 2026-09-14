@@ -100,9 +100,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/bg_card"
+                android:elevation="2dp"
                 android:orientation="vertical"
                 android:paddingHorizontal="20dp"
-                android:paddingVertical="16dp">
+                android:paddingVertical="20dp">
 
                 <!-- 보호자 이름 -->
                 <LinearLayout
@@ -113,7 +114,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="6dp"
+                        android:layout_marginBottom="@dimen/space_sm"
                         android:text="보호자 이름"
                         android:textColor="@color/ink_500"
                         android:textSize="@dimen/text_caption"
@@ -122,7 +123,7 @@
                     <EditText
                         android:id="@+id/etName"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
+                        android:layout_height="@dimen/input_height"
                         android:background="@drawable/bg_input_rounded"
                         android:hint="이름을 입력해주세요"
                         android:imeOptions="actionNext"
@@ -138,7 +139,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="@dimen/space_sm"
                         android:textSize="@dimen/text_tab"
                         android:visibility="gone" />
                 </LinearLayout>
@@ -153,7 +154,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="6dp"
+                        android:layout_marginBottom="@dimen/space_sm"
                         android:text="전화번호"
                         android:textColor="@color/ink_500"
                         android:textSize="@dimen/text_caption"
@@ -162,7 +163,7 @@
                     <EditText
                         android:id="@+id/etPhone"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
+                        android:layout_height="@dimen/input_height"
                         android:background="@drawable/bg_input_rounded"
                         android:hint="010-0000-0000"
                         android:imeOptions="actionNext"
@@ -178,7 +179,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="@dimen/space_sm"
                         android:textSize="@dimen/text_tab"
                         android:visibility="gone" />
                 </LinearLayout>
@@ -193,7 +194,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="6dp"
+                        android:layout_marginBottom="@dimen/space_sm"
                         android:text="이메일"
                         android:textColor="@color/ink_500"
                         android:textSize="@dimen/text_caption"
@@ -202,7 +203,7 @@
                     <EditText
                         android:id="@+id/etEmail"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
+                        android:layout_height="@dimen/input_height"
                         android:background="@drawable/bg_input_rounded"
                         android:hint="example@email.com"
                         android:imeOptions="actionNext"
@@ -218,7 +219,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="@dimen/space_sm"
                         android:textSize="@dimen/text_tab"
                         android:visibility="gone" />
                 </LinearLayout>
@@ -233,7 +234,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="6dp"
+                        android:layout_marginBottom="@dimen/space_sm"
                         android:text="주소"
                         android:textColor="@color/ink_500"
                         android:textSize="@dimen/text_caption"
@@ -242,7 +243,7 @@
                     <EditText
                         android:id="@+id/etAddress1"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
+                        android:layout_height="@dimen/input_height"
                         android:background="@drawable/bg_input_rounded"
                         android:hint="도로명 주소"
                         android:focusable="false"
@@ -256,7 +257,7 @@
                     <EditText
                         android:id="@+id/etAddress2"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
+                        android:layout_height="@dimen/input_height"
                         android:layout_marginTop="8dp"
                         android:background="@drawable/bg_input_rounded"
                         android:hint="상세 주소"
@@ -290,7 +291,7 @@
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
+                    android:layout_marginStart="12dp"
                     android:layout_weight="1"
                     android:lineSpacingMultiplier="1.4"
                     android:text="입력하신 정보는 긴급 상황 시 연락처로 사용됩니다.\n정확한 정보를 입력해주세요."
@@ -308,7 +309,7 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="16dp"
-                android:paddingVertical="14dp">
+                android:paddingVertical="12dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -348,11 +349,14 @@
     <Button
         android:id="@+id/btnSave"
         android:layout_width="0dp"
-        android:layout_height="56dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:layout_height="@dimen/btn_height"
         android:includeFontPadding="false"
         android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="20dp"
         android:background="@drawable/bg_button_blue"
+        android:stateListAnimator="@null"
         android:text="저장하기"
         android:textColor="@color/surface_white"
         android:textSize="@dimen/text_button"

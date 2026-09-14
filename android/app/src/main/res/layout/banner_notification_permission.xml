@@ -14,8 +14,8 @@
 
     <!-- 벨 아이콘 -->
     <ImageView
-        android:layout_width="22dp"
-        android:layout_height="22dp"
+        android:layout_width="@dimen/icon_sm"
+        android:layout_height="@dimen/icon_sm"
         android:contentDescription="@null"
         android:src="@drawable/ic_notification"
         app:tint="@color/primary_blue" />
@@ -38,7 +38,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:background="@drawable/bg_button_blue"
-        android:paddingHorizontal="14dp"
+        android:paddingHorizontal="12dp"
         android:paddingVertical="8dp"
         android:text="허용하기"
         android:textColor="@color/surface_white"

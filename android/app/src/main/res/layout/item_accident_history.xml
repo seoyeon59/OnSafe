@@ -6,7 +6,7 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
     app:cardBackgroundColor="@color/surface_white"
-    app:cardCornerRadius="16dp"
+    app:cardCornerRadius="@dimen/radius_md"
     app:cardElevation="2dp">
 
     <LinearLayout
@@ -132,7 +132,7 @@
                     android:id="@+id/btnDownload"
                     android:layout_width="@dimen/touch_min"
                     android:layout_height="@dimen/touch_min"
-                    android:padding="14dp"
+                    android:padding="12dp"
                     android:layout_marginStart="8dp"
                     android:background="@drawable/bg_stroke_neutral"
                     android:contentDescription="영상 다운로드"
@@ -144,7 +144,7 @@
                     android:id="@+id/btnDelete"
                     android:layout_width="@dimen/touch_min"
                     android:layout_height="@dimen/touch_min"
-                    android:padding="14dp"
+                    android:padding="12dp"
                     android:layout_marginStart="8dp"
                     android:background="@drawable/bg_stroke_danger_light"
                     android:contentDescription="이력 삭제"

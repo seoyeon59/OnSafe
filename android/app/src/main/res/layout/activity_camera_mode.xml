@@ -142,7 +142,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="@dimen/space_sm"
             android:fontFamily="@font/pretendard_bold"
             android:includeFontPadding="false"
             android:text="늘봄"
@@ -180,7 +180,7 @@
             <View
                 android:layout_width="1dp"
                 android:layout_height="10dp"
-                android:layout_marginHorizontal="6dp"
+                android:layout_marginHorizontal="@dimen/space_sm"
                 android:background="@color/overlay_white_50" />
 
             <!-- 촬영 경과 시간 — 숫자 폭이 흔들리지 않도록 monospace 사용 -->
@@ -299,7 +299,7 @@
                 android:src="@drawable/ic_person_remove"
                 android:padding="2dp"
                 android:visibility="gone"
-                app:tint="#80FEFEFE" />
+                app:tint="@color/overlay_white_50" />
 
         </LinearLayout>
 
@@ -505,7 +505,7 @@
                         android:id="@+id/tvToggleText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
+                        android:layout_marginStart="@dimen/space_sm"
                         android:fontFamily="@font/pretendard_bold"
                         android:text="촬영 시작하기"
                         android:textColor="@color/surface_white"

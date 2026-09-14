@@ -30,6 +30,16 @@
     <dimen name="space_md">16dp</dimen>
     <dimen name="space_lg">24dp</dimen>
 
+    <!-- 컴포넌트 표준 높이 — 화면마다 50/52/54/56dp로 갈리던 값을 역할 기준 한 값으로 통합.
+         Button은 Material 기본 inset 6dp가 배경을 깎으므로 사용처에서 inset을 0으로 둘 것. -->
+    <dimen name="btn_height">54dp</dimen>
+    <dimen name="input_height">50dp</dimen>
+
+    <!-- 아이콘 스케일 — 14~52dp 13단계로 흩어져 있던 값을 3단계로 정리 -->
+    <dimen name="icon_sm">20dp</dimen>   <!-- 행 안 보조 아이콘 · 화살표 -->
+    <dimen name="icon_md">24dp</dimen>   <!-- 원형 배경 안 기본 아이콘 -->
+    <dimen name="icon_lg">28dp</dimen>   <!-- 탭 바 · 강조 아이콘 -->
+
     <!-- 터치 대상 최소 크기 — Android 기준 48dp (iOS 44pt와 혼동 주의) -->
     <dimen name="touch_min">48dp</dimen>
 </resources>

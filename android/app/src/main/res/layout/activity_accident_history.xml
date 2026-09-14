@@ -93,7 +93,7 @@
             android:id="@+id/chipOldest"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="@dimen/space_sm"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
