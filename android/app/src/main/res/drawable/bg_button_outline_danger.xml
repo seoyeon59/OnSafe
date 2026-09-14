@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    디버그 전용 버튼 배경 — 로그인 버튼(bg_button_blue)과 같은 pill 계열이되
+    채움 대신 외곽선으로 한 단계 아래 위계. 테두리는 컨트롤 경계 대비 3:1 확보용으로 진한 빨강 사용.
+-->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/tint_danger">
+
+    <item android:id="@android:id/mask">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/radius_pill" />
+            <solid android:color="@color/white" />
+        </shape>
+    </item>
+
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/radius_pill" />
+            <solid android:color="@color/status_danger_soft" />
+            <stroke android:width="1dp" android:color="@color/status_danger" />
+        </shape>
+    </item>
+
+</ripple>

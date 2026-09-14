@@ -51,7 +51,7 @@
                 android:textSize="@dimen/text_brand"
                 android:textColor="@color/primary_blue"
                 android:fontFamily="@font/pretendard_bold"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="12dp"
                 android:letterSpacing="-0.025" />
 
             <!-- 서브타이틀 -->
@@ -79,10 +79,8 @@
                 android:orientation="vertical"
                 android:background="@drawable/bg_card"
                 android:elevation="2dp"
-                android:paddingLeft="20dp"
-                android:paddingRight="20dp"
-                android:paddingTop="20dp"
-                android:paddingBottom="20dp">
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="20dp">
 
                 <!-- 아이디 라벨 -->
                 <TextView
@@ -92,19 +90,19 @@
                     android:textSize="@dimen/text_body"
                     android:textColor="@color/ink_500"
                     android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="@dimen/space_sm" />
 
                 <!-- 아이디 입력칸 -->
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
+                    android:layout_height="@dimen/input_height"
                     android:background="@drawable/bg_input_rounded">
 
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:layout_gravity="center_vertical"
-                        android:layout_marginLeft="16dp"
+                        android:layout_marginStart="@dimen/space_md"
                         android:src="@drawable/ic_person"
                         android:contentDescription="아이디 아이콘"
                         app:tint="@color/ink_500" />
@@ -116,8 +114,8 @@
                         android:hint="아이디 입력"
                         android:textColor="@color/ink_900"
                         android:textSize="@dimen/text_body"
-                        android:paddingLeft="45dp"
-                        android:paddingRight="17dp"
+                        android:paddingStart="48dp"
+                        android:paddingEnd="@dimen/space_md"
                         android:background="@null"
                         android:inputType="textNoSuggestions"
                         android:singleLine="true" />
@@ -132,19 +130,19 @@
                     android:textColor="@color/ink_500"
                     android:textStyle="bold"
                     android:layout_marginTop="16dp"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="@dimen/space_sm" />
 
                 <!-- 비밀번호 입력칸 -->
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
+                    android:layout_height="@dimen/input_height"
                     android:background="@drawable/bg_input_rounded">
 
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:layout_gravity="center_vertical"
-                        android:layout_marginLeft="16dp"
+                        android:layout_marginStart="@dimen/space_md"
                         android:src="@drawable/ic_lock"
                         android:contentDescription="비밀번호 아이콘"
                         app:tint="@color/ink_500" />
@@ -156,8 +154,8 @@
                         android:hint="비밀번호 입력"
                         android:textColor="@color/ink_900"
                         android:textSize="@dimen/text_body"
-                        android:paddingLeft="45dp"
-                        android:paddingRight="49dp"
+                        android:paddingStart="48dp"
+                        android:paddingEnd="@dimen/touch_min"
                         android:background="@null"
                         android:inputType="textPassword"
                         android:singleLine="true" />
@@ -184,7 +182,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="@dimen/text_body"
-                    android:textColor="@color/status_danger"
+                    android:textColor="@color/status_danger_text"
                     android:layout_marginTop="8dp"
                     android:visibility="gone" />
 
@@ -194,8 +192,11 @@
             <Button
                 android:id="@+id/btnLogin"
                 android:layout_width="match_parent"
-                android:layout_height="54dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:layout_height="@dimen/btn_height"
                 android:includeFontPadding="false"
+                android:stateListAnimator="@null"
                 android:text="로그인"
                 android:textColor="@color/surface_white"
                 android:textSize="@dimen/text_button"
@@ -214,17 +215,21 @@
                 android:visibility="gone" />
 
             <!-- 디버그 전용 테스트 로그인 — 릴리즈에서는 BuildConfig.DEBUG 분기가 제거되어 gone 유지 -->
+            <!-- 로그인 버튼과 같은 pill 계열이되 외곽선·낮은 높이·본문 크기로 한 단계 아래 위계 -->
             <Button
                 android:id="@+id/btnDebugLogin"
                 android:layout_width="match_parent"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 android:layout_height="@dimen/touch_min"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_card"
-                android:text="[DEBUG] 로그인 건너뛰기"
-                android:textColor="@color/status_danger"
-                android:textSize="@dimen/text_caption"
-                android:textStyle="bold"
+                android:layout_marginTop="@dimen/space_sm"
+                android:includeFontPadding="false"
+                android:background="@drawable/bg_button_outline_danger"
                 android:stateListAnimator="@null"
+                android:text="[DEBUG] 로그인 건너뛰기"
+                android:textColor="@color/status_danger_text"
+                android:textSize="@dimen/text_body"
+                android:textStyle="bold"
                 android:visibility="gone" />
 
             <!-- 아이디찾기 / 비밀번호찾기 / 회원가입 -->

@@ -24,8 +24,8 @@
 
         <!-- 좌측 균형 맞춤용 -->
         <View
-            android:layout_width="40dp"
-            android:layout_height="40dp" />
+            android:layout_width="@dimen/touch_min"
+            android:layout_height="@dimen/touch_min" />
 
         <TextView
             android:layout_width="0dp"
@@ -45,7 +45,7 @@
             android:clickable="true"
             android:focusable="true"
             android:contentDescription="튜토리얼 다시 보기"
-            android:padding="10dp"
+            android:padding="12dp"
             android:src="@drawable/ic_info"
             app:tint="@color/ink_500" />
     </LinearLayout>
@@ -126,11 +126,11 @@
                 <!-- 알림 메인 토글 행 -->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="67dp"
+                    android:layout_height="68dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp"
-                    android:paddingVertical="14dp">
+                    android:paddingVertical="12dp">
 
                     <FrameLayout
                         android:layout_width="36dp"
@@ -139,8 +139,8 @@
 
                         <ImageView
                             android:id="@+id/ivNotificationIcon"
-                            android:layout_width="22dp"
-                            android:layout_height="22dp"
+                            android:layout_width="@dimen/icon_md"
+                            android:layout_height="@dimen/icon_md"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_notification"
@@ -221,7 +221,7 @@
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="10dp"
+                            android:layout_marginStart="12dp"
                             android:layout_weight="1"
                             android:orientation="vertical">
 
@@ -283,7 +283,7 @@
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="10dp"
+                            android:layout_marginStart="12dp"
                             android:layout_weight="1"
                             android:orientation="vertical">
 
@@ -369,8 +369,8 @@
                         android:textSize="@dimen/text_body" />
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="@dimen/icon_sm"
+                        android:layout_height="@dimen/icon_sm"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_chevron_right" />
                 </LinearLayout>
@@ -417,8 +417,8 @@
                         android:textSize="@dimen/text_body" />
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="@dimen/icon_sm"
+                        android:layout_height="@dimen/icon_sm"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_chevron_right" />
                 </LinearLayout>
@@ -465,8 +465,8 @@
                         android:textSize="@dimen/text_body" />
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="@dimen/icon_sm"
+                        android:layout_height="@dimen/icon_sm"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_chevron_right"
                         app:tint="@color/ink_500" />
@@ -529,8 +529,8 @@
                         android:textSize="@dimen/text_body" />
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="@dimen/icon_sm"
+                        android:layout_height="@dimen/icon_sm"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_chevron_right"
                         app:tint="@color/ink_500" />

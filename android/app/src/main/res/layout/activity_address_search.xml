@@ -42,8 +42,8 @@
 
         <!-- 우측 자리맞춤 플레이스홀더 -->
         <View
-            android:layout_width="32dp"
-            android:layout_height="32dp" />
+            android:layout_width="@dimen/touch_min"
+            android:layout_height="@dimen/touch_min" />
 
     </LinearLayout>
 
@@ -64,7 +64,7 @@
         <!-- 입력 필드 — 흰색 배경으로 surface_bg와 대비 확보 -->
         <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="50dp"
+            android:layout_height="@dimen/input_height"
             android:layout_weight="1"
             android:background="@drawable/bg_input_white">
 
@@ -72,7 +72,7 @@
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center_vertical"
-                android:layout_marginStart="14dp"
+                android:layout_marginStart="@dimen/space_md"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_search"
                 app:tint="@color/ink_500" />
@@ -86,7 +86,7 @@
                 android:imeOptions="actionSearch"
                 android:inputType="text"
                 android:maxLines="1"
-                android:paddingStart="44dp"
+                android:paddingStart="48dp"
                 android:paddingEnd="12dp"
                 android:textColor="@color/ink_900"
                 android:textColorHint="@color/ink_500"
@@ -97,7 +97,7 @@
         <Button
             android:id="@+id/btnSearch"
             android:layout_width="80dp"
-            android:layout_height="50dp"
+            android:layout_height="@dimen/input_height"
             android:includeFontPadding="false"
             android:layout_marginStart="8dp"
             android:background="@drawable/bg_button_blue"

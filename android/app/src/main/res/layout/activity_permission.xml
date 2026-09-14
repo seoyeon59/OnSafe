@@ -293,7 +293,9 @@
         <Button
             android:id="@+id/btnAllow"
             android:layout_width="match_parent"
-            android:layout_height="54dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_height="@dimen/btn_height"
             android:includeFontPadding="false"
             android:background="@drawable/bg_button_blue"
             android:stateListAnimator="@null"
