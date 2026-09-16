@@ -46,10 +46,10 @@
             android:id="@+id/btnSkipTutorial"
             android:layout_width="@dimen/touch_min"
             android:layout_height="@dimen/touch_min"
-            android:layout_marginStart="10dp"
+            android:layout_marginStart="12dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="튜토리얼 건너뛰기"
-            android:padding="6dp"
+            android:padding="@dimen/space_sm"
             android:src="@drawable/ic_close" />
 
     </LinearLayout>
@@ -60,7 +60,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="28dp"
-        android:layout_marginBottom="22dp"
+        android:layout_marginBottom="@dimen/space_lg"
         android:background="@color/surface_bg"
         app:layout_constraintBottom_toTopOf="@id/btnRow"
         app:layout_constraintEnd_toEndOf="parent"
@@ -82,7 +82,7 @@
     <LinearLayout
         android:id="@+id/btnRow"
         android:layout_width="0dp"
-        android:layout_height="54dp"
+        android:layout_height="@dimen/btn_height"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -93,7 +93,9 @@
         <Button
             android:id="@+id/btnPrev"
             android:layout_width="96dp"
-            android:layout_height="54dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_height="@dimen/btn_height"
             android:includeFontPadding="false"
             android:layout_marginEnd="8dp"
             android:background="@drawable/bg_outline_blue"
@@ -108,7 +110,9 @@
         <Button
             android:id="@+id/btnNext"
             android:layout_width="0dp"
-            android:layout_height="54dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_height="@dimen/btn_height"
             android:includeFontPadding="false"
             android:layout_weight="1"
             android:background="@drawable/bg_button_blue"

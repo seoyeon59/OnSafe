@@ -6,14 +6,14 @@
     android:layout_height="wrap_content"
     android:background="@drawable/bg_card"
     android:orientation="vertical"
-    android:paddingTop="16dp">
+    android:paddingTop="20dp">
 
     <!-- 내용 영역 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingHorizontal="16dp"
+        android:paddingHorizontal="20dp"
         android:paddingBottom="8dp">
 
         <!-- 제목 + 설명 -->
@@ -44,13 +44,13 @@
         <EditText
             android:id="@+id/etWithdrawConfirm"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="@dimen/input_height"
             android:layout_marginTop="8dp"
             android:background="@drawable/bg_input_rounded"
             android:hint="회원탈퇴"
             android:imeOptions="actionDone"
             android:inputType="text"
-            android:paddingHorizontal="16dp"
+            android:paddingHorizontal="20dp"
             android:textColor="@color/ink_900"
             android:textColorHint="@color/ink_500"
             android:textSize="@dimen/text_body" />

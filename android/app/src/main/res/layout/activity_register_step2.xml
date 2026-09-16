@@ -109,10 +109,9 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@drawable/bg_card"
-                android:paddingLeft="20dp"
-                android:paddingRight="20dp"
-                android:paddingTop="16dp"
-                android:paddingBottom="16dp"
+                android:elevation="2dp"
+                android:paddingHorizontal="20dp"
+                android:paddingVertical="20dp"
                 android:layout_marginBottom="12dp">
 
                 <!-- 아이디 -->
@@ -123,11 +122,11 @@
                     android:textSize="@dimen/text_body"
                     android:textColor="@color/ink_500"
                     android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="@dimen/space_sm" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
+                    android:layout_height="@dimen/input_height"
                     android:orientation="horizontal">
 
                     <EditText
@@ -147,7 +146,10 @@
                     <Button
                         android:id="@+id/btnCheckId"
                         android:layout_width="wrap_content"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
                         android:layout_height="match_parent"
+                        android:stateListAnimator="@null"
                         android:text="중복 확인"
                         android:textSize="@dimen/text_body"
                         android:textColor="@color/surface_white"
@@ -178,11 +180,11 @@
                     android:textColor="@color/ink_500"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="@dimen/space_sm" />
 
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="50dp">
+                    android:layout_height="@dimen/input_height">
 
                     <EditText
                         android:id="@+id/etPw"
@@ -230,11 +232,11 @@
                     android:textColor="@color/ink_500"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="@dimen/space_sm" />
 
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="50dp">
+                    android:layout_height="@dimen/input_height">
 
                     <EditText
                         android:id="@+id/etPwConfirm"
@@ -282,12 +284,12 @@
                     android:textColor="@color/ink_500"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="@dimen/space_sm" />
 
                 <EditText
                     android:id="@+id/etName"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
+                    android:layout_height="@dimen/input_height"
                     android:hint="이름을 입력하세요"
                     android:textColor="@color/ink_900"
                     android:textSize="@dimen/text_body"
@@ -306,12 +308,12 @@
                     android:textColor="@color/ink_500"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="@dimen/space_sm" />
 
                 <EditText
                     android:id="@+id/etPhone"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
+                    android:layout_height="@dimen/input_height"
                     android:hint="010-0000-0000"
                     android:textColor="@color/ink_900"
                     android:textSize="@dimen/text_body"
@@ -340,11 +342,11 @@
                     android:textColor="@color/ink_500"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="@dimen/space_sm" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
+                    android:layout_height="@dimen/input_height"
                     android:orientation="horizontal">
 
                     <EditText
@@ -364,7 +366,10 @@
                     <Button
                         android:id="@+id/btnVerifyEmail"
                         android:layout_width="wrap_content"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
                         android:layout_height="match_parent"
+                        android:stateListAnimator="@null"
                         android:text="인증 요청"
                         android:textSize="@dimen/text_body"
                         android:textColor="@color/surface_white"
@@ -396,7 +401,7 @@
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
+                        android:layout_height="@dimen/input_height"
                         android:orientation="horizontal">
 
                         <FrameLayout
@@ -426,14 +431,17 @@
                                 android:layout_marginEnd="12dp"
                                 android:text="3:00"
                                 android:textSize="@dimen/text_body"
-                                android:textColor="@color/status_danger" />
+                                android:textColor="@color/status_danger_text" />
 
                         </FrameLayout>
 
                         <Button
                             android:id="@+id/btnConfirmCode"
                             android:layout_width="wrap_content"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
                             android:layout_height="match_parent"
+                            android:stateListAnimator="@null"
                             android:text="확인"
                             android:textSize="@dimen/text_body"
                             android:textColor="@color/surface_white"
@@ -454,7 +462,7 @@
                         android:text="인증코드를 다시 받기"
                         android:textSize="@dimen/text_body"
                         android:textColor="@color/primary_blue"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="@dimen/space_sm"
                         android:layout_marginStart="8dp"
                         android:visibility="visible" />
 
@@ -480,12 +488,12 @@
                     android:textColor="@color/ink_500"
                     android:textStyle="bold"
                     android:layout_marginTop="8dp"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="@dimen/space_sm" />
 
                 <EditText
                     android:id="@+id/etAddress"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
+                    android:layout_height="@dimen/input_height"
                     android:hint="도로명 주소를 검색하세요"
                     android:textColor="@color/ink_900"
                     android:textSize="@dimen/text_body"
@@ -501,7 +509,7 @@
                 <EditText
                     android:id="@+id/etAddressDetail"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
+                    android:layout_height="@dimen/input_height"
                     android:hint="상세 주소 (동, 호수 등)"
                     android:textColor="@color/ink_900"
                     android:textSize="@dimen/text_body"
@@ -535,7 +543,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="10dp"
+                    android:layout_marginStart="12dp"
                     android:text="입력하신 정보는 긴급 상황 시 연락처로 사용됩니다.\n정확한 정보를 입력해주세요."
                     android:textSize="@dimen/text_caption"
                     android:textColor="@color/primary_blue"
@@ -547,8 +555,11 @@
             <Button
                 android:id="@+id/btnComplete"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:layout_height="@dimen/btn_height"
                 android:includeFontPadding="false"
+                android:stateListAnimator="@null"
                 android:text="가입 완료"
                 android:textColor="@color/surface_white"
                 android:textSize="@dimen/text_button"

@@ -31,6 +31,10 @@
     <color name="status_normal">#22C55E</color>   <!-- 정상/연결됨 (초록) -->
     <color name="status_warning">#F59E0B</color>  <!-- 주의/연결중 (주황) -->
     <color name="status_danger">#EF4444</color>   <!-- 위험/연결실패 (빨강) -->
+    <!-- 밝은 배경 위 오류 문구 전용 진한 빨강.
+         status_danger(#EF4444)는 흰 배경 대비 3.4:1로 본문 크기 텍스트 기준(4.5:1) 미달 — 6.9:1 확보.
+         상태 색 코딩(위험 지수·알림 유형)과 아이콘·테두리는 기존 status_danger 유지. -->
+    <color name="status_danger_text">#B91C1C</color>
     <color name="status_danger_light">#F87171</color> <!-- 밝은 빨강 — 삭제 아이콘 틴트 -->
     <color name="status_danger_soft">#FEF2F2</color>  <!-- 연한 빨강 — 위험 배경 -->
     <color name="status_standby">#9FA6AC</color>  <!-- 대기중 (회색) -->

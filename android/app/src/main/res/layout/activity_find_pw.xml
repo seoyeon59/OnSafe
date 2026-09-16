@@ -59,10 +59,9 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/bg_card"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="16dp">
+            android:elevation="2dp"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="20dp">
 
             <!-- 설명 -->
             <TextView
@@ -82,13 +81,13 @@
                 android:textSize="@dimen/text_body"
                 android:textColor="@color/ink_500"
                 android:textStyle="bold"
-                android:layout_marginBottom="6dp" />
+                android:layout_marginBottom="@dimen/space_sm" />
 
             <!-- 아이디 입력 -->
             <EditText
                 android:id="@+id/etUserId"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
+                android:layout_height="@dimen/input_height"
                 android:hint="아이디 입력"
                 android:textColor="@color/ink_900"
                 android:textSize="@dimen/text_body"
@@ -107,12 +106,12 @@
                 android:textSize="@dimen/text_body"
                 android:textColor="@color/ink_500"
                 android:textStyle="bold"
-                android:layout_marginBottom="6dp" />
+                android:layout_marginBottom="@dimen/space_sm" />
 
             <!-- 이메일 입력 + 코드받기 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
+                android:layout_height="@dimen/input_height"
                 android:orientation="horizontal">
 
                 <EditText
@@ -132,7 +131,10 @@
                 <Button
                     android:id="@+id/btnRequestCode"
                     android:layout_width="wrap_content"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
                     android:layout_height="match_parent"
+                    android:stateListAnimator="@null"
                     android:text="코드 받기"
                     android:textSize="@dimen/text_body"
                     android:textColor="@color/surface_white"
@@ -160,11 +162,11 @@
                     android:textSize="@dimen/text_body"
                     android:textColor="@color/ink_500"
                     android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
+                    android:layout_marginBottom="@dimen/space_sm" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
+                    android:layout_height="@dimen/input_height"
                     android:orientation="horizontal">
 
                     <FrameLayout
@@ -194,14 +196,17 @@
                             android:layout_marginEnd="12dp"
                             android:text="3:00"
                             android:textSize="@dimen/text_body"
-                            android:textColor="@color/status_danger" />
+                            android:textColor="@color/status_danger_text" />
 
                     </FrameLayout>
 
                     <Button
                         android:id="@+id/btnConfirm"
                         android:layout_width="wrap_content"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
                         android:layout_height="match_parent"
+                        android:stateListAnimator="@null"
                         android:text="확인"
                         android:textSize="@dimen/text_body"
                         android:textColor="@color/surface_white"
@@ -223,7 +228,7 @@
                     android:text="인증코드 다시 받기"
                     android:textSize="@dimen/text_body"
                     android:textColor="@color/primary_blue"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="@dimen/space_sm"
                     android:layout_marginStart="8dp"
                     android:visibility="gone" />
 
@@ -251,8 +256,11 @@
         <Button
             android:id="@+id/btnGoLogin"
             android:layout_width="match_parent"
-            android:layout_height="54dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_height="@dimen/btn_height"
             android:includeFontPadding="false"
+            android:stateListAnimator="@null"
             android:text="로그인으로 돌아가기"
             android:textColor="@color/surface_white"
             android:textSize="@dimen/text_button"
