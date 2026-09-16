@@ -18,6 +18,10 @@ okhttpLogging = "4.12.0"
 coroutines = "1.7.3"
 lifecycleRuntimeKtx = "2.7.0"
 
+# FCM (푸시 알림) — 개별 Firebase 라이브러리 버전은 BoM 이 통일 관리하므로 명시하지 않는다
+firebaseBom = "33.7.0"
+googleServices = "4.4.2"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,8 +48,14 @@ androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecyc
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activity" }
 
+# FCM — 버전은 BoM(firebase-bom)에서 통일 관리하므로 messaging 은 version 을 생략한다
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+# google-services.json 을 읽어 Firebase 초기화 리소스를 생성하는 Gradle 플러그인
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 

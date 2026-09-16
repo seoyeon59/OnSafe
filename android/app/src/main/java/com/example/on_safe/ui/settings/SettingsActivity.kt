@@ -27,6 +27,7 @@ import androidx.core.content.ContextCompat
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
+import com.example.on_safe.messaging.FcmTokenRegistrar
 import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.NavTab
@@ -115,6 +116,8 @@ class SettingsActivity : AppCompatActivity() {
 
         viewModel.logoutEvent.observe(this) { fired ->
             if (fired == true) {
+                // 세션 정리 전에 호출 — userId·토큰이 아직 살아있어야 서버 해제를 시도할 수 있다.
+                FcmTokenRegistrar.unregister(this)
                 TokenManager.clearSession(this)
                 toast("로그아웃 되었습니다.")
                 goToLogin()
@@ -126,6 +129,8 @@ class SettingsActivity : AppCompatActivity() {
             if (result != null) {
                 toast(result.message)
                 if (result.success) {
+                    // 이 기기가 탈퇴 후에도 푸시를 받지 않도록 토큰 해제 후 세션 정리.
+                    FcmTokenRegistrar.unregister(this)
                     TokenManager.clearSession(this)
                     goToLogin()
                 }

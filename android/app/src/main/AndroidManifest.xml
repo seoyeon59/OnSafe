@@ -121,6 +121,24 @@
             android:name="com.example.on_safe.ui.tutorial.TutorialActivity"
             android:screenOrientation="portrait" />
 
+        <!-- FCM 수신 서비스 — 승인/거부/오프라인 등 실시간 이벤트 수신 -->
+        <service
+            android:name=".messaging.OnSafeMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- notification 페이로드가 채널 없이 백그라운드로 도착할 때 시스템이 참조하는 기본값.
+             data 메시지는 서비스가 직접 처리하므로 이 값은 안전망 성격이다. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="@string/fcm_default_channel_id" />
+
     </application>
 
 </manifest>

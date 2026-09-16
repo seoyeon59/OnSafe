@@ -121,7 +121,7 @@ class RegisterStep2ViewModel : ViewModel() {
     // TODO: [백엔드] 전화번호를 정규화 없이 저장·비교해 하이픈 유무로 중복 검사 우회 가능.
     fun checkId(id: String) {
         if (!ID_REGEX.matches(id)) {
-            setState { copy(idValidation = FieldValidation.Invalid("영문/숫자 6~12자로 입력해주세요.")) }
+            setState { copy(idValidation = FieldValidation.Invalid("영문/숫자 5~15자로 입력해주세요.")) }
             return
         }
         setState { copy(isIdCheckEnabled = false) }
@@ -452,6 +452,8 @@ class RegisterStep2ViewModel : ViewModel() {
 
     private companion object {
         // 매 입력마다 재생성되지 않도록 상수화
-        val ID_REGEX = Regex("^[A-Za-z0-9]{6,12}$")
+
+        // 아이디 길이 5-15자로 설정
+        val ID_REGEX = Regex("^[A-Za-z0-9]{5,15}$")
     }
 }

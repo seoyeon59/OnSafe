@@ -5,6 +5,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.POST
@@ -87,6 +88,25 @@ interface ApiService {
 
     @DELETE("api/users/{userId}")
     suspend fun deleteUser(@Path("userId") userId: String): Response<ApiResponse<Unit>>
+
+    // ===== Push (FCM 토큰) =====
+
+    // TODO: [백엔드] FCM 토큰 등록/해제 엔드포인트 계약 확정 필요.
+    //   서버는 pairing_approved 등 이벤트를 이미 발송하지만(위 Guardian 주석), 토큰을 수집하는
+    //   경로가 REST 스펙에 없다. 아래 경로·필드명(fcmToken/deviceId)은 프론트 가정값이므로
+    //   실제 스펙에 맞춰 조정할 것. (로그인은 deviceId 만 보내고 FCM 토큰은 보내지 않음)
+    @POST("api/users/{userId}/fcm-token")
+    suspend fun registerFcmToken(
+        @Path("userId") userId: String,
+        @Body request: FcmTokenRequest
+    ): Response<ApiResponse<Unit>>
+
+    // DELETE + 바디 — 어떤 토큰을 해제할지 서버가 알도록 토큰을 함께 싣는다(@HTTP hasBody).
+    @HTTP(method = "DELETE", path = "api/users/{userId}/fcm-token", hasBody = true)
+    suspend fun deleteFcmToken(
+        @Path("userId") userId: String,
+        @Body request: FcmTokenRequest
+    ): Response<ApiResponse<Unit>>
 
     // ===== Guardian (보호자 페어링) =====
 
