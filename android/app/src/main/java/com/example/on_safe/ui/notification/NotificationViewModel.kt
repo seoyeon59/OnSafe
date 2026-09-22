@@ -35,15 +35,16 @@ class NotificationViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val fetched = repository.getNotifications(userId)
-                // 화면 진입 시 WARNING은 일괄 읽음 처리
-                val unreadWarnings = fetched.filter { it.isUnreadWarning() }
+                // 화면 진입만으로도 확인이 끝난 것으로 볼 수 있는 항목(주의·시스템 알림)은 일괄 읽음 처리.
+                // 낙상(FALL) 만 사용자가 모달로 명시 확인해야 read 로 넘어간다 — 안전상 눈길을 강제.
+                val autoReadable = fetched.filter { it.isAutoReadable() }
                 setState {
                     copy(
-                        items = fetched.map { if (it.isUnreadWarning()) it.copy(isUnread = false) else it },
+                        items = fetched.map { if (it.isAutoReadable()) it.copy(isUnread = false) else it },
                         loadFailed = false
                     )
                 }
-                unreadWarnings.forEach { confirm(userId, it.id) }
+                autoReadable.forEach { confirm(userId, it.id) }
             // CancellationException은 IllegalStateException의 하위 타입 — 순서를 바꾸면
             // 화면 이탈로 인한 취소가 오류 토스트로 새어 나온다
             } catch (e: CancellationException) {
@@ -89,8 +90,9 @@ class NotificationViewModel : ViewModel() {
         _toastEvent.value = NotificationToastEvent(message)
     }
 
-    private fun NotificationItem.isUnreadWarning() =
-        type == NotificationType.WARNING && isUnread
+    // FALL 만 진입 시 자동 read 대상에서 제외 — 사용자가 모달을 열어 확인해야 낙상을 놓치지 않는다.
+    private fun NotificationItem.isAutoReadable() =
+        isUnread && type != NotificationType.FALL
 
     private inline fun setState(update: NotificationUiState.() -> NotificationUiState) {
         _uiState.value = (_uiState.value ?: NotificationUiState()).update()

@@ -16,22 +16,29 @@ import com.example.on_safe.R
 enum class NotificationType(
     val iconRes: Int,
     val iconTintRes: Int,
-    val scoreColorRes: Int,
+    val subtitleColorRes: Int,
     val clickable: Boolean
 ) {
-    // 낙상 위험 감지 — 화살표 표시 + 클릭 시 모달
+    // 낙상 위험 감지 — 화살표 표시 + 클릭 시 모달, 위험 지수와 함께 표시
     FALL(R.drawable.ic_siren, android.R.color.holo_red_light, R.color.status_danger, clickable = true),
 
-    // 주의 상태 감지 — 화살표·클릭 없음
-    WARNING(R.drawable.ic_warning, android.R.color.holo_orange_light, R.color.status_warning, clickable = false)
+    // 주의 상태 감지 — 화살표·클릭 없음, 위험 지수 표시
+    WARNING(R.drawable.ic_warning, android.R.color.holo_orange_light, R.color.status_warning, clickable = false),
+
+    // 페어링·오프라인·기타 시스템 알림 — 위험 지수 없음, 서버 body 문구 표시
+    SYSTEM(R.drawable.ic_notification, R.color.ink_500, R.color.ink_500, clickable = false)
 }
 
 data class NotificationItem(
-    val id: String,              // 서버 낙상 로그 id(logId) — 읽음 처리(confirm)에 사용
+    // 알림함 항목의 서버 id — 새 API의 notificationId. 낙상 감지 알림이면 logId 도 함께 보관해
+    // 사고이력 confirm 을 병행 호출할 수 있게 한다.
+    val id: String,
+    val logId: String?,
     val type: NotificationType,
     val title: String,
+    val body: String,            // 서버가 실어 보낸 본문. 낙상 계열은 "위험 지수 88" 로 대체 표시.
     val time: String,            // 표시용 문자열 (예: "오늘 · 오후 02:23")
-    val riskScore: Int,
+    val riskScore: Int,          // 낙상·주의만 유효(0..100). SYSTEM 은 0 무시.
     val detectedAtMillis: Long,  // 모달에 감지 시각 표시용
     val isUnread: Boolean = false
 )
@@ -63,12 +70,17 @@ class NotificationAdapter(
 
         holder.tvTitle.text = item.title
         holder.tvTime.text = item.time
-        holder.tvRiskScore.text = "위험 지수 ${item.riskScore}"
+        // 낙상·주의는 위험 지수를, 시스템 알림은 서버 본문 문구를 같은 자리에 표시
+        // (레이아웃을 늘리지 않고 tv_risk_score 를 부제목 슬롯으로 겸용)
+        holder.tvRiskScore.text = when (type) {
+            NotificationType.FALL, NotificationType.WARNING -> "위험 지수 ${item.riskScore}"
+            NotificationType.SYSTEM -> item.body
+        }
         holder.viewUnreadDot.isVisible = item.isUnread
 
         holder.ivIcon.setImageResource(type.iconRes)
         holder.ivIcon.imageTintList = ContextCompat.getColorStateList(ctx, type.iconTintRes)
-        holder.tvRiskScore.setTextColor(ContextCompat.getColor(ctx, type.scoreColorRes))
+        holder.tvRiskScore.setTextColor(ContextCompat.getColor(ctx, type.subtitleColorRes))
 
         // 재사용된 뷰에 이전 종류의 리스너가 남지 않도록 두 경우 모두 명시 지정
         holder.ivArrow.isVisible = type.clickable
