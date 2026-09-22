@@ -12,14 +12,19 @@ import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.on_safe.R
+import com.example.on_safe.messaging.PushEventBus
 import com.example.on_safe.util.NotificationPermissionBanner
 import com.example.on_safe.util.RiskScoreCardBinder
 import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.toast
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -58,6 +63,21 @@ class NotificationActivity : AppCompatActivity() {
 
         observeViewModel()
         viewModel.load(userId)
+        observePushEvents()
+    }
+
+    // 목록 화면이 떠 있는 동안 낙상/재알림 FCM 이 오면 즉시 목록을 다시 불러 새 알림이 반영되도록 한다.
+    // 앞서 진입 시점의 load() 로도 대부분 커버되지만, 화면을 계속 보고 있는 사이 도착한 이벤트는 이 구독으로만 잡힌다.
+    private fun observePushEvents() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                PushEventBus.events.collect { push ->
+                    if (push.event == "fall_detected" || push.event == "fall_escalated") {
+                        if (userId.isNotBlank()) viewModel.load(userId)
+                    }
+                }
+            }
+        }
     }
 
     private fun observeViewModel() {
