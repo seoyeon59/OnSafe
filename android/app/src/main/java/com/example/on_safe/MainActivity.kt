@@ -118,22 +118,19 @@ class MainActivity : AppCompatActivity() {
         observePushEvents()
     }
 
-    // FCM 이 도착한 순간 홈이 떠 있으면 다음 polling 을 기다리지 않고 즉시 뱃지를 반영한다.
-    // (트레이 알림은 [PushNotifications] 가 이미 처리 — 여기선 화면 상태만 반영)
+    // FCM 도착 시 폴링 대기 없이 즉시 화면 반영 (트레이 알림은 PushNotifications 담당)
     private fun observePushEvents() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 PushEventBus.events.collect { push ->
-                    when (push.event) {
-                        "fall_detected", "fall_escalated" -> {
-                            // 서버 저장이 FCM 도착보다 살짝 늦을 수 있어 낙관적으로 먼저 켜고,
-                            // 이어서 서버 값으로 재확인 — 폴링/연결 상태는 건드리지 않는다
-                            // (startPolling 은 connectionState 를 CONNECTING 으로 리셋해 카드가 깜빡임).
+                    when {
+                        push.isFall -> {
+                            // 뱃지 선반영 후 서버 값 재확인. startPolling 미사용 — 연결 상태 리셋으로 카드 깜빡임
                             viewModel.setUnreadBadge(true)
                             viewModel.refreshUnreadBadge(TokenManager.getUserId(this@MainActivity))
                         }
-                        "pairing_approved", "pairing_displaced", "pairing_unpaired" -> {
-                            // 페어링 관계가 바뀌면 홈 진입 판단(getWards) 을 다시 하도록 상태 리셋
+                        push.event in listOf("pairing_approved", "pairing_displaced", "pairing_unpaired") -> {
+                            // 페어링 변경 — 홈 진입 판단(getWards) 재실행
                             isPaired = false
                             pairingDeferred = false
                             checkGuardianPairingOnEntry()

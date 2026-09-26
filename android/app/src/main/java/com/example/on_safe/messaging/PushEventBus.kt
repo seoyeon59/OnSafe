@@ -5,7 +5,12 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 /** 서버가 실어 보낸 event 코드 + 부가 data. UI 재조회 트리거에 쓴다. */
-data class PushEvent(val event: String?, val data: Map<String, String>)
+data class PushEvent(val event: String?, val data: Map<String, String>) {
+    val isFall: Boolean get() = isFallEvent(event)
+}
+
+// 낙상 계열(fall_detected / fall_escalated) 판정 단일 기준
+fun isFallEvent(event: String?): Boolean = event?.startsWith("fall") == true
 
 /**
  * 포그라운드 화면용 인프로세스 이벤트 버스.

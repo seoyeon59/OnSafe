@@ -93,11 +93,8 @@
             android:screenOrientation="sensorLandscape" />
 
         <!-- 알림 내역 -->
-        <!-- launchMode=singleTop — FCM 낙상 딥링크(PushNotifications)로 재진입 시 새 인스턴스가 쌓이지 않게 함.
-             이미 상단이면 재사용되고 onCreate 대신 onNewIntent 로만 들어와 목록 상태가 유지된다. -->
         <activity
             android:name="com.example.on_safe.ui.notification.NotificationActivity"
-            android:launchMode="singleTop"
             android:screenOrientation="portrait" />
 
         <!-- 설정 -->

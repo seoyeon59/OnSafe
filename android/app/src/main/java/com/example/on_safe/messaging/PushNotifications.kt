@@ -31,7 +31,7 @@ object PushNotifications {
     // 같은 이벤트가 연달아 와도 서로 덮지 않도록 표시마다 고유 ID 부여
     private val notificationId = AtomicInteger(1000)
 
-    // 딥링크 PendingIntent 의 requestCode — 서로 다른 목적의 PendingIntent 가 겹치지 않도록 분리
+    // 딥링크 PendingIntent requestCode — 목적별 분리
     private const val REQUEST_APP_LAUNCH = 100
     private const val REQUEST_FALL_DEEPLINK = 200
 
@@ -61,8 +61,7 @@ object PushNotifications {
      * @param event 서버가 실은 event 코드(pairing_approved / fall_detected / fall_escalated 등).
      * @param title / [body] 서버가 함께 보낸 문구. 없으면 event 코드로 기본 문구를 만든다.
      *
-     * 낙상 계열(fall_*)은 알림 목록 화면으로 직행 — 홈을 백스택에 두어 뒤로가기가 홈으로 오게 한다.
-     * 그 외(pairing_* 등)는 런처 인텐트로 앱을 연다 — 자동로그인/미로그인 라우팅에 그대로 맡긴다.
+     * 낙상 계열은 알림 목록으로 직행(홈을 백스택에 배치). 그 외는 런처 인텐트로 앱 실행.
      */
     fun show(context: Context, event: String?, title: String?, body: String?) {
         val channelId = channelFor(event)
@@ -85,11 +84,10 @@ object PushNotifications {
         NotificationManagerCompat.from(context).notify(notificationId.incrementAndGet(), notification)
     }
 
-    // 낙상/재알림은 알림 목록으로 딥링크 — TaskStackBuilder 로 홈을 백스택에 심어야
-    // NotificationActivity 에서 뒤로가기 시 홈으로 돌아온다(단독 태스크로 뜨면 앱이 사라진 것처럼 보임).
+    // 낙상 딥링크 — 홈을 백스택에 두어 뒤로가기 시 홈 복귀
     private fun contentIntentFor(context: Context, event: String?): PendingIntent? {
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        return if (event != null && event.startsWith("fall")) {
+        return if (isFallEvent(event)) {
             TaskStackBuilder.create(context)
                 .addNextIntent(Intent(context, MainActivity::class.java))
                 .addNextIntent(Intent(context, NotificationActivity::class.java))
