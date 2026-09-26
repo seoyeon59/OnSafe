@@ -114,7 +114,7 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:contentDescription="@null"
-                        android:src="@drawable/ic_camera"
+                        android:src="@drawable/ic_play"
                         app:tint="@color/primary_blue" />
 
                     <TextView

@@ -46,7 +46,7 @@
             android:focusable="true"
             android:contentDescription="튜토리얼 다시 보기"
             android:padding="12dp"
-            android:src="@drawable/ic_info"
+            android:src="@drawable/ic_help"
             app:tint="@color/ink_500" />
     </LinearLayout>
 
@@ -515,7 +515,7 @@
                             android:layout_height="20dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
-                            android:src="@drawable/ic_info"
+                            android:src="@drawable/ic_help"
                             app:tint="@color/ink_500" />
                     </FrameLayout>
 

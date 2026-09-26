@@ -28,7 +28,7 @@
                 android:layout_height="24dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
-                android:src="@drawable/ic_person_remove"
+                android:src="@drawable/ic_link_off"
                 app:tint="@color/ink_500" />
 
         </FrameLayout>

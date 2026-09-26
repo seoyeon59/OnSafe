@@ -98,7 +98,7 @@
                 android:layout_height="32dp"
                 android:layout_gravity="center"
                 android:contentDescription="피보호자 연결 해제"
-                android:src="@drawable/ic_person_remove"
+                android:src="@drawable/ic_link_off"
                 app:tint="@color/primary_blue" />
         </FrameLayout>
     </LinearLayout>
