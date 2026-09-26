@@ -552,8 +552,8 @@ class CameraModeActivity : AppCompatActivity() {
                 layoutStandbyContent.visibility = View.VISIBLE
                 layoutConnectingContent.visibility = View.GONE
                 layoutLiveBadge.visibility = View.GONE
-                setStatusBadge("대기 중", Color.parseColor("#9FA6AC"))
-                setToggleButton("촬영 시작하기", R.drawable.ic_camera, Color.parseColor("#4D80FF"))
+                setStatusBadge("대기 중", getColor(R.color.status_standby))
+                setToggleButton("촬영 시작하기", R.drawable.ic_camera, getColor(R.color.primary_blue))
                 btnToggleRecording.isEnabled = true
                 btnToggleRecording.alpha = 1.0f
             }
@@ -562,8 +562,8 @@ class CameraModeActivity : AppCompatActivity() {
                 layoutStandbyContent.visibility = View.GONE        // 대기 아이콘 숨김
                 layoutConnectingContent.visibility = View.VISIBLE  // 스피너 + "연결 중..." 표시
                 layoutLiveBadge.visibility = View.GONE
-                setStatusBadge("연결 중...", Color.parseColor("#F59E0B"))
-                setToggleButton("연결 중...", R.drawable.ic_camera, Color.parseColor("#4D80FF"))
+                setStatusBadge("연결 중...", getColor(R.color.status_warning))
+                setToggleButton("연결 중...", R.drawable.ic_camera, getColor(R.color.primary_blue))
                 btnToggleRecording.isEnabled = false
                 btnToggleRecording.alpha = 0.4f
             }
@@ -573,8 +573,8 @@ class CameraModeActivity : AppCompatActivity() {
                 layoutStandbyContent.visibility = View.VISIBLE     // 다음 STANDBY 상태 대비 초기화
                 layoutConnectingContent.visibility = View.GONE
                 layoutLiveBadge.visibility = View.VISIBLE
-                setStatusBadge("전송 중", Color.parseColor("#22C55E"))
-                setToggleButton("촬영 종료하기", R.drawable.ic_stop, Color.parseColor("#EF4444"))
+                setStatusBadge("전송 중", getColor(R.color.status_normal))
+                setToggleButton("촬영 종료하기", R.drawable.ic_stop, getColor(R.color.status_danger))
                 btnToggleRecording.isEnabled = true
                 btnToggleRecording.alpha = 1.0f
             }
@@ -584,8 +584,8 @@ class CameraModeActivity : AppCompatActivity() {
                 layoutStandbyContent.visibility = View.VISIBLE
                 layoutConnectingContent.visibility = View.GONE
                 layoutLiveBadge.visibility = View.GONE
-                setStatusBadge("연결 실패", Color.parseColor("#EF4444"))
-                setToggleButton("다시 시도하기", R.drawable.ic_camera, Color.parseColor("#4D80FF"))
+                setStatusBadge("연결 실패", getColor(R.color.status_danger))
+                setToggleButton("다시 시도하기", R.drawable.ic_refresh, getColor(R.color.primary_blue))
                 btnToggleRecording.isEnabled = true
                 btnToggleRecording.alpha = 1.0f
             }
