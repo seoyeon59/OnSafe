@@ -30,15 +30,13 @@ enum class NotificationType(
 }
 
 data class NotificationItem(
-    // 알림함 항목의 서버 id — 새 API의 notificationId. 낙상 감지 알림이면 logId 도 함께 보관해
-    // 사고이력 confirm 을 병행 호출할 수 있게 한다.
-    val id: String,
-    val logId: String?,
+    val id: String,              // 서버 notificationId — 읽음 처리용
+    val logId: String?,          // 낙상 계열의 fall_logs id — 사고 처리용. 시스템 알림은 null
     val type: NotificationType,
     val title: String,
-    val body: String,            // 서버가 실어 보낸 본문. 낙상 계열은 "위험 지수 88" 로 대체 표시.
+    val body: String,            // 서버 본문. 낙상·주의는 위험 지수로 대체 표시
     val time: String,            // 표시용 문자열 (예: "오늘 · 오후 02:23")
-    val riskScore: Int,          // 낙상·주의만 유효(0..100). SYSTEM 은 0 무시.
+    val riskScore: Int,          // 낙상·주의만 유효(0..100). SYSTEM은 0
     val detectedAtMillis: Long,  // 모달에 감지 시각 표시용
     val isUnread: Boolean = false
 )
@@ -70,8 +68,7 @@ class NotificationAdapter(
 
         holder.tvTitle.text = item.title
         holder.tvTime.text = item.time
-        // 낙상·주의는 위험 지수를, 시스템 알림은 서버 본문 문구를 같은 자리에 표시
-        // (레이아웃을 늘리지 않고 tv_risk_score 를 부제목 슬롯으로 겸용)
+        // tv_risk_score를 부제목 슬롯으로 겸용 — 낙상·주의는 위험 지수, 시스템은 본문
         holder.tvRiskScore.text = when (type) {
             NotificationType.FALL, NotificationType.WARNING -> "위험 지수 ${item.riskScore}"
             NotificationType.SYSTEM -> item.body
@@ -98,7 +95,7 @@ class NotificationAdapter(
     }
 
     private companion object {
-        // logId 기준 비교 — 읽음 처리 시 해당 행만 다시 그림
+        // id 기준 비교 — 읽음 처리 시 해당 행만 다시 그림
         val DIFF = object : DiffUtil.ItemCallback<NotificationItem>() {
             override fun areItemsTheSame(oldItem: NotificationItem, newItem: NotificationItem) =
                 oldItem.id == newItem.id

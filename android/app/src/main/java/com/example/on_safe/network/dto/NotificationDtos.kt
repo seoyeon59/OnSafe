@@ -1,17 +1,16 @@
 package com.example.on_safe.network.dto
 
 // GET /api/notifications/{userId} 응답 항목.
-// 서버는 낙상(fall_detected/fall_escalated) 외에도 페어링·오프라인 등 모든 알림을 이 컬렉션에 저장한다.
-// FallLog 와는 별개 — 여기 isRead 는 "사용자가 알림을 봤나", FallLog.isConfirmed 는 "보호자가 사고를 처리했나".
+// isRead = 알림 확인 여부, FallLog.isConfirmed = 사고 처리 여부 (별개 축)
 data class NotificationLogResponse(
     val notificationId: String,
     val title: String,
     val body: String,
-    // 낙상 계열이면 연결된 fall_logs 문서의 id — 상세 조회·확인에 사용. 페어링 등에는 null.
+    // 낙상 계열의 fall_logs id. 그 외 null
     val logId: String?,
-    // 낙상 계열이면 감지 점수, 아니면 null.
+    // 낙상·주의 감지 점수. 그 외 null
     val score: Float?,
-    // true 면 fall 계열(fall_detected / fall_escalated).
+    // fall_detected / fall_escalated 여부
     val fall: Boolean,
     val isRead: Boolean,
     val timestamp: String

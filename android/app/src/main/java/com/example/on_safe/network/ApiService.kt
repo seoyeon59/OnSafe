@@ -237,9 +237,7 @@ interface ApiService {
         @Path("logId") logId: String
     ): Response<ApiResponse<FallLogResponse>>
 
-    // 낙상 로그 확인 처리 — 보호자가 사고를 처리했음(isConfirmed)을 서버에 남긴다.
-    // 알림 목록의 "읽음"과는 별개(그건 markNotificationRead) — 알림함에서 낙상을 열어봤다고
-    // 사고이력이 자동 종결되지는 않도록 두 상태를 분리 관리한다.
+    // 낙상 사고 처리(isConfirmed) — 알림 읽음(markNotificationRead)과 별개. 재알림 중단 기준
     @PATCH("api/fall-logs/{userId}/{logId}/confirm")
     suspend fun confirmFallLog(
         @Path("userId") userId: String,
@@ -248,15 +246,13 @@ interface ApiService {
 
     // ===== Notifications (알림함) =====
 
-    // 낙상뿐 아니라 페어링·오프라인 등 서버가 발송한 모든 알림 이력을 최신순으로 반환.
-    // (사고이력 API 재활용 방식에선 낙상 외 이벤트가 알림함에 뜨지 않던 문제 해소)
+    // 낙상·페어링·오프라인 등 전체 알림 이력, 최신순
     @GET("api/notifications/{userId}")
     suspend fun getNotifications(
         @Path("userId") userId: String
     ): Response<ApiResponse<Map<String, List<NotificationLogResponse>>>>
 
-    // 사용자가 알림을 확인했다는 표시(isRead=true). 낙상 로그의 isConfirmed 와 다른 축이라
-    // 낙상을 열어본 것과 보호자 처리 여부를 서버가 각각 추적할 수 있다.
+    // 알림 읽음(isRead) 처리
     @PATCH("api/notifications/{userId}/{notificationId}/read")
     suspend fun markNotificationRead(
         @Path("userId") userId: String,

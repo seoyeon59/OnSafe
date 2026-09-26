@@ -35,8 +35,7 @@ class NotificationViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val fetched = repository.getNotifications(userId)
-                // 화면 진입만으로도 확인이 끝난 것으로 볼 수 있는 항목(주의·시스템 알림)은 일괄 읽음 처리.
-                // 낙상(FALL) 만 사용자가 모달로 명시 확인해야 read 로 넘어간다 — 안전상 눈길을 강제.
+                // 주의·시스템 알림은 진입 시 일괄 읽음. 낙상은 모달 확인 필수
                 val autoReadable = fetched.filter { it.isAutoReadable() }
                 setState {
                     copy(
@@ -44,7 +43,7 @@ class NotificationViewModel : ViewModel() {
                         loadFailed = false
                     )
                 }
-                autoReadable.forEach { confirm(userId, it.id) }
+                autoReadable.forEach { markRead(userId, it.id) }
             // CancellationException은 IllegalStateException의 하위 타입 — 순서를 바꾸면
             // 화면 이탈로 인한 취소가 오류 토스트로 새어 나온다
             } catch (e: CancellationException) {
@@ -59,24 +58,28 @@ class NotificationViewModel : ViewModel() {
         }
     }
 
-    // FALL 모달에서 확인/119를 눌렀을 때 호출 — 해당 항목만 읽음 처리
-    fun markFallItemRead(userId: String, logId: String) {
-        val current = _uiState.value ?: return
-        if (current.items.none { it.id == logId && it.isUnread }) return
-        setState { copy(items = items.map { if (it.id == logId) it.copy(isUnread = false) else it }) }
-        confirm(userId, logId)
+    // FALL 모달 확인/119 — 읽음 + 사고 처리(재알림 중단)
+    fun confirmFallItem(userId: String, item: NotificationItem) {
+        if (item.isUnread) {
+            setState { copy(items = items.map { if (it.id == item.id) it.copy(isUnread = false) else it }) }
+            markRead(userId, item.id)
+        }
+        item.logId?.let { logId -> launchQuietly { repository.confirmFall(userId, logId) } }
     }
 
     fun hasUnreadItems(): Boolean = _uiState.value?.items?.any { it.isUnread } == true
 
-    private fun confirm(userId: String, logId: String) {
+    private fun markRead(userId: String, notificationId: String) =
+        launchQuietly { repository.markRead(userId, notificationId) }
+
+    // 실패 시에도 로컬 표시 유지 — 다음 조회 때 서버 값으로 재동기화
+    private fun launchQuietly(block: suspend () -> Unit) {
         viewModelScope.launch {
             try {
-                repository.confirmNotification(userId, logId)
+                block()
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // 실패해도 로컬 읽음 표시는 유지 — 다음 조회 때 서버 값으로 재동기화됨
             }
         }
     }
@@ -90,7 +93,7 @@ class NotificationViewModel : ViewModel() {
         _toastEvent.value = NotificationToastEvent(message)
     }
 
-    // FALL 만 진입 시 자동 read 대상에서 제외 — 사용자가 모달을 열어 확인해야 낙상을 놓치지 않는다.
+    // FALL 제외 — 모달 확인 전까지 안 읽음 유지
     private fun NotificationItem.isAutoReadable() =
         isUnread && type != NotificationType.FALL
 
