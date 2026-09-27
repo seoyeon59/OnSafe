@@ -67,7 +67,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="가입한 아이디와 이메일 주소로 비밀번호 재설정 코드를 보냅니다."
+                android:text="가입한 아이디·이름·이메일이 모두 일치하면 새 비밀번호를 설정할 수 있습니다."
                 android:textSize="@dimen/text_caption"
                 android:textColor="@color/ink_500"
                 android:lineSpacingExtra="4dp"
@@ -98,6 +98,31 @@
                 android:singleLine="true"
                 android:layout_marginBottom="16dp" />
 
+            <!-- 이름 라벨 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="이름"
+                android:textSize="@dimen/text_body"
+                android:textColor="@color/ink_500"
+                android:textStyle="bold"
+                android:layout_marginBottom="@dimen/space_sm" />
+
+            <!-- 이름 입력 -->
+            <EditText
+                android:id="@+id/etName"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/input_height"
+                android:hint="홍길동"
+                android:textColor="@color/ink_900"
+                android:textSize="@dimen/text_body"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:background="@drawable/bg_input_rounded"
+                android:inputType="text"
+                android:singleLine="true"
+                android:layout_marginBottom="16dp" />
+
             <!-- 이메일 라벨 -->
             <TextView
                 android:layout_width="wrap_content"
@@ -108,131 +133,37 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="@dimen/space_sm" />
 
-            <!-- 이메일 입력 + 코드받기 -->
-            <LinearLayout
+            <!-- 이메일 입력 -->
+            <EditText
+                android:id="@+id/etEmail"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/input_height"
-                android:orientation="horizontal">
+                android:hint="example@email.com"
+                android:textColor="@color/ink_900"
+                android:textSize="@dimen/text_body"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:background="@drawable/bg_input_rounded"
+                android:imeOptions="actionDone"
+                android:inputType="textEmailAddress"
+                android:singleLine="true" />
 
-                <EditText
-                    android:id="@+id/etEmail"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:hint="example@email.com"
-                    android:textColor="@color/ink_900"
-                    android:textSize="@dimen/text_body"
-                    android:paddingLeft="16dp"
-                    android:paddingRight="16dp"
-                    android:background="@drawable/bg_input_rounded"
-                    android:inputType="textEmailAddress"
-                    android:singleLine="true" />
-
-                <Button
-                    android:id="@+id/btnRequestCode"
-                    android:layout_width="wrap_content"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:layout_height="match_parent"
-                    android:stateListAnimator="@null"
-                    android:text="코드 받기"
-                    android:textSize="@dimen/text_body"
-                    android:textColor="@color/surface_white"
-                    android:textStyle="bold"
-                    android:background="@drawable/bg_button_blue"
-                    android:layout_marginLeft="8dp"
-                    android:paddingLeft="16dp"
-                    android:paddingRight="16dp" />
-
-            </LinearLayout>
-
-            <!-- 재설정 코드 입력칸 (코드받기 후 표시) -->
-            <LinearLayout
-                android:id="@+id/layoutCode"
+            <!-- 본인 확인 — 성공 시 비밀번호 재설정 화면으로 이동 -->
+            <Button
+                android:id="@+id/btnVerify"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="16dp"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="재설정 코드"
-                    android:textSize="@dimen/text_body"
-                    android:textColor="@color/ink_500"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="@dimen/space_sm" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/input_height"
-                    android:orientation="horizontal">
-
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1">
-
-                        <EditText
-                            android:id="@+id/etCode"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:hint="6자리 숫자"
-                            android:textColor="@color/ink_900"
-                            android:textSize="@dimen/text_body"
-                            android:paddingLeft="16dp"
-                            android:paddingRight="72dp"
-                            android:background="@drawable/bg_input_rounded"
-                            android:inputType="number"
-                            android:maxLength="6"
-                            android:singleLine="true" />
-
-                        <TextView
-                            android:id="@+id/tvTimer"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_vertical|end"
-                            android:layout_marginEnd="12dp"
-                            android:text="3:00"
-                            android:textSize="@dimen/text_body"
-                            android:textColor="@color/status_danger_text" />
-
-                    </FrameLayout>
-
-                    <Button
-                        android:id="@+id/btnConfirm"
-                        android:layout_width="wrap_content"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:layout_height="match_parent"
-                        android:stateListAnimator="@null"
-                        android:text="확인"
-                        android:textSize="@dimen/text_body"
-                        android:textColor="@color/surface_white"
-                        android:textStyle="bold"
-                        android:background="@drawable/bg_button_blue"
-                        android:layout_marginLeft="8dp"
-                        android:paddingLeft="16dp"
-                        android:paddingRight="16dp" />
-
-                </LinearLayout>
-
-                <!-- 재전송 버튼 (만료 시 표시) -->
-                <TextView
-                    android:id="@+id/tvResend"
-                    android:minHeight="@dimen/touch_min"
-                    android:gravity="center"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="인증코드 다시 받기"
-                    android:textSize="@dimen/text_body"
-                    android:textColor="@color/primary_blue"
-                    android:layout_marginTop="@dimen/space_sm"
-                    android:layout_marginStart="8dp"
-                    android:visibility="gone" />
-
-            </LinearLayout>
+                android:layout_height="@dimen/btn_height"
+                android:layout_marginTop="24dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:includeFontPadding="false"
+                android:stateListAnimator="@null"
+                android:text="본인 확인"
+                android:textColor="@color/surface_white"
+                android:textSize="@dimen/text_button"
+                android:textStyle="bold"
+                android:background="@drawable/bg_button_blue"
+                app:backgroundTint="@null" />
 
         </LinearLayout>
 
@@ -252,7 +183,7 @@
             android:indeterminateTint="@color/primary_blue"
             android:visibility="gone" />
 
-        <!-- 로그인으로 돌아가기 -->
+        <!-- 로그인으로 돌아가기 — 보조 버튼(외곽선)으로 주 버튼과 위계 구분 -->
         <Button
             android:id="@+id/btnGoLogin"
             android:layout_width="match_parent"
@@ -262,10 +193,11 @@
             android:includeFontPadding="false"
             android:stateListAnimator="@null"
             android:text="로그인으로 돌아가기"
-            android:textColor="@color/surface_white"
+            android:textColor="@color/primary_blue"
             android:textSize="@dimen/text_button"
             android:textStyle="bold"
-            android:background="@drawable/bg_button_blue" />
+            android:background="@drawable/bg_outline_blue"
+            app:backgroundTint="@null" />
 
     </LinearLayout>
 

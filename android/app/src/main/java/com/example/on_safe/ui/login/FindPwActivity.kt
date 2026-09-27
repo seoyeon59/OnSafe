@@ -2,6 +2,7 @@ package com.example.on_safe.ui.login
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
@@ -59,6 +60,12 @@ class FindPwActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             viewModel.verifyIdentity(userId, name, email)
+        }
+
+        // 키보드 완료 키로도 제출 — false 반환으로 키보드는 기본대로 닫힘
+        etEmail.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) btnVerify.performClick()
+            false
         }
 
         observeViewModel()
