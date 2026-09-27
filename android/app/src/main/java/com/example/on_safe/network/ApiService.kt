@@ -33,20 +33,12 @@ interface ApiService {
     @POST("api/auth/check-mail")
     suspend fun checkMail(@Body request: CheckMailRequest): Response<ApiResponse<Unit>>
 
-    @POST("api/auth/send-email-code")
-    suspend fun sendEmailCode(@Body request: SendEmailCodeRequest): Response<ApiResponse<Unit>>
-
-    @POST("api/auth/verify-email-code")
-    suspend fun verifyEmailCode(@Body request: VerifyEmailCodeRequest): Response<ApiResponse<VerifyEmailCodeResponse>>
-
     @POST("api/auth/find-id")
     suspend fun findId(@Body request: FindIdRequest): Response<ApiResponse<FindIdResponse>>
 
-    @POST("api/auth/send-reset-code")
-    suspend fun sendResetCode(@Body request: SendResetCodeRequest): Response<ApiResponse<Unit>>
-
-    @POST("api/auth/verify-reset-code")
-    suspend fun verifyResetCode(@Body request: VerifyResetCodeRequest): Response<ApiResponse<Unit>>
+    // 아이디+이름+이메일이 모두 일치하면 재설정용 1회용 티켓을 발급받는다
+    @POST("api/auth/verify-reset-identity")
+    suspend fun verifyResetIdentity(@Body request: VerifyResetIdentityRequest): Response<ApiResponse<VerifyResetIdentityResponse>>
 
     @POST("api/auth/reset-password")
     suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<ApiResponse<Unit>>

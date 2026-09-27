@@ -29,6 +29,7 @@ class ResetPasswordActivity : AppCompatActivity() {
         // 호출부가 Intent에 담아 보내는 값 — 키·모드값 모두 여기서만 정의
         const val EXTRA_USER_ID = "userId"
         const val EXTRA_MODE = "mode"
+        const val EXTRA_RESET_TICKET = "resetTicket"   // MODE_FIND_PW 전용 — 본인확인 통과 증명
 
         const val MODE_FIND_PW = "find_pw"     // 비밀번호 찾기 후 진입 (현재 비번 칸 숨김)
         const val MODE_SETTINGS = "settings"   // 설정에서 진입 (현재 비번 칸 표시)
@@ -70,7 +71,8 @@ class ResetPasswordActivity : AppCompatActivity() {
         // MODE_SETTINGS이면 현재 비밀번호 입력란 표시
         val mode = intent.getStringExtra(EXTRA_MODE) ?: MODE_FIND_PW
         val userId = intent.getStringExtra(EXTRA_USER_ID) ?: ""
-        viewModel.init(mode, userId)
+        val resetTicket = intent.getStringExtra(EXTRA_RESET_TICKET) ?: ""
+        viewModel.init(mode, userId, resetTicket)
         if (mode == MODE_SETTINGS) {
             layoutCurrentPw.visibility = View.VISIBLE
         }

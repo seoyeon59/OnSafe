@@ -33,8 +33,7 @@ data class TokenResponse(
     val tokenType: String
 )
 
-// verifyEmailCode 성공 시 서버가 발급하는 1회용 티켓. 이후 register 요청에 emailVerifyTicket 으로
-// 실어보내야 통과된다 — mail 만 확인하던 예전 방식에서 발생하던 이메일 선점 시나리오 차단용.
-data class VerifyEmailCodeResponse(
-    val emailVerifyTicket: String
+// verifyResetIdentity 성공 시 서버가 발급하는 1회용 티켓. reset-password 요청에 실어 보내야 통과된다.
+data class VerifyResetIdentityResponse(
+    val resetTicket: String
 )

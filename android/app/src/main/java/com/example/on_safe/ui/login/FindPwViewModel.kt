@@ -5,22 +5,20 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.on_safe.network.ApiClient
-import com.example.on_safe.network.dto.SendResetCodeRequest
-import com.example.on_safe.network.dto.VerifyResetCodeRequest
-import com.example.on_safe.network.errorMessage
+import com.example.on_safe.network.dto.VerifyResetIdentityRequest
 import com.example.on_safe.network.isOk
-import com.example.on_safe.util.VerificationCodeTimer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-// FindIdUiState와 동일 구조 — 결과 카드 대신 비밀번호 재설정 화면으로 이동
 data class FindPwUiState(
     val isLoading: Boolean = false,
-    val isRequestCodeEnabled: Boolean = true,
-    val isCodeLayoutVisible: Boolean = false,
-    val isResendVisible: Boolean = false,
-    val isConfirmEnabled: Boolean = false,
-    val timerText: String = ""
+    val isVerifyEnabled: Boolean = true
+)
+
+// 본인확인을 통과한 아이디와 서버가 발급한 재설정 티켓 — 재설정 화면으로 함께 넘긴다
+data class ResetTarget(
+    val userId: String,
+    val resetTicket: String
 )
 
 class FindPwViewModel : ViewModel() {
@@ -33,99 +31,32 @@ class FindPwViewModel : ViewModel() {
     val toastMessage: LiveData<String?> = _toastMessage
 
     // 재설정 화면 이동 1회성 신호 — Activity가 소비 후 onNavigated()로 리셋
-    // 검증에 성공한 아이디를 그대로 넘긴다 — 화면에서 다시 읽으면 응답을 기다리는 사이
+    // 확인에 성공한 아이디를 그대로 넘긴다 — 화면에서 다시 읽으면 응답을 기다리는 사이
     // 사용자가 입력칸을 고친 경우 다른 계정으로 넘어간다
-    private val _navigateToReset = MutableLiveData<String?>(null)
-    val navigateToReset: LiveData<String?> = _navigateToReset
+    private val _navigateToReset = MutableLiveData<ResetTarget?>(null)
+    val navigateToReset: LiveData<ResetTarget?> = _navigateToReset
 
-    private val timer = VerificationCodeTimer(
-        onTick = { text -> setState { copy(timerText = text) } },
-        onFinish = {
-            setState {
-                copy(
-                    timerText = "0:00",
-                    isConfirmEnabled = false,
-                    isResendVisible = true,
-                    isRequestCodeEnabled = true
+    // 아이디+이름+이메일 대조 → 일치하면 재설정 티켓 발급
+    fun verifyIdentity(userId: String, name: String, email: String) {
+        setState { copy(isVerifyEnabled = false, isLoading = true) }
+        viewModelScope.launch {
+            try {
+                val response = ApiClient.api.verifyResetIdentity(
+                    VerifyResetIdentityRequest(userId = userId, name = name, mail = email)
                 )
-            }
-        }
-    )
-
-    fun requestCode(userId: String, email: String) {
-        setState { copy(isRequestCodeEnabled = false, isLoading = true) }
-        sendCode(userId, email, isResend = false)
-    }
-
-    fun resendCode(userId: String, email: String) {
-        setState { copy(isResendVisible = false) }
-        sendCode(userId, email, isResend = true)
-    }
-
-    // 발송·재발송 공통 — 안내 문구와 실패 시 복구 대상만 다름
-    private fun sendCode(userId: String, email: String, isResend: Boolean) {
-        viewModelScope.launch {
-            try {
-                val response = ApiClient.api.sendResetCode(SendResetCodeRequest(userId = userId, mail = email))
-                if (response.isOk) {
-                    startVerification(isResend)
+                val ticket = response.body()?.data?.resetTicket
+                if (response.isOk && !ticket.isNullOrBlank()) {
+                    _navigateToReset.value = ResetTarget(userId, ticket)
                 } else {
-                    restoreSendButton(isResend)
-                    _toastMessage.value = response.errorMessage(
-                        if (isResend) "재설정 코드 재발송에 실패했습니다." else "코드 발송에 실패했습니다."
-                    )
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                restoreSendButton(isResend)
-                _toastMessage.value = "네트워크 오류가 발생했습니다."
-            } finally {
-                // 재발송은 애초에 로딩을 켜지 않음 — 진행 중인 다른 요청의 스피너를 끄지 않도록 제외
-                if (!isResend) setState { copy(isLoading = false) }
-            }
-        }
-    }
-
-    private fun restoreSendButton(isResend: Boolean) {
-        if (isResend) setState { copy(isResendVisible = true) }
-        else setState { copy(isRequestCodeEnabled = true) }
-    }
-
-    private fun startVerification(isResend: Boolean) {
-        setState {
-            copy(
-                isRequestCodeEnabled = false,
-                isCodeLayoutVisible = true,
-                isResendVisible = true,
-                isConfirmEnabled = true
-            )
-        }
-        _toastMessage.value = if (isResend) "재설정 코드를 재발송했습니다." else "재설정 코드를 발송했습니다."
-        timer.start()
-    }
-
-    // 재설정 코드 확인
-    // TODO: [백엔드] sendResetCode가 USER_NOT_FOUND와 MAIL_NOT_MATCH를 구분해 아이디 존재 여부가 노출됨.
-    fun confirmCode(userId: String, code: String) {
-        setState { copy(isConfirmEnabled = false, isLoading = true) }
-        viewModelScope.launch {
-            try {
-                val response = ApiClient.api.verifyResetCode(VerifyResetCodeRequest(userId = userId, code = code))
-                if (response.isOk) {
-                    timer.cancel()
-                    _navigateToReset.value = userId
-                } else {
-                    _toastMessage.value = response.errorMessage("코드가 올바르지 않습니다.")
-                    setState { copy(isConfirmEnabled = true) }
+                    // 어느 항목이 틀렸는지 구분하지 않는다 — 아이디 존재 여부가 드러나지 않게
+                    _toastMessage.value = "입력하신 정보와 일치하는 계정이 없습니다."
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
                 _toastMessage.value = "네트워크 오류가 발생했습니다."
-                setState { copy(isConfirmEnabled = true) }
             } finally {
-                setState { copy(isLoading = false) }
+                setState { copy(isVerifyEnabled = true, isLoading = false) }
             }
         }
     }
@@ -140,10 +71,5 @@ class FindPwViewModel : ViewModel() {
 
     private inline fun setState(update: FindPwUiState.() -> FindPwUiState) {
         _uiState.value = (_uiState.value ?: FindPwUiState()).update()
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        timer.cancel()
     }
 }

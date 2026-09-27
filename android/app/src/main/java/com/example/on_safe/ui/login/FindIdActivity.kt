@@ -21,13 +21,8 @@ class FindIdActivity : AppCompatActivity() {
 
     private lateinit var etName: EditText
     private lateinit var etEmail: EditText
-    private lateinit var etCode: EditText
-    private lateinit var btnRequestCode: Button
-    private lateinit var btnConfirm: Button
-    private lateinit var layoutCode: LinearLayout
+    private lateinit var btnFindId: Button
     private lateinit var layoutResult: LinearLayout
-    private lateinit var tvTimer: TextView
-    private lateinit var tvResend: TextView
     private lateinit var tvFoundId: TextView
     private lateinit var pbLoading: ProgressBar
 
@@ -37,21 +32,16 @@ class FindIdActivity : AppCompatActivity() {
 
         etName = findViewById(R.id.etName)
         etEmail = findViewById(R.id.etEmail)
-        etCode = findViewById(R.id.etCode)
-        btnRequestCode = findViewById(R.id.btnRequestCode)
-        btnConfirm = findViewById(R.id.btnConfirm)
-        layoutCode = findViewById(R.id.layoutCode)
+        btnFindId = findViewById(R.id.btnFindId)
         layoutResult = findViewById(R.id.layoutResult)
-        tvTimer = findViewById(R.id.tvTimer)
-        tvResend = findViewById(R.id.tvResend)
         tvFoundId = findViewById(R.id.tvFoundId)
         pbLoading = findViewById(R.id.pbLoading)
 
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
         findViewById<Button>(R.id.btnGoLogin).setOnClickListener { finish() }
 
-        // 인증코드 발송 — 입력 검증만 여기서, 요청·상태 처리는 뷰모델 담당
-        btnRequestCode.setOnClickListener {
+        // 아이디 조회 — 입력 검증만 여기서, 요청·상태 처리는 뷰모델 담당
+        btnFindId.setOnClickListener {
             val name = etName.text.toString().trim()
             val email = etEmail.text.toString().trim()
             val error = when {
@@ -64,22 +54,7 @@ class FindIdActivity : AppCompatActivity() {
                 toast(error)
                 return@setOnClickListener
             }
-            viewModel.requestCode(email)
-        }
-
-        // 인증코드 확인 → 아이디 조회
-        btnConfirm.setOnClickListener {
-            val code = etCode.text.toString().trim()
-            if (code.isEmpty()) {
-                toast("인증코드를 입력해주세요.")
-                return@setOnClickListener
-            }
-            viewModel.confirmCode(code, etEmail.text.toString().trim(), etName.text.toString().trim())
-        }
-
-        tvResend.setOnClickListener {
-            etCode.text.clear()
-            viewModel.resendCode(etEmail.text.toString().trim())
+            viewModel.findId(name, email)
         }
 
         observeViewModel()
@@ -88,18 +63,9 @@ class FindIdActivity : AppCompatActivity() {
     private fun observeViewModel() {
         viewModel.uiState.observe(this) { state ->
             pbLoading.isVisible = state.isLoading
-            btnRequestCode.setEnabledWithAlpha(state.isRequestCodeEnabled)
-            btnConfirm.setEnabledWithAlpha(state.isConfirmEnabled)
-
-            layoutCode.isVisible = state.isCodeLayoutVisible
-            tvTimer.isVisible = state.isCodeLayoutVisible
-            tvTimer.text = state.timerText
-            tvResend.isVisible = state.isResendVisible
-
-            if (state.isResultVisible) {
-                tvFoundId.text = state.foundId
-                layoutResult.isVisible = true
-            }
+            btnFindId.setEnabledWithAlpha(state.isFindEnabled)
+            tvFoundId.text = state.foundId
+            layoutResult.isVisible = state.isResultVisible
         }
 
         viewModel.toastMessage.observe(this) { message ->
