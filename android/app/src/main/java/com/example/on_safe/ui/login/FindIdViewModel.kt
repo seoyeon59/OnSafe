@@ -110,13 +110,16 @@ class FindIdViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val verifyResponse = ApiClient.api.verifyEmailCode(VerifyEmailCodeRequest(mail = email, code = code))
-                if (!verifyResponse.isOk) {
+                val ticket = verifyResponse.body()?.data?.emailVerifyTicket
+                if (!verifyResponse.isOk || ticket == null) {
                     _toastMessage.value = verifyResponse.errorMessage("인증코드가 올바르지 않습니다.")
                     setState { copy(isConfirmEnabled = true) }
                     return@launch
                 }
 
-                val findResponse = ApiClient.api.findId(FindIdRequest(name = name, mail = email))
+                val findResponse = ApiClient.api.findId(
+                    FindIdRequest(name = name, mail = email, emailVerifyTicket = ticket)
+                )
                 val foundId = findResponse.body()?.data?.userId
                 if (findResponse.isOk && foundId != null) {
                     timer.cancel()
@@ -131,8 +134,11 @@ class FindIdViewModel : ViewModel() {
                         )
                     }
                 } else {
-                    _toastMessage.value = findResponse.errorMessage("아이디를 찾을 수 없습니다.")
-                    setState { copy(isConfirmEnabled = true) }
+                    // 티켓은 요청 시 소비 — 같은 코드로 재확인 불가, 인증번호 재발송부터
+                    _toastMessage.value = findResponse.errorMessage("아이디를 찾을 수 없습니다.") +
+                        " 인증번호를 다시 받아주세요."
+                    timer.cancel()
+                    setState { copy(isConfirmEnabled = false, isResendVisible = true) }
                 }
             } catch (e: CancellationException) {
                 throw e

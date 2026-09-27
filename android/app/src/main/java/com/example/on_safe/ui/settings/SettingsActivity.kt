@@ -28,6 +28,7 @@ import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
 import com.example.on_safe.messaging.FcmTokenRegistrar
+import com.example.on_safe.network.dto.LogoutRequest
 import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.NavTab
@@ -116,8 +117,8 @@ class SettingsActivity : AppCompatActivity() {
 
         viewModel.logoutEvent.observe(this) { fired ->
             if (fired == true) {
-                // 세션 정리 전에 호출 — userId·토큰이 아직 살아있어야 서버 해제를 시도할 수 있다.
-                FcmTokenRegistrar.unregister(this)
+                // 서버 토큰 해제는 로그아웃 본문이 처리 — 여기선 기기 정리만
+                FcmTokenRegistrar.clearLocal(this)
                 TokenManager.clearSession(this)
                 toast("로그아웃 되었습니다.")
                 goToLogin()
@@ -129,8 +130,8 @@ class SettingsActivity : AppCompatActivity() {
             if (result != null) {
                 toast(result.message)
                 if (result.success) {
-                    // 이 기기가 탈퇴 후에도 푸시를 받지 않도록 토큰 해제 후 세션 정리.
-                    FcmTokenRegistrar.unregister(this)
+                    // 서버가 탈퇴 파기에서 FCM 토큰 삭제 — 기기 정리만
+                    FcmTokenRegistrar.clearLocal(this)
                     TokenManager.clearSession(this)
                     goToLogin()
                 }
@@ -369,10 +370,14 @@ class SettingsActivity : AppCompatActivity() {
             showLogoutConfirm()
         }
 
-        // 회원탈퇴
+        // 회원탈퇴 — 확인 문구 통과 후 비밀번호 재확인(서버 재인증 티켓 필수)
         rowWithdraw.setOnClickListener {
             WithdrawAccountDialog(this) {
-                viewModel.withdraw(TokenManager.getUserId(this))
+                VerifyPasswordDialog(
+                    context = this,
+                    onConfirm = { pw -> viewModel.withdraw(TokenManager.getUserId(this), pw) },
+                    onCancel = {}
+                ).show()
             }.show()
         }
 
@@ -402,7 +407,11 @@ class SettingsActivity : AppCompatActivity() {
         }
         dialog.findViewById<TextView>(R.id.btnLogoutConfirm).setOnClickListener {
             dialog.dismiss()
-            viewModel.logout(TokenManager.getAccessToken(this), TokenManager.getRefreshToken(this))
+            viewModel.logout(
+                TokenManager.getAccessToken(this),
+                TokenManager.getRefreshToken(this),
+                LogoutRequest(FcmTokenRegistrar.currentToken(this), FcmTokenRegistrar.deviceId(this))
+            )
         }
         dialog.show()
     }

@@ -19,3 +19,15 @@ val <T> Response<ApiResponse<T>>.isOk: Boolean
 fun <T> Response<ApiResponse<T>>.errorMessage(fallback: String): String =
     body()?.message?.let { ApiClient.sanitizeMessage(it, fallback) }
         ?: ApiClient.parseErrorMessage(errorBody(), fallback)
+
+/** 실패 코드(ErrorCode 이름) + 사용자 노출 문구 */
+data class ApiFailure(val code: String?, val message: String)
+
+/**
+ * 실패 정보 일괄 추출 — errorBody는 1회만 읽을 수 있어 코드·문구를 한 번에 꺼냄.
+ * 코드로 분기할 화면(REAUTH_REQUIRED 등)에서 errorMessage() 대신 사용.
+ */
+fun <T> Response<ApiResponse<T>>.failure(fallback: String): ApiFailure {
+    val parsed = body() ?: ApiClient.parseErrorBody(errorBody())
+    return ApiFailure(parsed?.code, ApiClient.sanitizeMessage(parsed?.message, fallback))
+}

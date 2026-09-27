@@ -17,7 +17,6 @@ import androidx.core.view.isVisible
 import com.example.on_safe.R
 import com.example.on_safe.network.dto.UserResponse
 import com.example.on_safe.ui.login.AddressSearchActivity
-import com.example.on_safe.util.EmailValidator
 import com.example.on_safe.util.FieldValidation
 import com.example.on_safe.util.INPUT_BORDER_ERROR
 import com.example.on_safe.util.INPUT_BORDER_VALID
@@ -87,7 +86,16 @@ class EditProfileActivity : AppCompatActivity() {
 
     private fun observeViewModel() {
         viewModel.verifyResult.observe(this) { result ->
-            if (result != null) {
+            if (result != null && result.isReauth) {
+                // 저장 중 재확인 — 폼 유지, 성공 시 같은 입력값으로 저장 재시도
+                if (result.success) {
+                    saveForm()
+                } else {
+                    toast(result.message ?: "비밀번호가 올바르지 않습니다.")
+                    showVerifyDialog(isReauth = true)
+                }
+                viewModel.onVerifyResultHandled()
+            } else if (result != null) {
                 if (result.success) {
                     formContainer.visibility = View.VISIBLE
                     btnSave.visibility = View.VISIBLE
@@ -115,7 +123,20 @@ class EditProfileActivity : AppCompatActivity() {
             if (result != null) {
                 toast(result.message)
                 if (result.success) finish()
+                if (result.reauthRequired) showVerifyDialog(isReauth = true)
                 viewModel.onSaveResultHandled()
+            }
+        }
+
+        // 마케팅 동의 저장 실패 — 토글·로컬 캐시 원복
+        viewModel.marketingRevert.observe(this) { previous ->
+            if (previous != null) {
+                suppressMarketingListener = true
+                switchMarketing.isChecked = previous
+                suppressMarketingListener = false
+                settingsPrefs.edit().putBoolean("marketing_enabled", previous).apply()
+                toast("마케팅 수신 동의 변경에 실패했습니다. 다시 시도해주세요.")
+                viewModel.onMarketingRevertHandled()
             }
         }
 
@@ -158,27 +179,16 @@ class EditProfileActivity : AppCompatActivity() {
                 else -> FieldValidation.Invalid(PhoneField.ERROR_MSG)
             })
         }
-
-        etEmail.onTextChanged {
-            applyValidation(etEmail, tvEmailMessage, when {
-                it.isEmpty() -> FieldValidation.Empty
-                EmailValidator.isValid(it) -> FieldValidation.Valid(EmailValidator.SUCCESS_MSG)
-                else -> FieldValidation.Invalid(EmailValidator.ERROR_MSG)
-            })
-        }
     }
 
     // 저장 가능 여부 — 형식이 하나라도 어긋나면 저장 차단
     private fun validateAll(): String? {
         val name = etName.text.toString().trim()
         val phone = etPhone.text.toString().trim()
-        val email = etEmail.text.toString().trim()
         return when {
             name.isEmpty() -> "이름을 입력해주세요."
             phone.isEmpty() -> "전화번호를 입력해주세요."
             !PhoneField.isValid(phone) -> "전화번호 형식을 확인해주세요."
-            email.isEmpty() -> "이메일을 입력해주세요."
-            !EmailValidator.isValid(email) -> "이메일 형식을 확인해주세요."
             else -> null
         }
     }
@@ -224,19 +234,26 @@ class EditProfileActivity : AppCompatActivity() {
             viewModel.updateMarketingConsent(TokenManager.getUserId(this), isChecked)
         }
 
+        // 이메일 변경은 메일 인증 필요 — 인증 UI 전까지 읽기 전용
+        etEmail.isEnabled = false
+        tvEmailMessage.text = "이메일은 변경할 수 없습니다."
+        tvEmailMessage.setTextColor(ContextCompat.getColor(this, R.color.ink_500))
+        tvEmailMessage.isVisible = true
+
         // 인증 전: 폼 숨김
         formContainer.visibility = View.INVISIBLE
         btnSave.visibility = View.INVISIBLE
     }
 
-    // 진입 시 본인 확인 — 취소는 finish, 확인은 서버 검증 후 폼 표시·데이터 로드
-    private fun showVerifyDialog() {
+    // 진입 시 본인 확인 — 취소는 finish, 확인은 서버 검증 후 폼 표시·데이터 로드.
+    // isReauth: 저장 중 티켓 만료로 재확인 — 취소 시 화면 유지
+    private fun showVerifyDialog(isReauth: Boolean = false) {
         VerifyPasswordDialog(
             context = this,
             onConfirm = { password ->
-                viewModel.verifyPassword(TokenManager.getUserId(this), password)
+                viewModel.verifyPassword(TokenManager.getUserId(this), password, isReauth)
             },
-            onCancel = { finish() }
+            onCancel = { if (!isReauth) finish() }
         ).show()
     }
 
@@ -249,35 +266,36 @@ class EditProfileActivity : AppCompatActivity() {
             overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
 
-        btnSave.setOnClickListener {
-            val name     = etName.text.toString().trim()
-            val phone    = etPhone.text.toString().trim()
-            val email    = etEmail.text.toString().trim()
-            val address1 = etAddress1.text.toString().trim()
-            val address2 = etAddress2.text.toString().trim()
+        btnSave.setOnClickListener { saveForm() }
+    }
 
-            // 형식 오류 시 저장 차단 — 잘못된 값의 서버 반영 방지
-            val error = validateAll()
-            if (error != null) {
-                toast(error)
-                return@setOnClickListener
-            }
+    // 저장 버튼·재인증 성공 후 재시도 공통
+    private fun saveForm() {
+        val name     = etName.text.toString().trim()
+        val phone    = etPhone.text.toString().trim()
+        val address1 = etAddress1.text.toString().trim()
+        val address2 = etAddress2.text.toString().trim()
 
-            // 변경 없으면 서버 호출 생략
-            if (!viewModel.hasChanges(name, phone, email, address1, address2)) {
-                toast("변경된 내용이 없습니다.")
-                return@setOnClickListener
-            }
-
-            viewModel.save(
-                userId = TokenManager.getUserId(this),
-                name = name,
-                phone = phone,
-                email = email,
-                address = address1,
-                addressDetail = address2
-            )
+        // 형식 오류 시 저장 차단 — 잘못된 값의 서버 반영 방지
+        val error = validateAll()
+        if (error != null) {
+            toast(error)
+            return
         }
+
+        // 변경 없으면 서버 호출 생략
+        if (!viewModel.hasChanges(name, phone, address1, address2)) {
+            toast("변경된 내용이 없습니다.")
+            return
+        }
+
+        viewModel.save(
+            userId = TokenManager.getUserId(this),
+            name = name,
+            phone = phone,
+            address = address1,
+            addressDetail = address2
+        )
     }
 
     // 좌상단 뒤로가기 화면 공통 전환 — 알림 화면과 동일

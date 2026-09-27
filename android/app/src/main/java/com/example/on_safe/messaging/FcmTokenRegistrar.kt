@@ -21,7 +21,8 @@ import kotlinx.coroutines.launch
  *  1) 로그인 성공 직후,
  *  2) 자동 로그인(앱 시작 시 이미 로그인 상태),
  *  3) Firebase 가 토큰을 새로 발급([OnSafeMessagingService.onNewToken])
- * 시점에 동기화하고, 로그아웃/탈퇴 시 해제한다.
+ * 시점에 동기화. 서버 해제는 로그아웃 본문(LogoutRequest)이 담당하고,
+ * 모든 세션 종료 경로에서 [clearLocal]로 기기 쪽만 정리한다.
  *
  * google-services.json 미설정(=Firebase 미초기화) 환경에서도 크래시 없이 no-op 이 되도록
  * 모든 Firebase 접근을 try/catch 로 감싼다.
@@ -61,26 +62,18 @@ object FcmTokenRegistrar {
         syncToServer(context.applicationContext, token, force = true)
     }
 
-    /**
-     * 로그아웃·회원탈퇴 시 호출.
-     * 세션이 곧 정리되므로 userId·토큰을 지금(동기) 확보한 뒤, 서버 해제는 best-effort 로 시도한다.
-     * 핵심은 이 기기가 더는 푸시를 받지 않도록 Firebase 토큰 자체를 폐기하는 것.
-     */
-    fun unregister(context: Context) {
-        val appContext = context.applicationContext
-        val token = syncedToken(appContext)
-        val userId = TokenManager.getUserId(appContext)
-        clearSyncedToken(appContext)
+    /** 로그아웃 본문용 — 서버에 등록된 이 기기 토큰. [clearLocal] 전에 확보할 것 */
+    fun currentToken(context: Context): String? = syncedToken(context.applicationContext)
 
+    /**
+     * 모든 세션 종료 경로(로그아웃·탈퇴·세션 만료·비밀번호 변경) 공통 기기 정리.
+     * 캐시가 남으면 같은 기기 계정 전환 시 등록이 건너뛰어짐. 서버 해제는 호출하지 않음 —
+     * 로그아웃 본문이 대신하고, 그 외 경로는 세션이 이미 무효라 항상 401.
+     */
+    fun clearLocal(context: Context) {
+        clearSyncedToken(context.applicationContext)
         scope.launch {
-            if (!token.isNullOrBlank() && userId.isNotBlank()) {
-                try {
-                    ApiClient.api.deleteFcmToken(userId, FcmTokenRequest(token, deviceId(appContext)))
-                } catch (e: Exception) {
-                    if (BuildConfig.DEBUG) Log.w(TAG, "서버 토큰 해제 실패(무시)", e)
-                }
-            }
-            // 다음 로그인 사용자가 이전 토큰으로 알림을 받는 일이 없도록 기기 토큰을 폐기.
+            // 다음 로그인 사용자가 이전 토큰으로 알림을 받지 않도록 기기 토큰 폐기
             try {
                 FirebaseMessaging.getInstance().deleteToken()
             } catch (e: Exception) {
@@ -112,7 +105,7 @@ object FcmTokenRegistrar {
     }
 
     // 로그인 요청과 동일한 식별자 — 같은 계정의 여러 기기를 서버가 구분하도록 함께 보낸다.
-    private fun deviceId(context: Context): String =
+    fun deviceId(context: Context): String =
         Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: ""
 
     private fun prefs(context: Context) =
