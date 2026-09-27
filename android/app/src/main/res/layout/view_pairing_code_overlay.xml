@@ -1,46 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    페어링 코드 오버레이 — 카메라 프리뷰 상단 중앙에 얹는다.
-    자동 재발급 정책상 만료 UI는 필요 없고, 최초 로딩 중에는 코드 자리를 대시 6개로 표시.
+    보호자 연결 코드 오버레이 — 미연결 시 카메라 프리뷰 상단 중앙 표시.
+    안내는 버튼 대신 코드 아래 한 줄로 상시 노출. 자동 재발급이라 만료 UI 없음, 로딩 중 대시 6개 표시
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/pairingCodeOverlay"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_pairing_code_overlay"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:paddingHorizontal="20dp"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingHorizontal="24dp"
     android:paddingVertical="12dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:fontFamily="@font/pretendard_semibold"
+        android:includeFontPadding="false"
         android:text="보호자 연결 코드"
-        android:textColor="@color/white"
-        android:textSize="@dimen/text_tab" />
+        android:textColor="@color/overlay_white_75"
+        android:textSize="@dimen/text_caption" />
 
     <TextView
         android:id="@+id/tvPairingCode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
+        android:layout_marginTop="6dp"
+        android:fontFamily="@font/pretendard_bold"
+        android:includeFontPadding="false"
         android:letterSpacing="0.3"
         android:text="------"
-        android:textColor="@color/white"
-        android:textSize="@dimen/text_code"
-        android:textStyle="bold" />
+        android:textColor="@color/surface_white"
+        android:textSize="@dimen/text_code" />
 
-    <ImageButton
-        android:id="@+id/btnPairingCodeInfo"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:layout_marginStart="8dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="페어링 코드 안내"
-        android:padding="4dp"
-        android:src="@drawable/ic_info"
-        app:tint="@color/white" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:includeFontPadding="false"
+        android:text="보호자 앱에서 입력 · 5분마다 자동 갱신"
+        android:textColor="@color/overlay_white_50"
+        android:textSize="@dimen/text_tab" />
 
 </LinearLayout>

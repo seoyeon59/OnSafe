@@ -140,6 +140,7 @@
                     android:textColor="@color/surface_white"
                     android:textStyle="bold"
                     android:background="@drawable/bg_button_blue"
+                    app:backgroundTint="@null"
                     android:layout_marginLeft="8dp"
                     android:paddingLeft="16dp"
                     android:paddingRight="16dp" />
@@ -178,7 +179,7 @@
                             android:id="@+id/etCode"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:hint="6자리 숫자"
+                            android:hint="인증코드 6자리"
                             android:textColor="@color/ink_900"
                             android:textSize="@dimen/text_body"
                             android:paddingLeft="16dp"
@@ -212,6 +213,7 @@
                         android:textColor="@color/surface_white"
                         android:textStyle="bold"
                         android:background="@drawable/bg_button_blue"
+                        app:backgroundTint="@null"
                         android:layout_marginLeft="8dp"
                         android:paddingLeft="16dp"
                         android:paddingRight="16dp" />
@@ -225,7 +227,7 @@
                     android:gravity="center"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="인증코드 다시 받기"
+                    android:text="인증코드를 다시 받기"
                     android:textSize="@dimen/text_body"
                     android:textColor="@color/primary_blue"
                     android:layout_marginTop="@dimen/space_sm"
@@ -265,7 +267,8 @@
             android:textColor="@color/surface_white"
             android:textSize="@dimen/text_button"
             android:textStyle="bold"
-            android:background="@drawable/bg_button_blue" />
+            android:background="@drawable/bg_button_blue"
+            app:backgroundTint="@null" />
 
     </LinearLayout>
 

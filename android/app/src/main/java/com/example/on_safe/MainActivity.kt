@@ -25,6 +25,7 @@ import com.example.on_safe.util.DoubleBackToExit
 import com.example.on_safe.util.NotificationPermissionBanner
 import com.example.on_safe.util.RiskScoreCardBinder
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.cardDialog
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -235,9 +236,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val view = layoutInflater.inflate(R.layout.dialog_unpair, null, false)
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
-            .setView(view)
-            .create()
+        val dialog = cardDialog(this, view)
         view.findViewById<View>(R.id.btnUnpairCancel).setOnClickListener { dialog.dismiss() }
         view.findViewById<View>(R.id.btnUnpairConfirm).setOnClickListener {
             dialog.dismiss()

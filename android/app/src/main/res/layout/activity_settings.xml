@@ -328,6 +328,7 @@
                 android:textStyle="bold" />
 
             <LinearLayout
+                android:clipToOutline="true"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
@@ -488,6 +489,7 @@
                 android:textStyle="bold" />
 
             <LinearLayout
+                android:clipToOutline="true"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
@@ -551,6 +553,7 @@
                 android:textStyle="bold" />
 
             <LinearLayout
+                android:clipToOutline="true"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"

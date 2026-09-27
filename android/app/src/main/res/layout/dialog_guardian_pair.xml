@@ -1,89 +1,142 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- 보호자 연결 코드 입력 창 — 확인 창 공통 구조(아이콘 원·가운데 제목·구분선·하단 버튼 행) -->
+<LinearLayout
+    android:clipToOutline="true"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_card"
     android:orientation="vertical"
-    android:paddingHorizontal="20dp"
-    android:paddingTop="24dp"
-    android:paddingBottom="16dp">
+    android:paddingTop="20dp">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="보호자 연결"
-        android:textColor="@color/ink_900"
-        android:textSize="@dimen/text_subtitle"
-        android:textStyle="bold" />
-
-    <TextView
+    <!-- 아이콘 + 텍스트 + 코드 입력 -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="피보호자 화면에 표시된 6자리 코드를 입력해주세요."
-        android:textColor="@color/ink_500"
-        android:textSize="@dimen/text_caption" />
-
-    <EditText
-        android:id="@+id/etPairingCode"
-        android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/bg_input_rounded"
-        android:gravity="center"
-        android:hint="------"
-        android:inputType="number"
-        android:letterSpacing="0.3"
-        android:maxLength="6"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
         android:paddingHorizontal="20dp"
-        android:textColor="@color/ink_900"
-        android:textColorHint="@color/track_off"
-        android:textSize="@dimen/text_code"
-        android:textStyle="bold" />
+        android:paddingBottom="16dp">
 
-    <TextView
-        android:id="@+id/tvPairingError"
+        <!-- 연결 아이콘 원형 -->
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_circle_primary_tint">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_link"
+                app:tint="@color/primary_blue" />
+
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="보호자 연결"
+            android:textColor="@color/ink_900"
+            android:textSize="@dimen/text_subtitle"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:text="피보호자 화면에 표시된 6자리 코드를 입력해주세요."
+            android:textColor="@color/ink_500"
+            android:textSize="@dimen/text_caption" />
+
+        <!-- 6자리 코드 입력 — 넓은 입력칸, 큰 글자 -->
+        <EditText
+            android:id="@+id/etPairingCode"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_input_rounded"
+            android:fontFamily="@font/pretendard_bold"
+            android:gravity="center"
+            android:hint="000000"
+            android:importantForAutofill="no"
+            android:includeFontPadding="false"
+            android:inputType="number"
+            android:letterSpacing="0.4"
+            android:maxLength="6"
+            android:textColor="@color/ink_900"
+            android:textColorHint="@color/track_off"
+            android:textSize="@dimen/text_code" />
+
+        <TextView
+            android:id="@+id/tvPairingError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:textColor="@color/status_danger_text"
+            android:textSize="@dimen/text_caption"
+            android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/pbPairingLoading"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginTop="8dp"
+            android:indeterminateTint="@color/primary_blue"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- 구분선 -->
+    <View
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textColor="@color/status_danger_text"
-        android:textSize="@dimen/text_caption"
-        android:visibility="gone" />
+        android:layout_height="1dp"
+        android:background="@color/border_subtle" />
 
-    <ProgressBar
-        android:id="@+id/pbPairingLoading"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="12dp"
-        android:visibility="gone" />
-
-    <Button
-        android:id="@+id/btnPair"
+    <!-- 버튼 행 — 나중에 하기(코드를 아직 못 받은 보호자의 유일한 탈출 경로) / 연결하기 -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="@dimen/btn_height"
-        android:layout_marginTop="16dp"
-        android:insetTop="0dp"
-        android:insetBottom="0dp"
-        android:includeFontPadding="false"
-        android:background="@drawable/bg_button_blue"
-        android:stateListAnimator="@null"
-        android:text="연결하기"
-        android:textColor="@color/surface_white"
-        android:textSize="@dimen/text_button"
-        android:textStyle="bold" />
+        android:layout_height="52dp"
+        android:orientation="horizontal">
 
-    <!-- 코드를 아직 못 받은 보호자가 홈으로 빠져나갈 수 있는 유일한 경로 -->
-    <TextView
-        android:id="@+id/btnPairLater"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/touch_min"
-        android:layout_marginTop="@dimen/space_sm"
-        android:background="?attr/selectableItemBackground"
-        android:gravity="center"
-        android:includeFontPadding="false"
-        android:text="나중에 하기"
-        android:textColor="@color/ink_500"
-        android:textSize="@dimen/text_body" />
+        <TextView
+            android:id="@+id/btnPairLater"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="나중에 하기"
+            android:textColor="@color/ink_500"
+            android:textSize="@dimen/text_body"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/border_subtle" />
+
+        <TextView
+            android:id="@+id/btnPair"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="연결하기"
+            android:textColor="@color/primary_blue"
+            android:textSize="@dimen/text_body"
+            android:textStyle="bold" />
+
+    </LinearLayout>
 
 </LinearLayout>

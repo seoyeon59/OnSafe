@@ -55,7 +55,7 @@
                     android:layout_gravity="center"
                     android:alpha="0.4"
                     android:contentDescription="@null"
-                    android:src="@drawable/ic_camera"
+                    android:src="@drawable/ic_camera_large"
                     app:tint="@color/primary_blue" />
             </FrameLayout>
 
@@ -198,6 +198,7 @@
 
     <!-- 우하단 전체화면 버튼 -->
     <FrameLayout
+        android:clipToOutline="true"
         android:id="@+id/btnFullscreen"
         android:layout_width="@dimen/touch_min"
         android:layout_height="@dimen/touch_min"
@@ -485,6 +486,7 @@
 
                 <!-- 촬영 시작/종료 버튼 — pill shape + icon -->
                 <LinearLayout
+                    android:clipToOutline="true"
                     android:id="@+id/btnToggleRecording"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
@@ -516,6 +518,7 @@
 
                 <!-- 로그아웃 버튼 — pill outline + icon -->
                 <LinearLayout
+                    android:clipToOutline="true"
                     android:id="@+id/btnLogout"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"

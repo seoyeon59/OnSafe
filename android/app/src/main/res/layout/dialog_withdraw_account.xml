@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
+    android:clipToOutline="true"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -8,25 +9,44 @@
     android:orientation="vertical"
     android:paddingTop="20dp">
 
-    <!-- 내용 영역 -->
+    <!-- 내용 영역 — 아이콘 원·가운데 제목(확인 창 공통 구조) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
         android:orientation="vertical"
         android:paddingHorizontal="20dp"
-        android:paddingBottom="8dp">
+        android:paddingBottom="16dp">
+
+        <!-- 아이콘 원형 — 확인 창 공통 구조 -->
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_circle_danger_tint">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_person_remove"
+                app:tint="@color/status_danger" />
+
+        </FrameLayout>
 
         <!-- 제목 + 설명 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center_horizontal"
             android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="회원 탈퇴"
-                android:textColor="@color/status_danger"
+                android:text="회원 탈퇴하시겠습니까?"
+                android:textColor="@color/ink_900"
                 android:textSize="@dimen/text_subtitle"
                 android:textStyle="bold" />
 
@@ -34,9 +54,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
+                android:gravity="center"
                 android:lineSpacingMultiplier="1.4"
                 android:text='탈퇴하면 모든 데이터가 삭제되며 복구할 수 없습니다.\n계속하려면 아래에 "회원탈퇴"를 입력해주세요.'
-                android:textColor="@color/ink_900"
+                android:textColor="@color/ink_500"
                 android:textSize="@dimen/text_caption" />
         </LinearLayout>
 
@@ -45,8 +66,9 @@
             android:id="@+id/etWithdrawConfirm"
             android:layout_width="match_parent"
             android:layout_height="@dimen/input_height"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="16dp"
             android:background="@drawable/bg_input_rounded"
+            android:gravity="center"
             android:hint="회원탈퇴"
             android:imeOptions="actionDone"
             android:inputType="text"
@@ -60,7 +82,6 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="12dp"
         android:background="@color/border_subtle" />
 
     <!-- 버튼 영역 -->

@@ -100,6 +100,7 @@
 
                 <!-- 영상 보기 버튼 — 세 버튼 모두 40dp 높이 둥근 외곽선(터치 48dp) -->
                 <LinearLayout
+                    android:clipToOutline="true"
                     android:id="@+id/btnWatchVideo"
                     android:layout_width="wrap_content"
                     android:layout_height="@dimen/touch_min"
@@ -133,6 +134,7 @@
 
                 <!-- 다운로드 버튼 — 40dp 원 -->
                 <ImageButton
+                    android:clipToOutline="true"
                     android:id="@+id/btnDownload"
                     android:layout_width="40dp"
                     android:layout_height="@dimen/touch_min"
@@ -141,13 +143,14 @@
                     android:paddingVertical="14dp"
                     android:scaleType="fitCenter"
                     android:background="@drawable/bg_btn_round_neutral"
-                    android:foreground="?attr/selectableItemBackgroundBorderless"
+                    android:foreground="?attr/selectableItemBackground"
                     android:contentDescription="영상 다운로드"
                     android:src="@drawable/ic_download"
                     app:tint="@color/ink_500" />
 
                 <!-- 삭제 버튼 — 40dp 원 -->
                 <ImageButton
+                    android:clipToOutline="true"
                     android:id="@+id/btnDelete"
                     android:layout_width="40dp"
                     android:layout_height="@dimen/touch_min"
@@ -156,7 +159,7 @@
                     android:paddingVertical="14dp"
                     android:scaleType="fitCenter"
                     android:background="@drawable/bg_btn_round_danger"
-                    android:foreground="?attr/selectableItemBackgroundBorderless"
+                    android:foreground="?attr/selectableItemBackground"
                     android:contentDescription="이력 삭제"
                     android:src="@drawable/ic_delete"
                     app:tint="@color/status_danger_light" />

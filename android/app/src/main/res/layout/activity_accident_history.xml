@@ -155,6 +155,7 @@
             android:gravity="center" />
 
         <TextView
+            android:clipToOutline="true"
             android:id="@+id/btnRetry"
             android:layout_width="wrap_content"
             android:layout_height="@dimen/touch_min"

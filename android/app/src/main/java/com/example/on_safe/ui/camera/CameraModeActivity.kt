@@ -78,7 +78,6 @@ class CameraModeActivity : AppCompatActivity() {
     private lateinit var btnUnpairCamera: ImageView
     private lateinit var tvPairingCode: TextView
     private lateinit var pairingCodeOverlay: View
-    private lateinit var btnPairingCodeInfo: ImageButton
 
     // 화면보호기/번인방지/자동 dim — 카메라 로직과 독립적인 관심사라 별도 클래스로 분리
     private lateinit var screenSaverController: ScreenSaverController
@@ -254,7 +253,6 @@ class CameraModeActivity : AppCompatActivity() {
         btnUnpairCamera         = findViewById(R.id.btnUnpairCamera)
         tvPairingCode           = findViewById(R.id.tvPairingCode)
         pairingCodeOverlay      = findViewById(R.id.pairingCodeOverlay)
-        btnPairingCodeInfo      = findViewById(R.id.btnPairingCodeInfo)
 
         layoutStatusBadge.background = statusBadgeBg
     }
@@ -296,7 +294,6 @@ class CameraModeActivity : AppCompatActivity() {
         btnTutorial.setOnClickListener {
             startActivity(TutorialActivity.intentFromSettings(this))
         }
-        btnPairingCodeInfo.setOnClickListener { showPairingCodeGuide() }
         btnUnpairCamera.setOnClickListener {
             // 촬영 중에 해제하면 실시간 감지가 무의미해지므로 로그아웃과 동일하게 상태 가드.
             if (currentState == CameraState.STREAMING || currentState == CameraState.CONNECTING) {
@@ -305,18 +302,6 @@ class CameraModeActivity : AppCompatActivity() {
             }
             showUnpairDialog()
         }
-    }
-
-    private fun showPairingCodeGuide() {
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("보호자 연결 코드")
-            .setMessage(
-                "이 6자리 코드를 보호자에게 알려주세요.\n" +
-                    "보호자가 앱에서 코드를 입력하면 연결됩니다.\n" +
-                    "코드는 5분마다 자동으로 갱신돼요."
-            )
-            .setPositiveButton("확인", null)
-            .show()
     }
 
     private fun toggleFullscreen() {

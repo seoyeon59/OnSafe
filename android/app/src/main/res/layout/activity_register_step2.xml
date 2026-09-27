@@ -105,6 +105,7 @@
 
             <!-- 입력 카드 -->
             <LinearLayout
+                android:clipToOutline="true"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -155,6 +156,7 @@
                         android:textColor="@color/surface_white"
                         android:textStyle="bold"
                         android:background="@drawable/bg_button_blue"
+                        app:backgroundTint="@null"
                         android:layout_marginLeft="8dp"
                         android:paddingLeft="16dp"
                         android:paddingRight="16dp" />
@@ -375,6 +377,7 @@
                         android:textColor="@color/surface_white"
                         android:textStyle="bold"
                         android:background="@drawable/bg_button_blue"
+                        app:backgroundTint="@null"
                         android:layout_marginLeft="8dp"
                         android:paddingLeft="16dp"
                         android:paddingRight="16dp" />
@@ -447,6 +450,7 @@
                             android:textColor="@color/surface_white"
                             android:textStyle="bold"
                             android:background="@drawable/bg_button_blue"
+                            app:backgroundTint="@null"
                             android:layout_marginLeft="8dp"
                             android:paddingLeft="16dp"
                             android:paddingRight="16dp" />
@@ -491,6 +495,7 @@
                     android:layout_marginBottom="@dimen/space_sm" />
 
                 <EditText
+                    android:clipToOutline="true"
                     android:id="@+id/etAddress"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/input_height"
@@ -565,6 +570,7 @@
                 android:textSize="@dimen/text_button"
                 android:textStyle="bold"
                 android:background="@drawable/bg_button_blue"
+                app:backgroundTint="@null"
                 android:alpha="0.4"
                 android:enabled="false" />
 

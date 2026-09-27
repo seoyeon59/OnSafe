@@ -101,6 +101,7 @@
             android:includeFontPadding="false"
             android:layout_marginStart="8dp"
             android:background="@drawable/bg_button_blue"
+            app:backgroundTint="@null"
             android:insetTop="0dp"
             android:insetBottom="0dp"
             android:stateListAnimator="@null"
