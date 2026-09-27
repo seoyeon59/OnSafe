@@ -98,21 +98,23 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <!-- 영상 보기 버튼 -->
+                <!-- 영상 보기 버튼 — 세 버튼 모두 40dp 높이 둥근 외곽선(터치 48dp) -->
                 <LinearLayout
                     android:id="@+id/btnWatchVideo"
-                    android:layout_width="88dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="@dimen/touch_min"
-                    android:background="@drawable/bg_outline_blue"
+                    android:background="@drawable/bg_btn_round_blue"
                     android:foreground="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="14dp">
 
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_play"
                         app:tint="@color/primary_blue" />
@@ -120,33 +122,41 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
+                        android:layout_marginStart="6dp"
+                        android:fontFamily="@font/pretendard_semibold"
+                        android:includeFontPadding="false"
                         android:text="영상 보기"
                         android:textColor="@color/primary_blue"
                         android:textSize="@dimen/text_caption" />
 
                 </LinearLayout>
 
-                <!-- 다운로드 버튼 -->
+                <!-- 다운로드 버튼 — 40dp 원 -->
                 <ImageButton
                     android:id="@+id/btnDownload"
-                    android:layout_width="@dimen/touch_min"
+                    android:layout_width="40dp"
                     android:layout_height="@dimen/touch_min"
-                    android:padding="12dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_stroke_neutral"
+                    android:layout_marginStart="6dp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="14dp"
+                    android:scaleType="fitCenter"
+                    android:background="@drawable/bg_btn_round_neutral"
+                    android:foreground="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="영상 다운로드"
                     android:src="@drawable/ic_download"
                     app:tint="@color/ink_500" />
 
-                <!-- 삭제 버튼 -->
+                <!-- 삭제 버튼 — 40dp 원 -->
                 <ImageButton
                     android:id="@+id/btnDelete"
-                    android:layout_width="@dimen/touch_min"
+                    android:layout_width="40dp"
                     android:layout_height="@dimen/touch_min"
-                    android:padding="12dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_stroke_danger_light"
+                    android:layout_marginStart="6dp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="14dp"
+                    android:scaleType="fitCenter"
+                    android:background="@drawable/bg_btn_round_danger"
+                    android:foreground="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="이력 삭제"
                     android:src="@drawable/ic_delete"
                     app:tint="@color/status_danger_light" />

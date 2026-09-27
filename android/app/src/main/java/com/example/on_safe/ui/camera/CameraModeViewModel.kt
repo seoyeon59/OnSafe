@@ -15,11 +15,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-// 사이드 패널 "연결 정보"에 표시할 값 — 카메라/보호자 모드가 같은 계정으로 로그인하는 구조라
-// 여기 표시되는 이름도 계정 소유자 본인 이름이다 (별도 "보호자 계정" 개념 없음).
 // 조회 전/실패 구분용 null 유지 — 문구 결정은 DisplayText 담당
 data class CameraModeUiState(
-    val guardianName: String? = null,
     val deviceId: String? = null,
     // 페어링 코드 오버레이 — null 이면 로딩 중 or 이미 페어링됨, 값이 있으면 화면 상단에 표시.
     // 서버 TTL(15분)에 맞춰 자동 재발급되므로 만료 케이스 UI 처리 불필요.
@@ -130,26 +127,6 @@ class CameraModeViewModel : ViewModel() {
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) Log.w("CameraMode", "페어링 코드 발급 예외", e)
             -1L
-        }
-    }
-
-    // 실패 시에도 상태 갱신 — 레이아웃 예시 문구 잔존 방지
-    fun loadGuardianName(userId: String) {
-        if (userId.isBlank()) {
-            setState { copy(guardianName = "") }
-            return
-        }
-        viewModelScope.launch {
-            val name = try {
-                val response = ApiClient.api.getUser(userId)
-                val body = response.body()
-                if (response.isSuccessful && body?.success == true) body.data?.name else null
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                null
-            }
-            setState { copy(guardianName = name.orEmpty()) }
         }
     }
 

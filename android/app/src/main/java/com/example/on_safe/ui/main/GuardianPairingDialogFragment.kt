@@ -2,6 +2,9 @@ package com.example.on_safe.ui.main
 
 import android.app.Dialog
 import android.content.DialogInterface
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.view.WindowManager
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.Button
@@ -60,6 +63,18 @@ class GuardianPairingDialogFragment : DialogFragment() {
         return AlertDialog.Builder(requireContext())
             .setView(view)
             .create()
+    }
+
+    // 다른 확인 창과 동일 규격 — 기본 사각 배경 제거, 화면 폭 85%
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.apply {
+            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            setLayout(
+                (resources.displayMetrics.widthPixels * 0.85).toInt(),
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+        }
     }
 
     // 뒤로가기·바깥 탭으로 닫는 경로도 "나중에 하기"와 같게 취급한다.

@@ -4,6 +4,7 @@
     자동 재발급 정책상 만료 UI는 필요 없고, 최초 로딩 중에는 코드 자리를 대시 6개로 표시.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/pairingCodeOverlay"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
@@ -39,7 +40,7 @@
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="페어링 코드 안내"
         android:padding="4dp"
-        android:src="@android:drawable/ic_menu_info_details"
-        android:tint="@color/white" />
+        android:src="@drawable/ic_info"
+        app:tint="@color/white" />
 
 </LinearLayout>

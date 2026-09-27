@@ -54,6 +54,25 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
+        <!-- 피보호자 연결 버튼 — 미연결: 연결(ic_link) / 연결됨: 해제(ic_link_off). MainActivity.renderPairingButton -->
+        <FrameLayout
+            android:id="@+id/btnPairingMain"
+            android:layout_width="@dimen/touch_min"
+            android:layout_height="@dimen/touch_min"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/ivPairing"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_gravity="center"
+                android:contentDescription="피보호자 연결"
+                android:src="@drawable/ic_link"
+                app:tint="@color/primary_blue" />
+        </FrameLayout>
+
         <FrameLayout
             android:id="@+id/btnNotification"
             android:layout_width="@dimen/touch_min"
@@ -64,8 +83,8 @@
 
             <ImageView
                 android:id="@+id/ivNotificationBell"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
                 android:layout_gravity="center"
                 android:contentDescription="알림"
                 android:src="@drawable/ic_notification"
@@ -76,31 +95,13 @@
                 android:layout_width="6dp"
                 android:layout_height="6dp"
                 android:layout_gravity="top|end"
-                android:layout_marginTop="2dp"
-                android:layout_marginEnd="2dp"
+                android:layout_marginTop="11dp"
+                android:layout_marginEnd="11dp"
                 android:background="@drawable/bg_circle"
                 android:backgroundTint="@color/status_danger"
                 android:visibility="gone" />
         </FrameLayout>
 
-        <!-- 피보호자 연결 해제 버튼 — 페어링된 상태에서만 표시 (MainActivity 에서 visibility 제어) -->
-        <FrameLayout
-            android:id="@+id/btnUnpairMain"
-            android:layout_width="@dimen/touch_min"
-            android:layout_height="@dimen/touch_min"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:visibility="gone">
-
-            <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_gravity="center"
-                android:contentDescription="피보호자 연결 해제"
-                android:src="@drawable/ic_link_off"
-                app:tint="@color/primary_blue" />
-        </FrameLayout>
     </LinearLayout>
 
     <!-- 알림 권한 미동의 배너 -->

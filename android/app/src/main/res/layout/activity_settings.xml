@@ -69,21 +69,22 @@
             android:paddingTop="16dp"
             android:paddingBottom="20dp">
 
-            <!-- 프로필 카드 -->
+            <!-- 프로필 카드 — 외곽은 홈 기기 카드와 동일 규격 -->
             <LinearLayout
                 android:id="@+id/cardProfile"
                 android:layout_width="match_parent"
-                android:layout_height="64dp"
-                android:background="@drawable/bg_pill"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card_shadow_only"
+                android:elevation="2dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp">
+                android:padding="12dp">
 
                 <FrameLayout
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:background="@drawable/bg_circle_primary_tint">
+                    android:background="@drawable/bg_circle"
+                    android:backgroundTint="@color/surface_icon_blue">
 
                     <ImageView
                         android:layout_width="24dp"
@@ -98,7 +99,7 @@
                     android:id="@+id/tvUserName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="12dp"
                     tools:text="홍길동 보호자님"
                     android:textColor="@color/ink_500"
                     android:textSize="@dimen/text_body"
@@ -139,8 +140,8 @@
 
                         <ImageView
                             android:id="@+id/ivNotificationIcon"
-                            android:layout_width="@dimen/icon_md"
-                            android:layout_height="@dimen/icon_md"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_notification"
@@ -204,8 +205,8 @@
                         android:paddingVertical="12dp">
 
                         <FrameLayout
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
                             android:background="@drawable/bg_card">
 
                             <ImageView
@@ -266,8 +267,8 @@
                         android:paddingVertical="12dp">
 
                         <FrameLayout
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
                             android:background="@drawable/bg_card">
 
                             <ImageView
@@ -346,13 +347,13 @@
                     android:paddingVertical="12dp">
 
                     <FrameLayout
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
                         android:background="@drawable/bg_icon_item">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_person"
@@ -394,13 +395,13 @@
                     android:paddingVertical="12dp">
 
                     <FrameLayout
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
                         android:background="@drawable/bg_icon_item">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_lock"
@@ -442,13 +443,13 @@
                     android:paddingVertical="12dp">
 
                     <FrameLayout
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
                         android:background="@drawable/bg_icon_item">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_personal_inform"
@@ -506,13 +507,13 @@
                     android:paddingVertical="12dp">
 
                     <FrameLayout
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
                         android:background="@drawable/bg_icon_item">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_help"
@@ -569,13 +570,13 @@
                     android:paddingVertical="12dp">
 
                     <FrameLayout
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
                         android:background="@drawable/bg_icon_item">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_logout"
@@ -611,13 +612,13 @@
                     android:paddingVertical="12dp">
 
                     <FrameLayout
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
                         android:background="@drawable/bg_icon_danger">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_person_remove"
