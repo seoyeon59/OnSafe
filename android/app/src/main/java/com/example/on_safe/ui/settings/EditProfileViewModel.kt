@@ -95,28 +95,30 @@ class EditProfileViewModel : ViewModel() {
         original = user
     }
 
-    // 입력값과 원본의 차이 여부 — 전화번호는 하이픈 유무 차이를 무시하고 숫자만 비교.
-    // 이메일은 변경 불가(인증 UI 미구현)라 비교 제외
+    // 입력값과 원본의 차이 여부 — 전화번호는 하이픈 유무 차이를 무시하고 숫자만 비교
     fun hasChanges(
         name: String,
         phone: String,
+        email: String,
         address: String,
         addressDetail: String
     ): Boolean {
         val o = original ?: return true   // 원본 미수신 시 저장 시도
         return name != o.name ||
                 phone.digitsOnly() != o.phone.digitsOnly() ||
+                email != o.mail ||
                 address != o.address.orEmpty() ||
                 addressDetail != o.addressDetail.orEmpty()
     }
 
     private fun String.digitsOnly() = filter { it.isDigit() }
 
-    // 메일은 보내지 않음 — 변경에 메일 인증 티켓이 필요하고, 화면에서 변경 불가
+    // 메일 변경 시 서버가 메일 인증 티켓 요구(EMAIL_NOT_VERIFIED) — 변경 UI 방침 미정
     fun save(
         userId: String,
         name: String,
         phone: String,
+        email: String,
         address: String,
         addressDetail: String
     ) {
@@ -128,6 +130,7 @@ class EditProfileViewModel : ViewModel() {
                     userId,
                     UserUpdateRequest(
                         name = name,
+                        mail = email,
                         phone = phone,
                         address = address,
                         addressDetail = addressDetail,

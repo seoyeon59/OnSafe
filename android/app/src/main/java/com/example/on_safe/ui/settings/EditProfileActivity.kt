@@ -17,6 +17,7 @@ import androidx.core.view.isVisible
 import com.example.on_safe.R
 import com.example.on_safe.network.dto.UserResponse
 import com.example.on_safe.ui.login.AddressSearchActivity
+import com.example.on_safe.util.EmailValidator
 import com.example.on_safe.util.FieldValidation
 import com.example.on_safe.util.INPUT_BORDER_ERROR
 import com.example.on_safe.util.INPUT_BORDER_VALID
@@ -179,16 +180,27 @@ class EditProfileActivity : AppCompatActivity() {
                 else -> FieldValidation.Invalid(PhoneField.ERROR_MSG)
             })
         }
+
+        etEmail.onTextChanged {
+            applyValidation(etEmail, tvEmailMessage, when {
+                it.isEmpty() -> FieldValidation.Empty
+                EmailValidator.isValid(it) -> FieldValidation.Valid(EmailValidator.SUCCESS_MSG)
+                else -> FieldValidation.Invalid(EmailValidator.ERROR_MSG)
+            })
+        }
     }
 
     // 저장 가능 여부 — 형식이 하나라도 어긋나면 저장 차단
     private fun validateAll(): String? {
         val name = etName.text.toString().trim()
         val phone = etPhone.text.toString().trim()
+        val email = etEmail.text.toString().trim()
         return when {
             name.isEmpty() -> "이름을 입력해주세요."
             phone.isEmpty() -> "전화번호를 입력해주세요."
             !PhoneField.isValid(phone) -> "전화번호 형식을 확인해주세요."
+            email.isEmpty() -> "이메일을 입력해주세요."
+            !EmailValidator.isValid(email) -> "이메일 형식을 확인해주세요."
             else -> null
         }
     }
@@ -234,12 +246,6 @@ class EditProfileActivity : AppCompatActivity() {
             viewModel.updateMarketingConsent(TokenManager.getUserId(this), isChecked)
         }
 
-        // 이메일 변경은 메일 인증 필요 — 인증 UI 전까지 읽기 전용
-        etEmail.isEnabled = false
-        tvEmailMessage.text = "이메일은 변경할 수 없습니다."
-        tvEmailMessage.setTextColor(ContextCompat.getColor(this, R.color.ink_500))
-        tvEmailMessage.isVisible = true
-
         // 인증 전: 폼 숨김
         formContainer.visibility = View.INVISIBLE
         btnSave.visibility = View.INVISIBLE
@@ -273,6 +279,7 @@ class EditProfileActivity : AppCompatActivity() {
     private fun saveForm() {
         val name     = etName.text.toString().trim()
         val phone    = etPhone.text.toString().trim()
+        val email    = etEmail.text.toString().trim()
         val address1 = etAddress1.text.toString().trim()
         val address2 = etAddress2.text.toString().trim()
 
@@ -284,7 +291,7 @@ class EditProfileActivity : AppCompatActivity() {
         }
 
         // 변경 없으면 서버 호출 생략
-        if (!viewModel.hasChanges(name, phone, address1, address2)) {
+        if (!viewModel.hasChanges(name, phone, email, address1, address2)) {
             toast("변경된 내용이 없습니다.")
             return
         }
@@ -293,6 +300,7 @@ class EditProfileActivity : AppCompatActivity() {
             userId = TokenManager.getUserId(this),
             name = name,
             phone = phone,
+            email = email,
             address = address1,
             addressDetail = address2
         )
