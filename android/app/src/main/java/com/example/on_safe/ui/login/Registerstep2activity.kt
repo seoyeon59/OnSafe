@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,25 +36,19 @@ class RegisterStep2Activity : AppCompatActivity() {
     private lateinit var etName: EditText
     private lateinit var etPhone: EditText
     private lateinit var etEmail: EditText
-    private lateinit var etEmailCode: EditText
     private lateinit var etAddress: EditText
     private lateinit var etAddressDetail: EditText
 
     private lateinit var btnCheckId: Button
-    private lateinit var btnVerifyEmail: Button
-    private lateinit var btnConfirmCode: Button
+    private lateinit var btnCheckMail: Button
     private lateinit var btnComplete: Button
     private lateinit var pbLoading: ProgressBar
 
-    private lateinit var layoutEmailCode: LinearLayout
     private lateinit var tvIdMessage: TextView
     private lateinit var tvPwMessage: TextView
     private lateinit var tvPwConfirmMessage: TextView
     private lateinit var tvPhoneMessage: TextView
     private lateinit var tvEmailMessage: TextView
-    private lateinit var tvEmailVerified: TextView
-    private lateinit var tvEmailTimer: TextView
-    private lateinit var tvEmailResend: TextView
 
     // 완료 조건 충족 여부 — 버튼은 항상 활성, 미충족 시 안내 토스트
     private var isCompleteReady = false
@@ -93,23 +86,17 @@ class RegisterStep2Activity : AppCompatActivity() {
         etName = findViewById(R.id.etName)
         etPhone = findViewById(R.id.etPhone)
         etEmail = findViewById(R.id.etEmail)
-        etEmailCode = findViewById(R.id.etEmailCode)
         etAddress = findViewById(R.id.etAddress)
         etAddressDetail = findViewById(R.id.etAddressDetail)
         btnCheckId = findViewById(R.id.btnCheckId)
-        btnVerifyEmail = findViewById(R.id.btnVerifyEmail)
-        btnConfirmCode = findViewById(R.id.btnConfirmCode)
+        btnCheckMail = findViewById(R.id.btnCheckMail)
         btnComplete = findViewById(R.id.btnComplete)
         pbLoading = findViewById(R.id.pbLoading)
-        layoutEmailCode = findViewById(R.id.layoutEmailCode)
         tvIdMessage = findViewById(R.id.tvIdMessage)
         tvPwMessage = findViewById(R.id.tvPwMessage)
         tvPwConfirmMessage = findViewById(R.id.tvPwConfirmMessage)
         tvPhoneMessage = findViewById(R.id.tvPhoneMessage)
         tvEmailMessage = findViewById(R.id.tvEmailMessage)
-        tvEmailVerified = findViewById(R.id.tvEmailVerified)
-        tvEmailTimer = findViewById(R.id.tvEmailTimer)
-        tvEmailResend = findViewById(R.id.tvEmailResend)
 
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
         findViewById<ImageButton>(R.id.btnTogglePw).bindPasswordToggle(etPw)
@@ -135,22 +122,8 @@ class RegisterStep2Activity : AppCompatActivity() {
             viewModel.checkId(id)
         }
 
-        btnVerifyEmail.setOnClickListener { viewModel.verifyEmail() }
-
-        btnConfirmCode.setOnClickListener {
-            val code = etEmailCode.text.toString().trim()
-            if (code.isEmpty()) {
-                toast("인증코드를 입력해주세요.")
-                return@setOnClickListener
-            }
-            viewModel.confirmEmailCode(code)
-        }
-
-        // 재전송 — 중복 탭 방지용 즉시 숨김, 실패 시에만 복구
-        tvEmailResend.setOnClickListener {
-            etEmailCode.text.clear()
-            viewModel.resendEmailCode()
-        }
+        // 이메일 중복 확인 — 형식 검증은 뷰모델
+        btnCheckMail.setOnClickListener { viewModel.checkMail() }
 
         // 도로명 주소 API 연결
         etAddress.setOnClickListener {
@@ -190,12 +163,7 @@ class RegisterStep2Activity : AppCompatActivity() {
 
             // 이메일
             applyValidation(etEmail, tvEmailMessage, state.emailValidation)
-            btnVerifyEmail.setEnabledWithAlpha(state.isEmailVerifyEnabled)
-            btnConfirmCode.setEnabledWithAlpha(state.isConfirmCodeEnabled)
-            layoutEmailCode.isVisible = state.isEmailCodeLayoutVisible
-            tvEmailTimer.text = state.emailTimerText
-            tvEmailResend.isVisible = state.isEmailResendVisible
-            tvEmailVerified.isVisible = state.isEmailVerified
+            btnCheckMail.setEnabledWithAlpha(state.isEmailCheckEnabled)
 
             // 최종 가입 — 안내 표시를 위해 버튼은 활성 유지, 흐리게만 처리
             pbLoading.isVisible = state.isLoading

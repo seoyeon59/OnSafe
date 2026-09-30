@@ -2,12 +2,11 @@ package com.example.on_safe.ui.login
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.LinearLayout
 import android.widget.ProgressBar
-import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -22,13 +21,9 @@ class FindPwActivity : AppCompatActivity() {
     private val viewModel: FindPwViewModel by viewModels()
 
     private lateinit var etUserId: EditText
+    private lateinit var etName: EditText
     private lateinit var etEmail: EditText
-    private lateinit var etCode: EditText
-    private lateinit var btnRequestCode: Button
-    private lateinit var btnConfirm: Button
-    private lateinit var layoutCode: LinearLayout
-    private lateinit var tvTimer: TextView
-    private lateinit var tvResend: TextView
+    private lateinit var btnVerify: Button
     private lateinit var pbLoading: ProgressBar
 
     // 다음 화면 전환과 finish()를 함께 호출할 때, finish()의 역방향 전환이
@@ -40,24 +35,22 @@ class FindPwActivity : AppCompatActivity() {
         setContentView(R.layout.activity_find_pw)
 
         etUserId = findViewById(R.id.etUserId)
+        etName = findViewById(R.id.etName)
         etEmail = findViewById(R.id.etEmail)
-        etCode = findViewById(R.id.etCode)
-        btnRequestCode = findViewById(R.id.btnRequestCode)
-        btnConfirm = findViewById(R.id.btnConfirm)
-        layoutCode = findViewById(R.id.layoutCode)
-        tvTimer = findViewById(R.id.tvTimer)
-        tvResend = findViewById(R.id.tvResend)
+        btnVerify = findViewById(R.id.btnVerify)
         pbLoading = findViewById(R.id.pbLoading)
 
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
         findViewById<Button>(R.id.btnGoLogin).setOnClickListener { finish() }
 
-        // 재설정 코드 발송 — 입력 검증만 여기서, 요청·상태 처리는 뷰모델 담당
-        btnRequestCode.setOnClickListener {
+        // 본인확인 — 입력 검증만 여기서, 요청·상태 처리는 뷰모델 담당
+        btnVerify.setOnClickListener {
             val userId = etUserId.text.toString().trim()
+            val name = etName.text.toString().trim()
             val email = etEmail.text.toString().trim()
             val error = when {
                 userId.isEmpty() -> "아이디를 입력해주세요."
+                name.isEmpty() -> "이름을 입력해주세요."
                 email.isEmpty() -> "이메일을 입력해주세요."
                 !EmailValidator.isValid(email) -> EmailValidator.ERROR_MSG
                 else -> null
@@ -66,22 +59,13 @@ class FindPwActivity : AppCompatActivity() {
                 toast(error)
                 return@setOnClickListener
             }
-            viewModel.requestCode(userId, email)
+            viewModel.verifyIdentity(userId, name, email)
         }
 
-        // 재설정 코드 확인
-        btnConfirm.setOnClickListener {
-            val code = etCode.text.toString().trim()
-            if (code.isEmpty()) {
-                toast("재설정 코드를 입력해주세요.")
-                return@setOnClickListener
-            }
-            viewModel.confirmCode(etUserId.text.toString().trim(), code)
-        }
-
-        tvResend.setOnClickListener {
-            etCode.text.clear()
-            viewModel.resendCode(etUserId.text.toString().trim(), etEmail.text.toString().trim())
+        // 키보드 완료 키로도 제출 — false 반환으로 키보드는 기본대로 닫힘
+        etEmail.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) btnVerify.performClick()
+            false
         }
 
         observeViewModel()
@@ -90,13 +74,7 @@ class FindPwActivity : AppCompatActivity() {
     private fun observeViewModel() {
         viewModel.uiState.observe(this) { state ->
             pbLoading.isVisible = state.isLoading
-            btnRequestCode.setEnabledWithAlpha(state.isRequestCodeEnabled)
-            btnConfirm.setEnabledWithAlpha(state.isConfirmEnabled)
-
-            layoutCode.isVisible = state.isCodeLayoutVisible
-            tvTimer.isVisible = state.isCodeLayoutVisible
-            tvTimer.text = state.timerText
-            tvResend.isVisible = state.isResendVisible
+            btnVerify.setEnabledWithAlpha(state.isVerifyEnabled)
         }
 
         viewModel.toastMessage.observe(this) { message ->
@@ -114,7 +92,7 @@ class FindPwActivity : AppCompatActivity() {
         }
     }
 
-    private fun navigateToResetPassword(target: FindPwViewModel.ResetTarget) {
+    private fun navigateToResetPassword(target: ResetTarget) {
         startActivity(
             Intent(this, ResetPasswordActivity::class.java).apply {
                 putExtra(ResetPasswordActivity.EXTRA_USER_ID, target.userId)

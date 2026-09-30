@@ -43,11 +43,9 @@ object ApiClient {
         "api/auth/login",
         "api/auth/register",
         "api/auth/check-id",
-        "api/auth/send-email-code",
-        "api/auth/verify-email-code",
+        "api/auth/check-mail",
         "api/auth/find-id",
-        "api/auth/send-reset-code",
-        "api/auth/verify-reset-code",
+        "api/auth/verify-reset-identity",
         "api/auth/reset-password",
         // refresh는 Refresh-Token 헤더로 인증하므로 만료된 Bearer 첨부 방지
         "api/auth/refresh",

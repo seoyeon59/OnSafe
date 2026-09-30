@@ -105,6 +105,7 @@
 
             <!-- 입력 카드 -->
             <LinearLayout
+                android:clipToOutline="true"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -157,7 +158,8 @@
                         android:background="@drawable/bg_button_blue"
                         android:layout_marginLeft="8dp"
                         android:paddingLeft="16dp"
-                        android:paddingRight="16dp" />
+                        android:paddingRight="16dp"
+                        app:backgroundTint="@null" />
 
                 </LinearLayout>
 
@@ -364,20 +366,21 @@
                         android:singleLine="true" />
 
                     <Button
-                        android:id="@+id/btnVerifyEmail"
+                        android:id="@+id/btnCheckMail"
                         android:layout_width="wrap_content"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
                         android:layout_height="match_parent"
                         android:stateListAnimator="@null"
-                        android:text="인증 요청"
+                        android:text="중복 확인"
                         android:textSize="@dimen/text_body"
                         android:textColor="@color/surface_white"
                         android:textStyle="bold"
                         android:background="@drawable/bg_button_blue"
                         android:layout_marginLeft="8dp"
                         android:paddingLeft="16dp"
-                        android:paddingRight="16dp" />
+                        android:paddingRight="16dp"
+                        app:backgroundTint="@null" />
 
                 </LinearLayout>
 
@@ -387,94 +390,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="@dimen/text_body"
-                    android:layout_marginTop="4dp"
-                    android:visibility="gone" />
-
-                <!-- 이메일 인증코드 -->
-                <LinearLayout
-                    android:id="@+id/layoutEmailCode"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginTop="8dp"
-                    android:visibility="gone">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/input_height"
-                        android:orientation="horizontal">
-
-                        <FrameLayout
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_weight="1">
-
-                            <EditText
-                                android:id="@+id/etEmailCode"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:hint="인증코드 6자리"
-                                android:textColor="@color/ink_900"
-                                android:textSize="@dimen/text_body"
-                                android:paddingLeft="16dp"
-                                android:paddingRight="72dp"
-                                android:background="@drawable/bg_input_rounded"
-                                android:inputType="number"
-                                android:maxLength="6"
-                                android:singleLine="true" />
-
-                            <TextView
-                                android:id="@+id/tvEmailTimer"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_gravity="center_vertical|end"
-                                android:layout_marginEnd="12dp"
-                                android:text="3:00"
-                                android:textSize="@dimen/text_body"
-                                android:textColor="@color/status_danger_text" />
-
-                        </FrameLayout>
-
-                        <Button
-                            android:id="@+id/btnConfirmCode"
-                            android:layout_width="wrap_content"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:layout_height="match_parent"
-                            android:stateListAnimator="@null"
-                            android:text="확인"
-                            android:textSize="@dimen/text_body"
-                            android:textColor="@color/surface_white"
-                            android:textStyle="bold"
-                            android:background="@drawable/bg_button_blue"
-                            android:layout_marginLeft="8dp"
-                            android:paddingLeft="16dp"
-                            android:paddingRight="16dp" />
-
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tvEmailResend"
-                        android:minHeight="@dimen/touch_min"
-                        android:gravity="center"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="인증코드를 다시 받기"
-                        android:textSize="@dimen/text_body"
-                        android:textColor="@color/primary_blue"
-                        android:layout_marginTop="@dimen/space_sm"
-                        android:layout_marginStart="8dp"
-                        android:visibility="visible" />
-
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvEmailVerified"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="✓ 이메일 인증이 완료되었습니다."
-                    android:textSize="@dimen/text_body"
-                    android:textColor="@color/status_normal"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="8dp"
                     android:visibility="gone" />
@@ -491,6 +406,7 @@
                     android:layout_marginBottom="@dimen/space_sm" />
 
                 <EditText
+                    android:clipToOutline="true"
                     android:id="@+id/etAddress"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/input_height"
@@ -566,7 +482,8 @@
                 android:textStyle="bold"
                 android:background="@drawable/bg_button_blue"
                 android:alpha="0.4"
-                android:enabled="false" />
+                android:enabled="false"
+                app:backgroundTint="@null" />
 
             <!-- 가입 완료 중 로딩 인디케이터 -->
             <ProgressBar

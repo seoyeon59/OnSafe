@@ -50,7 +50,7 @@ class ResetPasswordViewModel : ViewModel() {
     private var currentPw = ""   // MODE_SETTINGS에서만 사용 — 서버 본인확인에 전송
 
     // Intent의 모드·유저아이디·티켓을 onCreate에서 1회 전달받음
-    fun init(mode: String, userId: String, resetTicket: String) {
+    fun init(mode: String, userId: String, resetTicket: String = "") {
         this.mode = mode
         this.userId = userId
         this.resetTicket = resetTicket
@@ -99,11 +99,16 @@ class ResetPasswordViewModel : ViewModel() {
         }
     }
 
-    // 진입 경로별 엔드포인트 상이 — reset-password는 이메일 코드 인증 선행 필수
+    // 진입 경로별 엔드포인트 상이 — reset-password는 본인확인 티켓 필수
     fun save() {
         // 아이디가 없으면 요청 경로가 깨져 "현재 비밀번호가 올바르지 않습니다"로 잘못 안내된다
         if (userId.isBlank()) {
             _toastMessage.value = "로그인 정보가 없습니다. 다시 로그인해주세요."
+            return
+        }
+        // 티켓 없이 보내면 서버가 거부한다 — 원인을 알 수 있게 미리 안내
+        if (mode == ResetPasswordActivity.MODE_FIND_PW && resetTicket.isBlank()) {
+            _toastMessage.value = "본인확인 정보가 없습니다. 비밀번호 찾기를 다시 진행해주세요."
             return
         }
         setState { copy(isLoading = true) }
@@ -112,7 +117,7 @@ class ResetPasswordViewModel : ViewModel() {
                 if (mode == ResetPasswordActivity.MODE_SETTINGS) {
                     saveFromSettings()
                 } else {
-                    saveAfterCodeVerification()
+                    saveAfterIdentityCheck()
                 }
             } catch (e: CancellationException) {
                 throw e   // 화면 종료로 인한 취소 — "네트워크 오류" 오표시 방지
@@ -138,8 +143,8 @@ class ResetPasswordViewModel : ViewModel() {
         }
     }
 
-    // 비밀번호 찾기 경유 — 이메일 코드 인증이 이미 끝난 상태
-    private suspend fun saveAfterCodeVerification() {
+    // 비밀번호 찾기 경유 — 본인확인(아이디+이름+이메일)이 이미 끝난 상태
+    private suspend fun saveAfterIdentityCheck() {
         val response = ApiClient.api.resetPassword(
             ResetPasswordRequest(userId = userId, resetTicket = resetTicket, newPassword = newPw)
         )
@@ -154,7 +159,9 @@ class ResetPasswordViewModel : ViewModel() {
             _toastMessage.value = "인증 시간이 지났습니다. 다시 인증해주세요."
             _saveOutcome.value = SaveOutcome.RESTART_VERIFICATION
         } else {
-            _toastMessage.value = failure.message
+            // 서버 원문을 그대로 쓰지 않는다 — 영문 검증 메시지가 섞여 오면 걸러진다
+            // 티켓 만료로 실패할 수 있으니 다시 시도하도록 안내
+            _toastMessage.value = response.errorMessage("비밀번호 변경에 실패했습니다. 비밀번호 찾기를 다시 진행해주세요.")
         }
     }
 

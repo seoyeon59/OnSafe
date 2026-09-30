@@ -23,10 +23,7 @@ data class RegisterRequest(
     val sensitiveInfoAgreed: Boolean,
     // 서버(users.marketing_consent)가 동의·철회 시점을 함께 기록하기 위한 신호.
     // Step1 동의 화면의 선택 항목 체크값이 Step2를 거쳐 그대로 전달된다.
-    val marketingConsent: Boolean = false,
-    // verifyEmailCode 응답에서 받은 1회용 티켓. 서버가 이 티켓과 함께 온 register 요청만 통과시켜,
-    // 인증만 마친 다른 사용자의 이메일을 도용해 자기 계정에 붙이는 이메일 선점(squatting) 시나리오를 차단한다.
-    val emailVerifyTicket: String
+    val marketingConsent: Boolean = false
 )
 
 data class CheckIdRequest(
@@ -37,15 +34,6 @@ data class CheckMailRequest(
     val mail: String
 )
 
-data class SendEmailCodeRequest(
-    val mail: String
-)
-
-data class VerifyEmailCodeRequest(
-    val mail: String,
-    val code: String
-)
-
 data class FindIdRequest(
     val name: String,
     val mail: String,
@@ -53,16 +41,15 @@ data class FindIdRequest(
     val emailVerifyTicket: String
 )
 
-data class SendResetCodeRequest(
+// 비밀번호 찾기 본인확인 — 세 값이 모두 일치해야 서버가 재설정 티켓을 발급한다
+data class VerifyResetIdentityRequest(
     val userId: String,
+    val name: String,
     val mail: String
 )
 
-data class VerifyResetCodeRequest(
-    val userId: String,
-    val code: String
-)
-
+// userId만으로 바꿀 수 있으면 아이디만 알아도 남의 비밀번호를 바꿀 수 있다.
+// 본인확인에서 받은 티켓을 함께 보내 확인을 통과한 요청만 받게 한다.
 data class ResetPasswordRequest(
     val userId: String,
     // verifyResetCode 응답 티켓 — 1회용·10분
