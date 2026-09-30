@@ -202,6 +202,7 @@
                 android:textSize="@dimen/text_button"
                 android:textStyle="bold"
                 android:background="@drawable/bg_button_blue"
+                app:backgroundTint="@null"
                 android:layout_marginTop="16dp" />
 
             <!-- 로그인 중 로딩 인디케이터 -->
@@ -225,6 +226,7 @@
                 android:layout_marginTop="@dimen/space_sm"
                 android:includeFontPadding="false"
                 android:background="@drawable/bg_button_outline_danger"
+                app:backgroundTint="@null"
                 android:stateListAnimator="@null"
                 android:text="[DEBUG] 로그인 건너뛰기"
                 android:textColor="@color/status_danger_text"

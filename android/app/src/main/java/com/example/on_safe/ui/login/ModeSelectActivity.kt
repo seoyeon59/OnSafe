@@ -1,5 +1,6 @@
 package com.example.on_safe.ui.login
 
+import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
@@ -13,11 +14,22 @@ import androidx.core.content.ContextCompat
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ui.camera.CameraModeActivity
+import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.setEnabledWithAlpha
 
 class ModeSelectActivity : AppCompatActivity() {
 
     private enum class Mode { GUARDIAN, CAMERA }
+
+    companion object {
+        // 저장된 모드의 진입 화면 — 없으면 null(모드 선택 필요). 변경은 로그아웃 시 초기화
+        fun savedModeTarget(context: Context): Class<*>? =
+            when (TokenManager.getMode(context)?.let { runCatching { Mode.valueOf(it) }.getOrNull() }) {
+                Mode.CAMERA -> CameraModeActivity::class.java
+                Mode.GUARDIAN -> MainActivity::class.java
+                null -> null
+            }
+    }
 
     // 카드 한 장 — 선택 상태에 따라 테두리·아이콘·태그 스타일이 함께 바뀜
     private class ModeCard(
@@ -59,6 +71,8 @@ class ModeSelectActivity : AppCompatActivity() {
 
         btnNext.setOnClickListener {
             val mode = selectedMode ?: return@setOnClickListener
+            // 다음 실행부터 모드 선택 생략
+            TokenManager.saveMode(this, mode.name)
             // 권한 요청은 온보딩(Tutorial → Permission)에서 완료 — 바로 해당 모드로 진입
             val target = when (mode) {
                 Mode.CAMERA -> CameraModeActivity::class.java

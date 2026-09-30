@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 연결(이어진 고리) — 보호자·피보호자 페어링 진입. ic_link_off와 같은 형태 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+    <group
+        android:pivotX="120"
+        android:pivotY="120"
+        android:scaleX="1.2188"
+        android:scaleY="1.2188">
+        <path
+            android:pathData="M100,80H84a40,40 0 0 0 0,80H100M140,80H156a40,40 0 0 1 0,80H140M92,120H148"
+            android:strokeWidth="17.5"
+            android:strokeColor="@color/ink_900"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>

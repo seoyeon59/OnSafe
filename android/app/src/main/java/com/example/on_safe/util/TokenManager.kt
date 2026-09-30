@@ -19,6 +19,8 @@ object TokenManager {
     private const val KEY_REFRESH = "refresh_token"
     private const val KEY_USER_ID = "user_id"
     private const val KEY_LOGIN_TIME = "login_time"
+    // 선택 모드 — 같은 파일이라 clear()·clearSession() 시 함께 삭제
+    private const val KEY_MODE = "selected_mode"
 
     // SettingsActivity·EditProfileActivity가 알림·마케팅 설정을 캐시하는 파일
     private const val SETTINGS_PREFS = "settings"
@@ -89,6 +91,13 @@ object TokenManager {
 
     fun getUserId(context: Context): String =
         prefs(context).getString(KEY_USER_ID, "") ?: ""
+
+    fun saveMode(context: Context, mode: String) {
+        prefs(context).edit { putString(KEY_MODE, mode) }
+    }
+
+    fun getMode(context: Context): String? =
+        prefs(context).getString(KEY_MODE, null)
 
     fun clear(context: Context) {
         prefs(context).edit { clear() }

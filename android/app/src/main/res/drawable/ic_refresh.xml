@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 다시 시도(순환 화살표) — 재시도 버튼 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+    <group
+        android:pivotX="120"
+        android:pivotY="120"
+        android:scaleX="1.2188"
+        android:scaleY="1.2188">
+        <path
+            android:pathData="M172,90A60,60 0 1 1 120,60M108,42L126,60L108,78"
+            android:strokeWidth="17.5"
+            android:strokeColor="@color/ink_900"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>

@@ -5,8 +5,13 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.DeleteUserRequest
+import com.example.on_safe.network.dto.LogoutRequest
 import com.example.on_safe.network.dto.NotificationSettingsRequest
 import com.example.on_safe.network.dto.NotificationSettingsResponse
+import com.example.on_safe.network.dto.VerifyPasswordRequest
+import com.example.on_safe.network.errorMessage
+import com.example.on_safe.network.isOk
 import com.example.on_safe.util.DisplayText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -133,11 +138,12 @@ class SettingsViewModel : ViewModel() {
         }
     }
 
-    // 서버 호출 실패와 무관하게 로컬 로그아웃은 항상 진행
-    fun logout(accessToken: String?, refreshToken: String?) {
+    // 서버 호출 실패와 무관하게 로컬 로그아웃은 항상 진행.
+    // fcm: 이 기기 FCM 토큰 — 서버가 세션 종료와 함께 해제
+    fun logout(accessToken: String?, refreshToken: String?, fcm: LogoutRequest) {
         viewModelScope.launch {
             try {
-                ApiClient.api.logout(accessToken?.let { "Bearer $it" }, refreshToken)
+                ApiClient.api.logout(accessToken?.let { "Bearer $it" }, refreshToken, fcm)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -147,21 +153,26 @@ class SettingsViewModel : ViewModel() {
         }
     }
 
-    // 서버 탈퇴 성공 시에만 Activity가 로컬 정리하도록 결과 전달
-    fun withdraw(userId: String) {
+    // 비밀번호 확인 → 재인증 티켓 → 탈퇴. 서버 성공 시에만 Activity가 로컬 정리
+    fun withdraw(userId: String, password: String) {
         if (userId.isBlank()) {
             _withdrawResult.value = AuthResultEvent(false, "로그인 정보가 없습니다.")
             return
         }
         viewModelScope.launch {
             try {
-                val response = ApiClient.api.deleteUser(userId)
-                val body = response.body()
-                if (response.isSuccessful && body?.success == true) {
+                val verify = ApiClient.api.verifyPassword(userId, VerifyPasswordRequest(password))
+                val ticket = verify.body()?.data?.reauthTicket
+                if (!verify.isOk || ticket == null) {
+                    // 비밀번호 오류(INVALID_PASSWORD)·횟수 제한(429)은 서버 문구 그대로
+                    _withdrawResult.value = AuthResultEvent(false, verify.errorMessage("비밀번호가 올바르지 않습니다."))
+                    return@launch
+                }
+                val response = ApiClient.api.deleteUser(userId, DeleteUserRequest(ticket))
+                if (response.isOk) {
                     _withdrawResult.value = AuthResultEvent(true, "회원탈퇴가 완료되었습니다.")
                 } else {
-                    val message = ApiClient.parseErrorMessage(response.errorBody(), "회원탈퇴에 실패했습니다.")
-                    _withdrawResult.value = AuthResultEvent(false, message)
+                    _withdrawResult.value = AuthResultEvent(false, response.errorMessage("회원탈퇴에 실패했습니다."))
                 }
             } catch (e: CancellationException) {
                 throw e

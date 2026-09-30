@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 전체화면 — 선 굵기 앱 기준(약 21) 맞춤 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -10,16 +11,10 @@
         android:scaleX="1.3684"
         android:scaleY="1.3684">
         <path
-            android:fillColor="@color/ink_900"
-            android:pathData="M62,108c-5.52246,0-10-4.47754-10-10v-36c0-5.52246,4.47754-10,10-10h36c5.52246,0,10,4.47754,10,10s-4.47754,10-10,10h-26v26c0,5.52246-4.47754,10-10,10Z" />
-        <path
-            android:fillColor="@color/ink_900"
-            android:pathData="M98,188h-36c-5.52246,0-10-4.47754-10-10v-36c0-5.52246,4.47754-10,10-10s10,4.47754,10,10v26h26c5.52246,0,10,4.47754,10,10s-4.47754,10-10,10Z" />
-        <path
-            android:fillColor="@color/ink_900"
-            android:pathData="M178,188h-36c-5.52246,0-10-4.47754-10-10s4.47754-10,10-10h26v-26c0-5.52246,4.47754-10,10-10s10,4.47754,10,10v36c0,5.52246-4.47754,10-10,10Z" />
-        <path
-            android:fillColor="@color/ink_900"
-            android:pathData="M178,108c-5.52246,0-10-4.47754-10-10v-26h-26c-5.52246,0-10-4.47754-10-10s4.47754-10,10-10h36c5.52246,0,10,4.47754,10,10v36c0,5.52246-4.47754,10-10,10Z" />
+            android:pathData="M62,98V62H98M62,142V178H98M142,178H178V142M142,62H178V98"
+            android:strokeWidth="15.6"
+            android:strokeColor="@color/ink_900"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
     </group>
 </vector>

@@ -15,23 +15,28 @@ import com.example.on_safe.R
 // 알림 종류별 표시 규칙 — 어댑터 분기 대신 값으로 보유
 enum class NotificationType(
     val iconRes: Int,
-    val iconTintRes: Int,
-    val scoreColorRes: Int,
+    val iconTintRes: Int,      // 아이콘·위험 지수 색
+    val circleTintRes: Int,    // 아이콘 원형 배경 색
     val clickable: Boolean
 ) {
-    // 낙상 위험 감지 — 화살표 표시 + 클릭 시 모달
-    FALL(R.drawable.ic_siren, android.R.color.holo_red_light, R.color.status_danger, clickable = true),
+    // 낙상 위험 감지 — 화살표 + 클릭 시 모달
+    FALL(R.drawable.ic_siren, R.color.status_danger, R.color.tint_danger, clickable = true),
 
-    // 주의 상태 감지 — 화살표·클릭 없음
-    WARNING(R.drawable.ic_warning, android.R.color.holo_orange_light, R.color.status_warning, clickable = false)
+    // 주의 상태 감지 — 클릭 없음
+    WARNING(R.drawable.ic_warning, R.color.status_warning, R.color.tint_warning, clickable = false),
+
+    // 페어링·오프라인 등 시스템 알림 — 위험 지수 대신 본문 표시
+    SYSTEM(R.drawable.ic_notification, R.color.ink_500, R.color.tint_neutral, clickable = false)
 }
 
 data class NotificationItem(
-    val id: String,              // 서버 낙상 로그 id(logId) — 읽음 처리(confirm)에 사용
+    val id: String,              // 서버 notificationId — 읽음 처리용
+    val logId: String?,          // 낙상 계열의 fall_logs id — 사고 처리용. 시스템 알림은 null
     val type: NotificationType,
     val title: String,
+    val body: String,            // 서버 본문. SYSTEM만 표시
     val time: String,            // 표시용 문자열 (예: "오늘 · 오후 02:23")
-    val riskScore: Int,
+    val riskScore: Int,          // 낙상·주의만 유효(0..100). SYSTEM은 0
     val detectedAtMillis: Long,  // 모달에 감지 시각 표시용
     val isUnread: Boolean = false
 )
@@ -42,7 +47,9 @@ class NotificationAdapter(
 ) : ListAdapter<NotificationItem, NotificationAdapter.ViewHolder>(DIFF) {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val flIconCircle: View = view.findViewById(R.id.fl_icon_circle)
         val ivIcon: ImageView = view.findViewById(R.id.iv_notification_icon)
+        val tvBody: TextView = view.findViewById(R.id.tv_body)
         val tvTitle: TextView = view.findViewById(R.id.tv_title)
         val tvTime: TextView = view.findViewById(R.id.tv_time)
         val tvRiskScore: TextView = view.findViewById(R.id.tv_risk_score)
@@ -63,12 +70,19 @@ class NotificationAdapter(
 
         holder.tvTitle.text = item.title
         holder.tvTime.text = item.time
+        // 시스템 알림은 본문, 낙상·주의는 위험 지수
+        val isSystem = type == NotificationType.SYSTEM
+        holder.tvBody.isVisible = isSystem
+        holder.tvBody.text = item.body
+        holder.tvRiskScore.isVisible = !isSystem
         holder.tvRiskScore.text = "위험 지수 ${item.riskScore}"
         holder.viewUnreadDot.isVisible = item.isUnread
 
+        val iconTint = ContextCompat.getColorStateList(ctx, type.iconTintRes)
         holder.ivIcon.setImageResource(type.iconRes)
-        holder.ivIcon.imageTintList = ContextCompat.getColorStateList(ctx, type.iconTintRes)
-        holder.tvRiskScore.setTextColor(ContextCompat.getColor(ctx, type.scoreColorRes))
+        holder.ivIcon.imageTintList = iconTint
+        holder.tvRiskScore.setTextColor(iconTint)
+        holder.flIconCircle.backgroundTintList = ContextCompat.getColorStateList(ctx, type.circleTintRes)
 
         // 재사용된 뷰에 이전 종류의 리스너가 남지 않도록 두 경우 모두 명시 지정
         holder.ivArrow.isVisible = type.clickable
@@ -86,7 +100,7 @@ class NotificationAdapter(
     }
 
     private companion object {
-        // logId 기준 비교 — 읽음 처리 시 해당 행만 다시 그림
+        // id 기준 비교 — 읽음 처리 시 해당 행만 다시 그림
         val DIFF = object : DiffUtil.ItemCallback<NotificationItem>() {
             override fun areItemsTheSame(oldItem: NotificationItem, newItem: NotificationItem) =
                 oldItem.id == newItem.id

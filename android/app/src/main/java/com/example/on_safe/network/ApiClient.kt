@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.network.dto.ApiResponse
+import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.TokenManager
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
@@ -17,6 +18,7 @@ import okhttp3.Route
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 object ApiClient {
     // BASE_URL을 BuildConfig로 뺐음 — build.gradle.kts에서 debug/release 자동 분기
@@ -71,6 +73,9 @@ object ApiClient {
         chain.proceed(request)
     }
 
+    // 자동 로그인 세션 검증 — 401 처리를 LoginActivity가 직접 하므로 전역 만료 이벤트 제외
+    private const val VALIDATE_PATH = "api/auth/validate"
+
     // 401 응답 시 refresh 토큰으로 access 토큰을 재발급받아 요청을 자동 재시도.
     // 동시성: 여러 요청이 동시에 401을 받아도 refresh는 한 번만 수행되도록 락으로 보호.
     private val refreshLock = Any()
@@ -84,6 +89,16 @@ object ApiClient {
         // 이미 한 번 재시도했다면 그만 (Authenticator 무한 루프 방지)
         if (responseCount(response) >= 2) return@Authenticator null
         if (!::appContext.isInitialized) return@Authenticator null
+
+        // 만료(EXPIRED_TOKEN)만 refresh. 세션 무효(INVALID_TOKEN)는 refresh 없이 전역 만료 처리,
+        // code 없는 401(프록시 등)도 refresh하지 않음. peekBody — 원래 응답 본문 보존
+        val code = runCatching {
+            gson.fromJson(response.peekBody(4096).string(), ApiResponse::class.java)?.code
+        }.getOrNull()
+        if (code != "EXPIRED_TOKEN") {
+            if (code == "INVALID_TOKEN" && path != VALIDATE_PATH) SessionEvents.expire(appContext)
+            return@Authenticator null
+        }
 
         synchronized(refreshLock) {
             val requestAccessToken = response.request.header("Authorization")?.removePrefix("Bearer ")
@@ -109,9 +124,12 @@ object ApiClient {
             val body = refreshResponse?.body()
             val newTokens = body?.data
             if (refreshResponse?.isSuccessful != true || body?.success != true || newTokens == null) {
-                // 리프레시 실패 → 세션 종료. 이후 요청은 401 그대로 반환됨.
-                if (BuildConfig.DEBUG) Log.w("ApiClient", "토큰 재발급 실패 — 로컬 세션 정리")
-                TokenManager.clearSession(appContext)
+                // 401(토큰 무효·만료)만 세션 종료. 통신 실패·5xx(Redis 장애 등)는 세션 유지 —
+                // 일시 장애로 전체 사용자가 로그아웃되는 것 방지. 원래 요청은 401로 실패 처리
+                if (refreshResponse?.code() == 401 && path != VALIDATE_PATH) {
+                    if (BuildConfig.DEBUG) Log.w("ApiClient", "토큰 재발급 거부 — 세션 만료 처리")
+                    SessionEvents.expire(appContext)
+                }
                 return@synchronized null
             }
 
@@ -139,7 +157,10 @@ object ApiClient {
         }
     }
 
+    // 기본 10초는 탈퇴·영상 등 느린 응답에서 실패로 보일 수 있어 명시
     private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
         .addInterceptor(authInterceptor)
         .authenticator(tokenAuthenticator)
         .withDebugLogging()
@@ -176,14 +197,16 @@ object ApiClient {
      * 실패 응답 본문에서 사용자 노출용 문구 추출.
      * errorBody는 1회만 읽을 수 있으므로 응답당 한 번만 호출할 것.
      */
-    fun parseErrorMessage(errorBody: ResponseBody?, fallback: String): String {
-        return try {
-            val json = errorBody?.string() ?: return fallback
-            sanitizeMessage(gson.fromJson(json, ApiResponse::class.java)?.message, fallback)
+    fun parseErrorMessage(errorBody: ResponseBody?, fallback: String): String =
+        sanitizeMessage(parseErrorBody(errorBody)?.message, fallback)
+
+    /** 실패 응답 본문 파싱. 1회 소비 — 파싱 불가 시 null */
+    fun parseErrorBody(errorBody: ResponseBody?): ApiResponse<*>? =
+        try {
+            errorBody?.string()?.let { gson.fromJson(it, ApiResponse::class.java) }
         } catch (_: Exception) {
-            fallback
+            null
         }
-    }
 
     /**
      * 서버 메시지를 사용자에게 보여줄 형태로 다듬는다. 보여줄 수 없으면 [fallback].

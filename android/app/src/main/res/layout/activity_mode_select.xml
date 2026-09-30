@@ -304,6 +304,7 @@
         android:textSize="@dimen/text_button"
         android:textStyle="bold"
         android:background="@drawable/bg_button_blue"
+        app:backgroundTint="@null"
         android:alpha="0.4"
         android:enabled="false" />
 

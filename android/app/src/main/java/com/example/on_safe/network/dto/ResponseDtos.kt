@@ -10,7 +10,9 @@ data class ApiResponse<T>(
     val success: Boolean,
     // 성공 응답에서 생략될 수 있어 nullable — 호출부는 ApiResult.errorMessage()로 대체 문구 확보
     val message: String?,
-    val data: T? = null
+    val data: T? = null,
+    // 실패 원인 식별자(ErrorCode 이름, 예: EXPIRED_TOKEN). 성공 응답은 null
+    val code: String? = null
 )
 
 data class LoginResponse(
@@ -35,5 +37,10 @@ data class TokenResponse(
 
 // verifyResetIdentity 성공 시 서버가 발급하는 1회용 티켓. reset-password 요청에 실어 보내야 통과된다.
 data class VerifyResetIdentityResponse(
+    val resetTicket: String
+)
+
+// verifyResetCode 성공 시 발급되는 1회용 재설정 티켓(10분) — resetPassword 요청에 첨부
+data class VerifyResetCodeResponse(
     val resetTicket: String
 )

@@ -45,10 +45,12 @@ interface ApiService {
 
     // 두 토큰을 모두 명시 전달한다. 자동 부착에 맡기면 호출부가 로컬 정리를 먼저 한 경우
     // Authorization이 비어 나가 access 토큰이 블랙리스트에 오르지 않는다.
+    // 본문의 FCM 토큰은 서버가 세션 종료와 함께 해제 — 로그아웃 뒤 별도 해제 호출은 항상 401
     @POST("api/auth/logout")
     suspend fun logout(
         @Header("Authorization") bearer: String? = null,
-        @Header("Refresh-Token") refreshToken: String? = null
+        @Header("Refresh-Token") refreshToken: String? = null,
+        @Body request: LogoutRequest = LogoutRequest(null, null)
     ): Response<ApiResponse<Unit>>
 
     @POST("api/auth/refresh")
@@ -76,26 +78,20 @@ interface ApiService {
     suspend fun verifyPassword(
         @Path("userId") userId: String,
         @Body request: VerifyPasswordRequest
-    ): Response<ApiResponse<Unit>>
+    ): Response<ApiResponse<VerifyPasswordResponse>>
 
-    @DELETE("api/users/{userId}")
-    suspend fun deleteUser(@Path("userId") userId: String): Response<ApiResponse<Unit>>
+    // DELETE + 바디 — 재인증 티켓 첨부(@HTTP hasBody)
+    @HTTP(method = "DELETE", path = "api/users/{userId}", hasBody = true)
+    suspend fun deleteUser(
+        @Path("userId") userId: String,
+        @Body request: DeleteUserRequest
+    ): Response<ApiResponse<Unit>>
 
     // ===== Push (FCM 토큰) =====
 
-    // TODO: [백엔드] FCM 토큰 등록/해제 엔드포인트 계약 확정 필요.
-    //   서버는 pairing_approved 등 이벤트를 이미 발송하지만(위 Guardian 주석), 토큰을 수집하는
-    //   경로가 REST 스펙에 없다. 아래 경로·필드명(fcmToken/deviceId)은 프론트 가정값이므로
-    //   실제 스펙에 맞춰 조정할 것. (로그인은 deviceId 만 보내고 FCM 토큰은 보내지 않음)
+    // 기기별 저장(계정당 최대 5대). 해제는 로그아웃 본문(LogoutRequest)이 대신함
     @POST("api/users/{userId}/fcm-token")
     suspend fun registerFcmToken(
-        @Path("userId") userId: String,
-        @Body request: FcmTokenRequest
-    ): Response<ApiResponse<Unit>>
-
-    // DELETE + 바디 — 어떤 토큰을 해제할지 서버가 알도록 토큰을 함께 싣는다(@HTTP hasBody).
-    @HTTP(method = "DELETE", path = "api/users/{userId}/fcm-token", hasBody = true)
-    suspend fun deleteFcmToken(
         @Path("userId") userId: String,
         @Body request: FcmTokenRequest
     ): Response<ApiResponse<Unit>>
@@ -229,10 +225,25 @@ interface ApiService {
         @Path("logId") logId: String
     ): Response<ApiResponse<FallLogResponse>>
 
-    // 낙상 로그 확인 처리 — 알림 목록의 읽음 처리에도 그대로 사용(isConfirmed == 읽음)
+    // 낙상 사고 처리(isConfirmed) — 알림 읽음(markNotificationRead)과 별개. 재알림 중단 기준
     @PATCH("api/fall-logs/{userId}/{logId}/confirm")
     suspend fun confirmFallLog(
         @Path("userId") userId: String,
         @Path("logId") logId: String
     ): Response<ApiResponse<ConfirmFallLogResponse>>
+
+    // ===== Notifications (알림함) =====
+
+    // 낙상·페어링·오프라인 등 전체 알림 이력, 최신순
+    @GET("api/notifications/{userId}")
+    suspend fun getNotifications(
+        @Path("userId") userId: String
+    ): Response<ApiResponse<Map<String, List<NotificationLogResponse>>>>
+
+    // 알림 읽음(isRead) 처리
+    @PATCH("api/notifications/{userId}/{notificationId}/read")
+    suspend fun markNotificationRead(
+        @Path("userId") userId: String,
+        @Path("notificationId") notificationId: String
+    ): Response<ApiResponse<NotificationLogResponse>>
 }

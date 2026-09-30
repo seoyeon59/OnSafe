@@ -55,7 +55,7 @@
                     android:layout_gravity="center"
                     android:alpha="0.4"
                     android:contentDescription="@null"
-                    android:src="@drawable/ic_camera"
+                    android:src="@drawable/ic_camera_large"
                     app:tint="@color/primary_blue" />
             </FrameLayout>
 
@@ -198,6 +198,7 @@
 
     <!-- 우하단 전체화면 버튼 -->
     <FrameLayout
+        android:clipToOutline="true"
         android:id="@+id/btnFullscreen"
         android:layout_width="@dimen/touch_min"
         android:layout_height="@dimen/touch_min"
@@ -279,26 +280,28 @@
                 android:textColor="@color/surface_white"
                 android:textSize="@dimen/text_body" />
 
-            <!-- 튜토리얼 버튼 (설정 화면과 동일) -->
-            <ImageView
-                android:id="@+id/btnTutorial"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:contentDescription="튜토리얼"
-                android:src="@drawable/ic_info"
-                android:padding="2dp"
-                app:tint="@color/overlay_white_50" />
-
             <!-- 보호자 연결 해제 버튼 — 이미 페어링된 상태에서만 표시 (ViewModel.isPaired 관찰) -->
             <ImageView
                 android:id="@+id/btnUnpairCamera"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:layout_marginStart="4dp"
+                android:layout_width="@dimen/touch_min"
+                android:layout_height="@dimen/touch_min"
                 android:contentDescription="보호자 연결 해제"
-                android:src="@drawable/ic_person_remove"
-                android:padding="2dp"
+                android:src="@drawable/ic_link_off"
+                android:padding="12dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:visibility="gone"
+                app:tint="@color/overlay_white_50" />
+
+            <!-- 튜토리얼 버튼 — 아이콘 24dp, 터치 48dp. 연결 버튼과 터치 영역 12dp 겹쳐 아이콘 간격 12dp -->
+            <ImageView
+                android:id="@+id/btnTutorial"
+                android:layout_marginStart="-12dp"
+                android:layout_width="@dimen/touch_min"
+                android:layout_height="@dimen/touch_min"
+                android:contentDescription="튜토리얼"
+                android:src="@drawable/ic_help"
+                android:padding="12dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 app:tint="@color/overlay_white_50" />
 
         </LinearLayout>
@@ -483,6 +486,7 @@
 
                 <!-- 촬영 시작/종료 버튼 — pill shape + icon -->
                 <LinearLayout
+                    android:clipToOutline="true"
                     android:id="@+id/btnToggleRecording"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
@@ -514,6 +518,7 @@
 
                 <!-- 로그아웃 버튼 — pill outline + icon -->
                 <LinearLayout
+                    android:clipToOutline="true"
                     android:id="@+id/btnLogout"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"

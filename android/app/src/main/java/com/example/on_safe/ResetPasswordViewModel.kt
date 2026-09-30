@@ -8,6 +8,7 @@ import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.ResetPasswordRequest
 import com.example.on_safe.network.dto.UserUpdateRequest
 import com.example.on_safe.network.errorMessage
+import com.example.on_safe.network.failure
 import com.example.on_safe.network.isOk
 import com.example.on_safe.util.FieldValidation
 import com.example.on_safe.util.PasswordValidator
@@ -30,13 +31,19 @@ class ResetPasswordViewModel : ViewModel() {
     private val _toastMessage = MutableLiveData<String?>()
     val toastMessage: LiveData<String?> = _toastMessage
 
-    // 저장 성공 시 화면을 닫으라는 1회성 신호
-    private val _saveSuccess = MutableLiveData(false)
-    val saveSuccess: LiveData<Boolean> = _saveSuccess
+    // 저장 후 화면 처리 1회성 신호
+    enum class SaveOutcome {
+        CLOSE,                 // 비밀번호 찾기 경유 성공 — 화면 닫기
+        RELOGIN,               // 설정 경유 성공 — 서버가 모든 세션을 끊어 재로그인 필요
+        RESTART_VERIFICATION   // 재설정 티켓 만료·사용됨 — 비밀번호 찾기부터 다시
+    }
+
+    private val _saveOutcome = MutableLiveData<SaveOutcome?>(null)
+    val saveOutcome: LiveData<SaveOutcome?> = _saveOutcome
 
     private var mode = ResetPasswordActivity.MODE_FIND_PW
     private var userId = ""
-    private var resetTicket = ""   // MODE_FIND_PW에서만 사용 — 본인확인 통과 증명
+    private var resetTicket = ""   // MODE_FIND_PW 전용 — verifyResetCode 응답 1회용 티켓
 
     private var newPw = ""
     private var newPwConfirm = ""
@@ -129,7 +136,8 @@ class ResetPasswordViewModel : ViewModel() {
             UserUpdateRequest(currentPassword = currentPw, password = newPw)
         )
         if (response.isOk) {
-            onSaveSucceeded()
+            // 서버가 이 기기 포함 모든 세션 종료 — 다음 요청의 "세션 만료" 오해 방지
+            _saveOutcome.value = SaveOutcome.RELOGIN
         } else {
             _toastMessage.value = response.errorMessage("현재 비밀번호가 올바르지 않습니다.")
         }
@@ -141,7 +149,15 @@ class ResetPasswordViewModel : ViewModel() {
             ResetPasswordRequest(userId = userId, resetTicket = resetTicket, newPassword = newPw)
         )
         if (response.isOk) {
-            onSaveSucceeded()
+            _toastMessage.value = "비밀번호가 변경되었습니다."
+            _saveOutcome.value = SaveOutcome.CLOSE
+            return
+        }
+        // 서버 원문을 그대로 쓰지 않는다 — 영문 검증 메시지가 섞여 오면 걸러진다
+        val failure = response.failure("비밀번호 변경에 실패했습니다.")
+        if (failure.code == "INVALID_RESET_CODE") {
+            _toastMessage.value = "인증 시간이 지났습니다. 다시 인증해주세요."
+            _saveOutcome.value = SaveOutcome.RESTART_VERIFICATION
         } else {
             // 서버 원문을 그대로 쓰지 않는다 — 영문 검증 메시지가 섞여 오면 걸러진다
             // 티켓 만료로 실패할 수 있으니 다시 시도하도록 안내
@@ -149,18 +165,12 @@ class ResetPasswordViewModel : ViewModel() {
         }
     }
 
-    // 두 경로 공통 성공 처리
-    private fun onSaveSucceeded() {
-        _toastMessage.value = "비밀번호가 변경되었습니다."
-        _saveSuccess.value = true
-    }
-
     fun onToastShown() {
         _toastMessage.value = null
     }
 
     fun onSaveHandled() {
-        _saveSuccess.value = false
+        _saveOutcome.value = null
     }
 
     private inline fun setState(update: ResetPasswordUiState.() -> ResetPasswordUiState) {

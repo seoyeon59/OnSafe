@@ -24,7 +24,8 @@ class LandmarkStreamClient(private val listener: Listener) {
         fun onInitOk()
         fun onResult(fallScore: Float, fall: Boolean, level: String, logId: String?)
         fun onFailure(t: Throwable)
-        fun onClosed()
+        // code: 1000 앱 정상 종료 / 1008 세션 무효 / 1011 서버 Redis 장애
+        fun onClosed(code: Int)
     }
 
     companion object {
@@ -78,8 +79,11 @@ class LandmarkStreamClient(private val listener: Listener) {
                 listener.onFailure(t)
             }
 
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                listener.onClosed()
+            // 서버가 먼저 끊는 경우(1008·1011) 종료 코드는 onClosing에서만 확실히 전달됨.
+            // 응답 close로 핸드셰이크 마무리
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                webSocket.close(1000, null)
+                listener.onClosed(code)
             }
         })
     }

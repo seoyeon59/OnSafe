@@ -96,6 +96,7 @@
 
             <!-- 입력 폼 카드 -->
             <LinearLayout
+                android:clipToOutline="true"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -241,6 +242,7 @@
                         android:textStyle="bold" />
 
                     <EditText
+                        android:clipToOutline="true"
                         android:id="@+id/etAddress1"
                         android:layout_width="match_parent"
                         android:layout_height="@dimen/input_height"
@@ -356,6 +358,7 @@
         android:layout_marginHorizontal="16dp"
         android:layout_marginBottom="20dp"
         android:background="@drawable/bg_button_blue"
+        app:backgroundTint="@null"
         android:stateListAnimator="@null"
         android:text="저장하기"
         android:textColor="@color/surface_white"

@@ -4,11 +4,9 @@ import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
@@ -19,6 +17,7 @@ import com.example.on_safe.network.dto.PairRequest
 import com.example.on_safe.network.errorMessage
 import com.example.on_safe.network.isOk
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.cardDialog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -38,7 +37,7 @@ class GuardianPairingDialogFragment : DialogFragment() {
             .inflate(R.layout.dialog_guardian_pair, null, false)
 
         val etCode = view.findViewById<EditText>(R.id.etPairingCode)
-        val btnPair = view.findViewById<Button>(R.id.btnPair)
+        val btnPair = view.findViewById<TextView>(R.id.btnPair)
         val tvError = view.findViewById<TextView>(R.id.tvPairingError)
         val pbLoading = view.findViewById<ProgressBar>(R.id.pbPairingLoading)
 
@@ -57,9 +56,8 @@ class GuardianPairingDialogFragment : DialogFragment() {
             submitPairing(code, etCode, btnPair, pbLoading, tvError)
         }
 
-        return AlertDialog.Builder(requireContext())
-            .setView(view)
-            .create()
+        // 기본 AlertDialog 틀 대신 확인 창 공통 틀
+        return cardDialog(requireContext(), view)
     }
 
     // 뒤로가기·바깥 탭으로 닫는 경로도 "나중에 하기"와 같게 취급한다.
@@ -82,7 +80,7 @@ class GuardianPairingDialogFragment : DialogFragment() {
     private fun submitPairing(
         code: String,
         etCode: EditText,
-        btnPair: Button,
+        btnPair: TextView,
         pbLoading: ProgressBar,
         tvError: TextView
     ) {

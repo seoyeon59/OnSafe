@@ -21,9 +21,18 @@ data class UserUpdateRequest(
     val mail: String? = null,
     val phone: String? = null,
     val address: String? = null,
-    val addressDetail: String? = null
+    val addressDetail: String? = null,
+    // verifyPassword 응답 티켓 — 개인정보 수정 시 필수(비밀번호 변경은 currentPassword로 대체)
+    val reauthTicket: String? = null,
+    // 메일을 실제로 바꿀 때만 필요한 verifyEmailCode 티켓
+    val emailVerifyTicket: String? = null
 )
 
 data class VerifyPasswordRequest(
     val currentPassword: String
+)
+
+// verifyPassword 성공 시 발급되는 재인증 티켓(10분) — 개인정보 수정·탈퇴에 첨부
+data class VerifyPasswordResponse(
+    val reauthTicket: String
 )

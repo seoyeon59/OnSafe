@@ -36,7 +36,9 @@ data class CheckMailRequest(
 
 data class FindIdRequest(
     val name: String,
-    val mail: String
+    val mail: String,
+    // verifyEmailCode 응답 티켓 — 1회용, 요청 시 소비
+    val emailVerifyTicket: String
 )
 
 // 비밀번호 찾기 본인확인 — 세 값이 모두 일치해야 서버가 재설정 티켓을 발급한다
@@ -50,6 +52,7 @@ data class VerifyResetIdentityRequest(
 // 본인확인에서 받은 티켓을 함께 보내 확인을 통과한 요청만 받게 한다.
 data class ResetPasswordRequest(
     val userId: String,
+    // verifyResetCode 응답 티켓 — 1회용·10분
     val resetTicket: String,
     val newPassword: String
 )
@@ -60,4 +63,15 @@ data class ResetPasswordRequest(
 data class FcmTokenRequest(
     val fcmToken: String,
     val deviceId: String
+)
+
+// 로그아웃 본문 — 서버가 세션 종료와 함께 이 기기 FCM 토큰 해제
+data class LogoutRequest(
+    val fcmToken: String?,
+    val deviceId: String?
+)
+
+// 탈퇴 본문 — verifyPassword 응답의 재인증 티켓
+data class DeleteUserRequest(
+    val reauthTicket: String
 )

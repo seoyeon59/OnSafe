@@ -2,6 +2,7 @@ package com.example.on_safe
 
 import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -13,7 +14,9 @@ import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import com.example.on_safe.ui.login.FindPwActivity
 import com.example.on_safe.util.FieldValidation
+import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.INPUT_BORDER_ERROR
 import com.example.on_safe.util.INPUT_BORDER_VALID
 import com.example.on_safe.util.bindPasswordToggle
@@ -113,10 +116,19 @@ class ResetPasswordActivity : AppCompatActivity() {
             }
         }
 
-        viewModel.saveSuccess.observe(this) { success ->
-            if (success) {
-                viewModel.onSaveHandled()
-                finish()
+        viewModel.saveOutcome.observe(this) { outcome ->
+            if (outcome == null) return@observe
+            viewModel.onSaveHandled()
+            when (outcome) {
+                ResetPasswordViewModel.SaveOutcome.CLOSE -> finish()
+                // 서버 세션 이미 무효 — 로그아웃 API 없이 로컬 정리 후 로그인 화면
+                ResetPasswordViewModel.SaveOutcome.RELOGIN ->
+                    SessionEvents.expire(this, "비밀번호가 변경되어 다시 로그인해주세요.")
+                // FindPwActivity는 이동 직후 finish() — 새로 열기
+                ResetPasswordViewModel.SaveOutcome.RESTART_VERIFICATION -> {
+                    startActivity(Intent(this, FindPwActivity::class.java))
+                    finish()
+                }
             }
         }
     }

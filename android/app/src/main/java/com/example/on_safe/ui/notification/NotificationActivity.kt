@@ -12,14 +12,19 @@ import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.on_safe.R
+import com.example.on_safe.messaging.PushEventBus
 import com.example.on_safe.util.NotificationPermissionBanner
 import com.example.on_safe.util.RiskScoreCardBinder
 import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.toast
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -58,6 +63,18 @@ class NotificationActivity : AppCompatActivity() {
 
         observeViewModel()
         viewModel.load(userId)
+        observePushEvents()
+    }
+
+    // 목록 표시 중 낙상 FCM 도착 시 즉시 재조회
+    private fun observePushEvents() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                PushEventBus.events.collect { push ->
+                    if (push.isFall) viewModel.load(userId)
+                }
+            }
+        }
     }
 
     private fun observeViewModel() {
@@ -117,9 +134,9 @@ class NotificationActivity : AppCompatActivity() {
         // 점수 카드 바인딩 (색상·배지·메시지·프로그레스·stroke 일괄 처리)
         RiskScoreCardBinder.bind(view.findViewById(R.id.alertRiskScoreCard), item.riskScore)
 
-        // item.id(서버 logId) 기준으로 읽음 처리 후 dismiss
+        // 읽음 + 사고 처리 후 dismiss
         val markReadAndDismiss = {
-            viewModel.markFallItemRead(userId, item.id)
+            viewModel.confirmFallItem(userId, item)
             dialog.dismiss()
         }
 
