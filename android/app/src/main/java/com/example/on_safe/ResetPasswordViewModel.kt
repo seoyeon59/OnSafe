@@ -43,7 +43,7 @@ class ResetPasswordViewModel : ViewModel() {
 
     private var mode = ResetPasswordActivity.MODE_FIND_PW
     private var userId = ""
-    private var resetTicket = ""   // MODE_FIND_PW 전용 — verifyResetCode 응답 1회용 티켓
+    private var resetTicket = ""   // MODE_FIND_PW 전용 — verifyResetIdentity 응답 1회용 티켓
 
     private var newPw = ""
     private var newPwConfirm = ""
@@ -155,8 +155,8 @@ class ResetPasswordViewModel : ViewModel() {
         }
         // 서버 원문을 그대로 쓰지 않는다 — 영문 검증 메시지가 섞여 오면 걸러진다
         val failure = response.failure("비밀번호 변경에 실패했습니다.")
-        if (failure.code == "INVALID_RESET_CODE") {
-            _toastMessage.value = "인증 시간이 지났습니다. 다시 인증해주세요."
+        if (failure.code == "INVALID_RESET_TICKET") {
+            _toastMessage.value = "본인확인 시간이 지났습니다. 다시 확인해주세요."
             _saveOutcome.value = SaveOutcome.RESTART_VERIFICATION
         } else {
             // 서버 원문을 그대로 쓰지 않는다 — 영문 검증 메시지가 섞여 오면 걸러진다

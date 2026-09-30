@@ -113,7 +113,7 @@ class EditProfileViewModel : ViewModel() {
 
     private fun String.digitsOnly() = filter { it.isDigit() }
 
-    // 메일 변경 시 서버가 메일 인증 티켓 요구(EMAIL_NOT_VERIFIED) — 변경 UI 방침 미정
+    // 메일 변경은 재인증 티켓만으로 가능 — 서버는 메일 중복만 검사하고 소유 확인은 하지 않는다
     fun save(
         userId: String,
         name: String,
