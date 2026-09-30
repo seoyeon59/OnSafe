@@ -39,8 +39,3 @@ data class TokenResponse(
 data class VerifyResetIdentityResponse(
     val resetTicket: String
 )
-
-// verifyResetCode 성공 시 발급되는 1회용 재설정 티켓(10분) — resetPassword 요청에 첨부
-data class VerifyResetCodeResponse(
-    val resetTicket: String
-)

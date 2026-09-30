@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.VerifyResetIdentityRequest
+import com.example.on_safe.network.errorMessage
 import com.example.on_safe.network.isOk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -48,8 +49,9 @@ class FindPwViewModel : ViewModel() {
                 if (response.isOk && !ticket.isNullOrBlank()) {
                     _navigateToReset.value = ResetTarget(userId, ticket)
                 } else {
-                    // 어느 항목이 틀렸는지 구분하지 않는다 — 아이디 존재 여부가 드러나지 않게
-                    _toastMessage.value = "입력하신 정보와 일치하는 계정이 없습니다."
+                    // 서버가 불일치 사유를 RESET_IDENTITY_MISMATCH 하나로 묶어 아이디 존재 여부를 숨긴다.
+                    // 고정 문구를 쓰면 요청 제한(TOO_MANY_REQUESTS)도 "계정 없음"으로 잘못 안내된다.
+                    _toastMessage.value = response.errorMessage("입력하신 정보와 일치하는 계정이 없습니다.")
                 }
             } catch (e: CancellationException) {
                 throw e
