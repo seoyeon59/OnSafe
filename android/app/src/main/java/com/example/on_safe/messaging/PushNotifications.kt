@@ -2,11 +2,16 @@ package com.example.on_safe.messaging
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.TaskStackBuilder
+import com.example.on_safe.MainActivity
 import com.example.on_safe.R
+import com.example.on_safe.ui.notification.NotificationActivity
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -25,6 +30,10 @@ object PushNotifications {
 
     // 같은 이벤트가 연달아 와도 서로 덮지 않도록 표시마다 고유 ID 부여
     private val notificationId = AtomicInteger(1000)
+
+    // 딥링크 PendingIntent requestCode — 목적별 분리
+    private const val REQUEST_APP_LAUNCH = 100
+    private const val REQUEST_FALL_DEEPLINK = 200
 
     /** Application.onCreate 에서 1회 호출 — 채널이 없으면 만들고, 있으면 그대로 둔다. */
     fun createChannels(context: Context) {
@@ -49,25 +58,17 @@ object PushNotifications {
 
     /**
      * 이벤트를 트레이 알림으로 표시한다.
-     * @param event 서버가 실은 event 코드(pairing_approved 등). 채널·기본 문구 결정에 사용.
+     * @param event 서버가 실은 event 코드(pairing_approved / fall_detected / fall_escalated 등).
      * @param title / [body] 서버가 함께 보낸 문구. 없으면 event 코드로 기본 문구를 만든다.
      *
-     * 탭하면 런처 인텐트로 앱을 연다 — 로그인/자동로그인 라우팅을 그대로 타 세션이 없을 때도 안전.
+     * 낙상 계열은 알림 목록으로 직행(홈을 백스택에 배치). 그 외는 런처 인텐트로 앱 실행.
      */
     fun show(context: Context, event: String?, title: String?, body: String?) {
         val channelId = channelFor(event)
         val resolvedTitle = title?.takeIf { it.isNotBlank() } ?: defaultTitle(event)
         val resolvedBody = body?.takeIf { it.isNotBlank() } ?: defaultBody(event)
 
-        val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
-        val contentIntent = launch?.let {
-            android.app.PendingIntent.getActivity(
-                context,
-                0,
-                it,
-                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
-            )
-        }
+        val contentIntent = contentIntentFor(context, event)
 
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_notification)
@@ -83,6 +84,20 @@ object PushNotifications {
         NotificationManagerCompat.from(context).notify(notificationId.incrementAndGet(), notification)
     }
 
+    // 낙상 딥링크 — 홈을 백스택에 두어 뒤로가기 시 홈 복귀
+    private fun contentIntentFor(context: Context, event: String?): PendingIntent? {
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        return if (isFallEvent(event)) {
+            TaskStackBuilder.create(context)
+                .addNextIntent(Intent(context, MainActivity::class.java))
+                .addNextIntent(Intent(context, NotificationActivity::class.java))
+                .getPendingIntent(REQUEST_FALL_DEEPLINK, flags)
+        } else {
+            val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            launch?.let { PendingIntent.getActivity(context, REQUEST_APP_LAUNCH, it, flags) }
+        }
+    }
+
     private fun channelFor(event: String?): String =
         if (event != null && event.startsWith("pairing")) CHANNEL_PAIRING else CHANNEL_ALERTS
 
@@ -92,6 +107,8 @@ object PushNotifications {
         "pairing_rejected" -> "연결 요청 거절됨"
         "pairing_displaced" -> "보호자 연결 해제됨"
         "pairing_unpaired" -> "보호자 연결 해제됨"
+        "fall_detected" -> "낙상 감지"
+        "fall_escalated" -> "낙상 재알림 — 확인 필요"
         else -> "늘봄 알림"
     }
 
@@ -100,6 +117,8 @@ object PushNotifications {
         "pairing_rejected" -> "상대방이 연결 요청을 거절했습니다."
         "pairing_displaced" -> "새 연결이 성립되어 기존 연결이 해제되었습니다."
         "pairing_unpaired" -> "보호자 연결이 해제되었습니다."
+        "fall_detected" -> "낙상이 감지되었습니다. 즉시 확인해주세요."
+        "fall_escalated" -> "아직 확인되지 않은 낙상 알림이 있습니다."
         else -> "새로운 알림이 도착했습니다."
     }
 }

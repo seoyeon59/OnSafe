@@ -13,6 +13,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.example.on_safe.messaging.PushEventBus
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.isOk
 import com.example.on_safe.ui.FullscreenActivity
@@ -110,6 +112,31 @@ class MainActivity : AppCompatActivity() {
                 }
                 // "나중에 하기" — 이번 방문 동안은 다시 묻지 않는다
                 else -> pairingDeferred = true
+            }
+        }
+
+        observePushEvents()
+    }
+
+    // FCM 도착 시 폴링 대기 없이 즉시 화면 반영 (트레이 알림은 PushNotifications 담당)
+    private fun observePushEvents() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                PushEventBus.events.collect { push ->
+                    when {
+                        push.isFall -> {
+                            // 뱃지 선반영 후 서버 값 재확인. startPolling 미사용 — 연결 상태 리셋으로 카드 깜빡임
+                            viewModel.setUnreadBadge(true)
+                            viewModel.refreshUnreadBadge(TokenManager.getUserId(this@MainActivity))
+                        }
+                        push.event in listOf("pairing_approved", "pairing_displaced", "pairing_unpaired") -> {
+                            // 페어링 변경 — 홈 진입 판단(getWards) 재실행
+                            isPaired = false
+                            pairingDeferred = false
+                            checkGuardianPairingOnEntry()
+                        }
+                    }
+                }
             }
         }
     }
