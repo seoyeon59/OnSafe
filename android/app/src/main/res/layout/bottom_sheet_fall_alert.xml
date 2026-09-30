@@ -76,7 +76,7 @@
                     android:layout_height="20dp"
                     android:layout_gravity="center"
                     android:contentDescription="@null"
-                    android:src="@drawable/ic_siren"
+                    android:src="@drawable/ic_clock"
                     app:tint="@color/status_danger" />
             </FrameLayout>
 
@@ -188,6 +188,7 @@
 
         <!-- 119 신고하기 버튼 -->
         <LinearLayout
+            android:clipToOutline="true"
             android:id="@+id/btn119Alert"
             android:layout_width="match_parent"
             android:layout_height="56dp"
@@ -196,7 +197,7 @@
             android:backgroundTint="@color/status_danger"
             android:clickable="true"
             android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:foreground="@drawable/ripple_pill_on_color"
             android:gravity="center"
             android:orientation="horizontal">
 
@@ -221,13 +222,14 @@
         <TextView
             android:id="@+id/btnAlertDismiss"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/touch_min"
             android:layout_gravity="center"
-            android:layout_marginTop="12dp"
-            android:background="?attr/selectableItemBackground"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/ripple_text_pill"
             android:clickable="true"
             android:focusable="true"
-            android:padding="8dp"
+            android:gravity="center"
+            android:paddingHorizontal="16dp"
             android:text="확인했습니다 (긴급상황 아님)"
             android:textColor="@color/ink_500"
             android:textSize="@dimen/text_caption" />

@@ -19,11 +19,12 @@
 
         <!-- 해제 원형 버튼 -->
         <FrameLayout
+            android:clipToOutline="true"
             android:id="@+id/btnWakeUp"
             android:layout_width="96dp"
             android:layout_height="96dp"
             android:background="@drawable/bg_circle_primary_outline"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:foreground="?attr/selectableItemBackground"
             android:clickable="true"
             android:focusable="true">
 

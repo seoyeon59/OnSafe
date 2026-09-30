@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 개인정보(방패) — 개인정보 처리방침 -->
+<!-- 연결 해제(끊어진 고리) — 보호자·피보호자 페어링 해제 전용 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -11,16 +11,15 @@
         android:scaleX="1.2188"
         android:scaleY="1.2188">
         <path
-            android:pathData="M120,54L170,73V113C170,146 148,172 120,184C92,172 70,146 70,113V73Z"
+            android:pathData="M100,80H84a40,40 0 0 0 0,80H100M140,80H156a40,40 0 0 1 0,80H140"
             android:strokeWidth="17.5"
             android:strokeColor="@color/ink_900"
             android:strokeLineCap="round"
             android:strokeLineJoin="round" />
         <path
-            android:pathData="M99,117L114,132L143,103"
+            android:pathData="M100,56L140,184"
             android:strokeWidth="17.5"
             android:strokeColor="@color/ink_900"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
+            android:strokeLineCap="round" />
     </group>
 </vector>

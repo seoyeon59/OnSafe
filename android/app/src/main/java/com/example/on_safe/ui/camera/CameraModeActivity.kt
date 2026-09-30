@@ -77,7 +77,7 @@ class CameraModeActivity : AppCompatActivity() {
     private lateinit var btnTutorial: ImageView
     private lateinit var btnUnpairCamera: ImageView
     private lateinit var tvPairingCode: TextView
-    private lateinit var btnPairingCodeInfo: ImageButton
+    private lateinit var pairingCodeOverlay: View
 
     // 화면보호기/번인방지/자동 dim — 카메라 로직과 독립적인 관심사라 별도 클래스로 분리
     private lateinit var screenSaverController: ScreenSaverController
@@ -161,7 +161,6 @@ class CameraModeActivity : AppCompatActivity() {
         observeViewModel()
         viewModel.setDeviceId(deviceId)
         val userId = TokenManager.getUserId(this)
-        viewModel.loadGuardianName(userId)
         // 이 폰이 곧 감시 카메라 — 보호자 홈 조회용 등록
         viewModel.registerDevice(userId, deviceId, Build.MODEL)
         // 피보호자용 페어링 코드 발급 + 15분 TTL 만료 직전 자동 재발급 시작.
@@ -253,7 +252,7 @@ class CameraModeActivity : AppCompatActivity() {
         btnTutorial             = findViewById(R.id.btnTutorial)
         btnUnpairCamera         = findViewById(R.id.btnUnpairCamera)
         tvPairingCode           = findViewById(R.id.tvPairingCode)
-        btnPairingCodeInfo      = findViewById(R.id.btnPairingCodeInfo)
+        pairingCodeOverlay      = findViewById(R.id.pairingCodeOverlay)
 
         layoutStatusBadge.background = statusBadgeBg
     }
@@ -261,17 +260,13 @@ class CameraModeActivity : AppCompatActivity() {
     private fun observeViewModel() {
         viewModel.uiState.observe(this) { state ->
             // 레이아웃 예시 문구 잔존 방지용 무조건 대입
-            tvGuardianName.text = DisplayText.loadingOrNone(state.guardianName)
+            // 연결 보호자 — 페어링된 보호자 이름, 미연결 시 "정보 없음"
+            tvGuardianName.text = if (state.isPaired) DisplayText.loadingOrNone(state.pairedGuardianName) else DisplayText.NONE
             tvDeviceId.text = DisplayText.loadingOrNone(state.deviceId)
-            // 페어링 상태에 따라 코드 오버레이 문구 결정:
-            //  - 이미 연결됨: "○○님과 연결됨"
-            //  - 발급됨: 6자리 코드
-            //  - 발급 전/실패: 자리 표시자 "------"
-            tvPairingCode.text = when {
-                state.isPaired -> "${state.pairedGuardianName ?: "보호자"}님과 연결됨"
-                state.pairingCode != null -> state.pairingCode
-                else -> "------"
-            }
+            // 연결 코드 오버레이는 미연결 시에만 표시 — 연결 정보는 우측 패널에서 확인.
+            // 발급 전·실패 시 자리 표시자 "------"
+            pairingCodeOverlay.visibility = if (state.isPaired) View.GONE else View.VISIBLE
+            tvPairingCode.text = state.pairingCode ?: "------"
             // 페어링된 상태에서만 해제 버튼 노출 — 미연결 상태에선 해제할 대상이 없다.
             btnUnpairCamera.visibility = if (state.isPaired) View.VISIBLE else View.GONE
         }
@@ -299,7 +294,6 @@ class CameraModeActivity : AppCompatActivity() {
         btnTutorial.setOnClickListener {
             startActivity(TutorialActivity.intentFromSettings(this))
         }
-        btnPairingCodeInfo.setOnClickListener { showPairingCodeGuide() }
         btnUnpairCamera.setOnClickListener {
             // 촬영 중에 해제하면 실시간 감지가 무의미해지므로 로그아웃과 동일하게 상태 가드.
             if (currentState == CameraState.STREAMING || currentState == CameraState.CONNECTING) {
@@ -308,18 +302,6 @@ class CameraModeActivity : AppCompatActivity() {
             }
             showUnpairDialog()
         }
-    }
-
-    private fun showPairingCodeGuide() {
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("보호자 연결 코드")
-            .setMessage(
-                "이 6자리 코드를 보호자에게 알려주세요.\n" +
-                    "보호자가 앱에서 코드를 입력하면 연결됩니다.\n" +
-                    "코드는 5분마다 자동으로 갱신돼요."
-            )
-            .setPositiveButton("확인", null)
-            .show()
     }
 
     private fun toggleFullscreen() {
@@ -552,8 +534,8 @@ class CameraModeActivity : AppCompatActivity() {
                 layoutStandbyContent.visibility = View.VISIBLE
                 layoutConnectingContent.visibility = View.GONE
                 layoutLiveBadge.visibility = View.GONE
-                setStatusBadge("대기 중", Color.parseColor("#9FA6AC"))
-                setToggleButton("촬영 시작하기", R.drawable.ic_camera, Color.parseColor("#4D80FF"))
+                setStatusBadge("대기 중", getColor(R.color.status_standby))
+                setToggleButton("촬영 시작하기", R.drawable.ic_camera, getColor(R.color.primary_blue))
                 btnToggleRecording.isEnabled = true
                 btnToggleRecording.alpha = 1.0f
             }
@@ -562,8 +544,8 @@ class CameraModeActivity : AppCompatActivity() {
                 layoutStandbyContent.visibility = View.GONE        // 대기 아이콘 숨김
                 layoutConnectingContent.visibility = View.VISIBLE  // 스피너 + "연결 중..." 표시
                 layoutLiveBadge.visibility = View.GONE
-                setStatusBadge("연결 중...", Color.parseColor("#F59E0B"))
-                setToggleButton("연결 중...", R.drawable.ic_camera, Color.parseColor("#4D80FF"))
+                setStatusBadge("연결 중...", getColor(R.color.status_warning))
+                setToggleButton("연결 중...", R.drawable.ic_camera, getColor(R.color.primary_blue))
                 btnToggleRecording.isEnabled = false
                 btnToggleRecording.alpha = 0.4f
             }
@@ -573,8 +555,8 @@ class CameraModeActivity : AppCompatActivity() {
                 layoutStandbyContent.visibility = View.VISIBLE     // 다음 STANDBY 상태 대비 초기화
                 layoutConnectingContent.visibility = View.GONE
                 layoutLiveBadge.visibility = View.VISIBLE
-                setStatusBadge("전송 중", Color.parseColor("#22C55E"))
-                setToggleButton("촬영 종료하기", R.drawable.ic_stop, Color.parseColor("#EF4444"))
+                setStatusBadge("전송 중", getColor(R.color.status_normal))
+                setToggleButton("촬영 종료하기", R.drawable.ic_stop, getColor(R.color.status_danger))
                 btnToggleRecording.isEnabled = true
                 btnToggleRecording.alpha = 1.0f
             }
@@ -584,8 +566,8 @@ class CameraModeActivity : AppCompatActivity() {
                 layoutStandbyContent.visibility = View.VISIBLE
                 layoutConnectingContent.visibility = View.GONE
                 layoutLiveBadge.visibility = View.GONE
-                setStatusBadge("연결 실패", Color.parseColor("#EF4444"))
-                setToggleButton("다시 시도하기", R.drawable.ic_camera, Color.parseColor("#4D80FF"))
+                setStatusBadge("연결 실패", getColor(R.color.status_danger))
+                setToggleButton("다시 시도하기", R.drawable.ic_refresh, getColor(R.color.primary_blue))
                 btnToggleRecording.isEnabled = true
                 btnToggleRecording.alpha = 1.0f
             }

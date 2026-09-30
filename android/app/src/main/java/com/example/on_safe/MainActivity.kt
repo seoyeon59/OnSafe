@@ -27,6 +27,7 @@ import com.example.on_safe.util.DoubleBackToExit
 import com.example.on_safe.util.NotificationPermissionBanner
 import com.example.on_safe.util.RiskScoreCardBinder
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.cardDialog
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -103,6 +104,7 @@ class MainActivity : AppCompatActivity() {
                 // 실제 관계 성립 완료(FCM pairing_approved 이후 리트리거되는 경로).
                 result.getBoolean(GuardianPairingDialogFragment.RESULT_PAIRED) -> {
                     isPaired = true
+                    renderPairingButton()
                     viewModel.startPolling(TokenManager.getUserId(this))
                 }
                 // 요청 전송됨 — 승인 대기 상태. 이번 방문 동안은 모달 재표시 안 하되, 다음 진입에서
@@ -174,9 +176,10 @@ class MainActivity : AppCompatActivity() {
                 // 1:1 정책상 최대 1건. 해제 버튼에서 counterpart 로 쓴다.
                 pairedWardUserId = wards.first().userId
                 pairedWardName = wards.first().name
-                findViewById<View>(R.id.btnUnpairMain).visibility = View.VISIBLE
+                renderPairingButton()
                 return@launch
             }
+            renderPairingButton()
             // 응답이 늦게 오면 이미 onSaveInstanceState를 지났을 수 있다.
             // 그 상태에서 show()는 commit이라 IllegalStateException으로 죽는다.
             if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
@@ -241,7 +244,16 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btn119).setOnClickListener {
             startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:119")))
         }
-        findViewById<View>(R.id.btnUnpairMain).setOnClickListener { showUnpairDialog() }
+        // 연결됨: 해제 확인 / 미연결: 코드 입력 모달 재진입("나중에" 이후 경로)
+        findViewById<View>(R.id.btnPairingMain).setOnClickListener {
+            if (isPaired) {
+                showUnpairDialog()
+            } else if (supportFragmentManager.findFragmentByTag(PAIRING_TAG) == null) {
+                pairingDeferred = false
+                GuardianPairingDialogFragment().show(supportFragmentManager, PAIRING_TAG)
+            }
+        }
+        renderPairingButton()
     }
 
     private fun showUnpairDialog() {
@@ -251,9 +263,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val view = layoutInflater.inflate(R.layout.dialog_unpair, null, false)
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
-            .setView(view)
-            .create()
+        val dialog = cardDialog(this, view)
         view.findViewById<View>(R.id.btnUnpairCancel).setOnClickListener { dialog.dismiss() }
         view.findViewById<View>(R.id.btnUnpairConfirm).setOnClickListener {
             dialog.dismiss()
@@ -273,7 +283,7 @@ class MainActivity : AppCompatActivity() {
                     isPaired = false
                     pairedWardUserId = null
                     pairedWardName = null
-                    findViewById<View>(R.id.btnUnpairMain).visibility = View.GONE
+                    renderPairingButton()
                     android.widget.Toast.makeText(this@MainActivity, "피보호자 연결이 해제되었어요.", android.widget.Toast.LENGTH_SHORT).show()
                     // pairingDeferred 는 이번 방문 동안 재확인만 억제하는 값이라 그대로 두면 홈에 계속 남는다.
                     // 명시 해제 후엔 다음 진입 때 페어링 모달이 다시 뜨도록 리셋.
@@ -286,6 +296,14 @@ class MainActivity : AppCompatActivity() {
             } catch (_: Exception) {
                 android.widget.Toast.makeText(this@MainActivity, "네트워크 오류가 발생했어요.", android.widget.Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    // 연결 상태별 헤더 아이콘 — 미연결: 연결 / 연결됨: 해제
+    private fun renderPairingButton() {
+        findViewById<ImageView>(R.id.ivPairing).apply {
+            setImageResource(if (isPaired) R.drawable.ic_link_off else R.drawable.ic_link)
+            contentDescription = if (isPaired) "피보호자 연결 해제" else "피보호자 연결"
         }
     }
 

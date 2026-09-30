@@ -4,7 +4,7 @@
   활성 표시(pill 배경·채운 아이콘·강조색)와 화면 이동은 BottomNav.setupBottomNav()가 담당하므로
   여기서는 비활성 상태만 정의한다.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout android:clipToOutline="true" xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="85dp"
     android:background="@drawable/bg_sheet_top_rounded"
@@ -21,7 +21,7 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        android:background="@null"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center"
@@ -32,7 +32,9 @@
             android:layout_width="64dp"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:duplicateParentState="true"
+            android:foreground="@drawable/ripple_tab_pill">
 
             <ImageView
                 android:id="@+id/tabHistoryIcon"
@@ -59,7 +61,7 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        android:background="@null"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center"
@@ -70,7 +72,9 @@
             android:layout_width="64dp"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:duplicateParentState="true"
+            android:foreground="@drawable/ripple_tab_pill">
 
             <ImageView
                 android:id="@+id/tabHomeIcon"
@@ -97,7 +101,7 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        android:background="@null"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center"
@@ -108,7 +112,9 @@
             android:layout_width="64dp"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:duplicateParentState="true"
+            android:foreground="@drawable/ripple_tab_pill">
 
             <ImageView
                 android:id="@+id/tabSettingsIcon"

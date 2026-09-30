@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 개인정보(방패) — 개인정보 처리방침 -->
+<!-- 시각(시계) — 감지 시각 등 시간 표시 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -11,13 +11,10 @@
         android:scaleX="1.2188"
         android:scaleY="1.2188">
         <path
-            android:pathData="M120,54L170,73V113C170,146 148,172 120,184C92,172 70,146 70,113V73Z"
-            android:strokeWidth="17.5"
-            android:strokeColor="@color/ink_900"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
+            android:fillColor="@color/ink_900"
+            android:pathData="M120,196.75c-42.32031,0-76.75-34.42969-76.75-76.75S77.67969,43.25,120,43.25s76.75,34.42969,76.75,76.75-34.42969,76.75-76.75,76.75ZM120,60.75c-32.6709,0-59.25,26.5791-59.25,59.25s26.5791,59.25,59.25,59.25,59.25-26.5791,59.25-59.25-26.5791-59.25-59.25-59.25Z" />
         <path
-            android:pathData="M99,117L114,132L143,103"
+            android:pathData="M120,86V120L142,134"
             android:strokeWidth="17.5"
             android:strokeColor="@color/ink_900"
             android:strokeLineCap="round"

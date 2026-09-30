@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 메뉴 — 선 굵기 앱 기준(약 21) 맞춤 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -10,13 +11,10 @@
         android:scaleX="1.3000"
         android:scaleY="1.3000">
         <path
-            android:fillColor="@color/ink_900"
-            android:pathData="M182,90.77441H58c-5.52295,0-10-4.47754-10-10s4.47705-10,10-10h124c5.52246,0,10,4.47754,10,10s-4.47754,10-10,10Z" />
-        <path
-            android:fillColor="@color/ink_900"
-            android:pathData="M182,130H58c-5.52295,0-10-4.47754-10-10s4.47705-10,10-10h124c5.52246,0,10,4.47754,10,10s-4.47754,10-10,10Z" />
-        <path
-            android:fillColor="@color/ink_900"
-            android:pathData="M182,169.22559H58c-5.52295,0-10-4.47754-10-10s4.47705-10,10-10h124c5.52246,0,10,4.47754,10,10s-4.47754,10-10,10Z" />
+            android:pathData="M58,80.77H182M58,120H182M58,159.23H182"
+            android:strokeWidth="16.4"
+            android:strokeColor="@color/ink_900"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
     </group>
 </vector>
