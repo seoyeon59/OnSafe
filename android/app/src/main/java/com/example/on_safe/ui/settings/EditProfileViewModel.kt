@@ -9,17 +9,22 @@ import com.example.on_safe.network.dto.MarketingConsentRequest
 import com.example.on_safe.network.dto.UserResponse
 import com.example.on_safe.network.dto.UserUpdateRequest
 import com.example.on_safe.network.dto.VerifyPasswordRequest
+import com.example.on_safe.network.failure
+import com.example.on_safe.network.isOk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 // 비밀번호 확인 결과 — 성공 시 폼을 바로 채우도록 최신 사용자 정보 동봉
+// isReauth: 저장 중 티켓 만료로 다시 확인한 경우 — 폼 유지 후 저장 재시도
 data class VerifyResult(
     val success: Boolean,
     val message: String? = null,
-    val user: UserResponse? = null
+    val user: UserResponse? = null,
+    val isReauth: Boolean = false
 )
 
-data class SaveResult(val success: Boolean, val message: String)
+// reauthRequired: 재인증 티켓 만료(10분)·누락 — 비밀번호 재확인 필요
+data class SaveResult(val success: Boolean, val message: String, val reauthRequired: Boolean = false)
 
 class EditProfileViewModel : ViewModel() {
 
@@ -37,16 +42,30 @@ class EditProfileViewModel : ViewModel() {
     private val _marketingConsent = MutableLiveData<Boolean?>()
     val marketingConsent: LiveData<Boolean?> = _marketingConsent
 
-    fun verifyPassword(userId: String, password: String) {
+    // 마케팅 동의 저장 실패 — 되돌릴 이전 값. 법적 동의 이력이라 화면·서버 불일치 방지
+    private val _marketingRevert = MutableLiveData<Boolean?>()
+    val marketingRevert: LiveData<Boolean?> = _marketingRevert
+
+    // verifyPassword 응답 재인증 티켓 — 저장 요청에 첨부, 10분·저장 성공 시 소비
+    private var reauthTicket: String? = null
+
+    fun verifyPassword(userId: String, password: String, isReauth: Boolean = false) {
         viewModelScope.launch {
             try {
                 val verifyResponse = ApiClient.api.verifyPassword(userId, VerifyPasswordRequest(password))
-                val verifyBody = verifyResponse.body()
-                if (!verifyResponse.isSuccessful || verifyBody?.success != true) {
+                val ticket = verifyResponse.body()?.data?.reauthTicket
+                if (!verifyResponse.isOk || ticket == null) {
                     _verifyResult.value = VerifyResult(
                         success = false,
-                        message = ApiClient.parseErrorMessage(verifyResponse.errorBody(), "비밀번호가 올바르지 않습니다.")
+                        message = verifyResponse.failure("비밀번호가 올바르지 않습니다.").message,
+                        isReauth = isReauth
                     )
+                    return@launch
+                }
+                reauthTicket = ticket
+                // 재확인은 티켓 갱신만 — 폼을 서버 값으로 덮으면 입력 중인 값 유실
+                if (isReauth) {
+                    _verifyResult.value = VerifyResult(success = true, isReauth = true)
                     return@launch
                 }
 
@@ -62,7 +81,9 @@ class EditProfileViewModel : ViewModel() {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _verifyResult.value = VerifyResult(success = false, message = "네트워크 오류가 발생했습니다.")
+                _verifyResult.value = VerifyResult(
+                    success = false, message = "네트워크 오류가 발생했습니다.", isReauth = isReauth
+                )
             }
         }
     }
@@ -92,6 +113,7 @@ class EditProfileViewModel : ViewModel() {
 
     private fun String.digitsOnly() = filter { it.isDigit() }
 
+    // 메일 변경 시 서버가 메일 인증 티켓 요구(EMAIL_NOT_VERIFIED) — 변경 UI 방침 미정
     fun save(
         userId: String,
         name: String,
@@ -111,16 +133,20 @@ class EditProfileViewModel : ViewModel() {
                         mail = email,
                         phone = phone,
                         address = address,
-                        addressDetail = addressDetail
+                        addressDetail = addressDetail,
+                        reauthTicket = reauthTicket
                     )
                 )
-                if (response.isSuccessful && response.body()?.success == true) {
+                if (response.isOk) {
+                    reauthTicket = null   // 성공 시 서버에서 소비
                     _saveResult.value = SaveResult(true, "정보가 저장되었습니다.")
                 } else {
-                    _saveResult.value = SaveResult(
-                        false,
-                        ApiClient.parseErrorMessage(response.errorBody(), "저장에 실패했습니다.")
-                    )
+                    val failure = response.failure("저장에 실패했습니다.")
+                    _saveResult.value = if (failure.code == "REAUTH_REQUIRED") {
+                        SaveResult(false, "확인 시간이 지났습니다. 비밀번호를 다시 입력해주세요.", reauthRequired = true)
+                    } else {
+                        SaveResult(false, failure.message)
+                    }
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -150,17 +176,22 @@ class EditProfileViewModel : ViewModel() {
         }
     }
 
-    // 스위치 조작 시 서버 반영 — 실패해도 로컬 표시 유지, 다음 조회 때 재동기화
+    // 스위치 조작 시 서버 반영 — 실패 시 이전 값으로 되돌림 신호
     fun updateMarketingConsent(userId: String, consent: Boolean) {
         viewModelScope.launch {
-            try {
-                ApiClient.api.updateMarketingConsent(userId, MarketingConsentRequest(consent))
+            val ok = try {
+                ApiClient.api.updateMarketingConsent(userId, MarketingConsentRequest(consent)).isOk
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                // 무시 — 다음 조회 때 재동기화
+                false
             }
+            if (!ok) _marketingRevert.value = !consent
         }
+    }
+
+    fun onMarketingRevertHandled() {
+        _marketingRevert.value = null
     }
 
     fun onVerifyResultHandled() {

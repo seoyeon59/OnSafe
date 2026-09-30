@@ -36,11 +36,14 @@ import androidx.camera.video.Recorder
 import androidx.camera.video.VideoCapture
 import com.example.on_safe.R
 import com.example.on_safe.network.ApiClient
+import com.example.on_safe.messaging.FcmTokenRegistrar
 import com.example.on_safe.network.dto.LandmarkPoint
+import com.example.on_safe.network.dto.LogoutRequest
 import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.AppScope
 import com.example.on_safe.util.DisplayText
+import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.toast
 import kotlinx.coroutines.CancellationException
@@ -394,8 +397,24 @@ class CameraModeActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onClosed() {
-                Log.d(TAG, "WS 연결 종료")
+            // 끊긴 소켓에 프레임을 계속 보내 "감지 멈춤 + 화면은 촬영 중"이 되는 것 방지
+            override fun onClosed(code: Int) {
+                runOnUiThread {
+                    Log.d(TAG, "WS 연결 종료 (code=$code)")
+                    when (code) {
+                        1000 -> Unit   // 앱이 스스로 닫음
+                        // 로그아웃·비밀번호 변경·탈퇴로 세션 무효 — 로컬 정리 후 로그인 화면(onDestroy가 촬영 정리)
+                        1008 -> SessionEvents.expire(this@CameraModeActivity)
+                        1011 -> {
+                            this@CameraModeActivity.toast("서버가 일시적으로 불안정합니다. 잠시 후 다시 시도해주세요.")
+                            setState(CameraState.FAILED)
+                        }
+                        else -> if (currentState == CameraState.STREAMING) {
+                            this@CameraModeActivity.toast("서버 연결이 끊어졌습니다.")
+                            setState(CameraState.FAILED)
+                        }
+                    }
+                }
             }
         }
 
@@ -610,6 +629,9 @@ class CameraModeActivity : AppCompatActivity() {
         // access 토큰이 서버 블랙리스트에 오르지 않는다.
         val accessToken = TokenManager.getAccessToken(this)
         val refreshToken = TokenManager.getRefreshToken(this)
+        // FCM 토큰도 정리 전에 확보 — 서버가 로그아웃과 함께 해제
+        val fcm = LogoutRequest(FcmTokenRegistrar.currentToken(this), FcmTokenRegistrar.deviceId(this))
+        FcmTokenRegistrar.clearLocal(this)
         TokenManager.clearSession(this)
         startActivity(Intent(this, LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -617,7 +639,7 @@ class CameraModeActivity : AppCompatActivity() {
         // 리프레시 토큰 블랙리스트 등록 — 실패해도 로컬은 이미 정리된 상태
         AppScope.launch {
             try {
-                ApiClient.api.logout(accessToken?.let { "Bearer $it" }, refreshToken)
+                ApiClient.api.logout(accessToken?.let { "Bearer $it" }, refreshToken, fcm)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

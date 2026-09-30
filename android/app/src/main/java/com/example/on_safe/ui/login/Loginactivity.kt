@@ -183,10 +183,10 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    // 튜토리얼 미시청이면 튜토리얼부터, 아니면 모드 선택으로 (기기별 1회)
+    // 튜토리얼 미시청이면 튜토리얼부터(기기별 1회), 저장된 모드가 있으면 바로 해당 화면, 없으면 모드 선택
     private fun startOnboarding() {
         val next = if (TutorialActivity.isTutorialShown(this)) {
-            Intent(this, ModeSelectActivity::class.java)
+            Intent(this, ModeSelectActivity.savedModeTarget(this) ?: ModeSelectActivity::class.java)
         } else {
             TutorialActivity.intentForLogin(this)
         }

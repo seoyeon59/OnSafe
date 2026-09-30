@@ -2,6 +2,7 @@ package com.example.on_safe
 
 import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -13,7 +14,9 @@ import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import com.example.on_safe.ui.login.FindPwActivity
 import com.example.on_safe.util.FieldValidation
+import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.INPUT_BORDER_ERROR
 import com.example.on_safe.util.INPUT_BORDER_VALID
 import com.example.on_safe.util.bindPasswordToggle
@@ -29,6 +32,7 @@ class ResetPasswordActivity : AppCompatActivity() {
         // 호출부가 Intent에 담아 보내는 값 — 키·모드값 모두 여기서만 정의
         const val EXTRA_USER_ID = "userId"
         const val EXTRA_MODE = "mode"
+        const val EXTRA_RESET_TICKET = "resetTicket"   // MODE_FIND_PW 전용
 
         const val MODE_FIND_PW = "find_pw"     // 비밀번호 찾기 후 진입 (현재 비번 칸 숨김)
         const val MODE_SETTINGS = "settings"   // 설정에서 진입 (현재 비번 칸 표시)
@@ -70,7 +74,7 @@ class ResetPasswordActivity : AppCompatActivity() {
         // MODE_SETTINGS이면 현재 비밀번호 입력란 표시
         val mode = intent.getStringExtra(EXTRA_MODE) ?: MODE_FIND_PW
         val userId = intent.getStringExtra(EXTRA_USER_ID) ?: ""
-        viewModel.init(mode, userId)
+        viewModel.init(mode, userId, intent.getStringExtra(EXTRA_RESET_TICKET) ?: "")
         if (mode == MODE_SETTINGS) {
             layoutCurrentPw.visibility = View.VISIBLE
         }
@@ -111,10 +115,19 @@ class ResetPasswordActivity : AppCompatActivity() {
             }
         }
 
-        viewModel.saveSuccess.observe(this) { success ->
-            if (success) {
-                viewModel.onSaveHandled()
-                finish()
+        viewModel.saveOutcome.observe(this) { outcome ->
+            if (outcome == null) return@observe
+            viewModel.onSaveHandled()
+            when (outcome) {
+                ResetPasswordViewModel.SaveOutcome.CLOSE -> finish()
+                // 서버 세션 이미 무효 — 로그아웃 API 없이 로컬 정리 후 로그인 화면
+                ResetPasswordViewModel.SaveOutcome.RELOGIN ->
+                    SessionEvents.expire(this, "비밀번호가 변경되어 다시 로그인해주세요.")
+                // FindPwActivity는 이동 직후 finish() — 새로 열기
+                ResetPasswordViewModel.SaveOutcome.RESTART_VERIFICATION -> {
+                    startActivity(Intent(this, FindPwActivity::class.java))
+                    finish()
+                }
             }
         }
     }

@@ -106,18 +106,19 @@ class FindPwActivity : AppCompatActivity() {
             }
         }
 
-        viewModel.navigateToReset.observe(this) { verifiedUserId ->
-            if (verifiedUserId != null) {
-                navigateToResetPassword(verifiedUserId)
+        viewModel.navigateToReset.observe(this) { target ->
+            if (target != null) {
+                navigateToResetPassword(target)
                 viewModel.onNavigated()
             }
         }
     }
 
-    private fun navigateToResetPassword(verifiedUserId: String) {
+    private fun navigateToResetPassword(target: FindPwViewModel.ResetTarget) {
         startActivity(
             Intent(this, ResetPasswordActivity::class.java).apply {
-                putExtra(ResetPasswordActivity.EXTRA_USER_ID, verifiedUserId)
+                putExtra(ResetPasswordActivity.EXTRA_USER_ID, target.userId)
+                putExtra(ResetPasswordActivity.EXTRA_RESET_TICKET, target.resetTicket)
                 putExtra(ResetPasswordActivity.EXTRA_MODE, ResetPasswordActivity.MODE_FIND_PW)
             }
         )
