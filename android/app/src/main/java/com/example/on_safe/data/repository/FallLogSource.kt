@@ -9,8 +9,8 @@ import com.example.on_safe.network.dto.FallLogResponse
  */
 internal object FallLogSource {
 
-    // 백엔드 RiskLevel.DANGER_THRESHOLD(score > 75 strict)와 동일 기준
-    private const val DANGER_THRESHOLD = 75f
+    // 백엔드 RiskLevel.DANGER_THRESHOLD(score > 75 strict)와 동일 기준. 알림함 분류도 공용
+    const val DANGER_THRESHOLD = 75f
 
     suspend fun fetchLogs(userId: String, errorFallback: String): List<FallLogResponse> {
         val response = ApiClient.api.getFallLogs(userId)

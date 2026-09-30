@@ -134,9 +134,9 @@ class NotificationActivity : AppCompatActivity() {
         // 점수 카드 바인딩 (색상·배지·메시지·프로그레스·stroke 일괄 처리)
         RiskScoreCardBinder.bind(view.findViewById(R.id.alertRiskScoreCard), item.riskScore)
 
-        // item.id(서버 logId) 기준으로 읽음 처리 후 dismiss
+        // 읽음 + 사고 처리 후 dismiss
         val markReadAndDismiss = {
-            viewModel.markFallItemRead(userId, item.id)
+            viewModel.confirmFallItem(userId, item)
             dialog.dismiss()
         }
 

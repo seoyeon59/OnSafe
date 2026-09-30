@@ -237,10 +237,25 @@ interface ApiService {
         @Path("logId") logId: String
     ): Response<ApiResponse<FallLogResponse>>
 
-    // 낙상 로그 확인 처리 — 알림 목록의 읽음 처리에도 그대로 사용(isConfirmed == 읽음)
+    // 낙상 사고 처리(isConfirmed) — 알림 읽음(markNotificationRead)과 별개. 재알림 중단 기준
     @PATCH("api/fall-logs/{userId}/{logId}/confirm")
     suspend fun confirmFallLog(
         @Path("userId") userId: String,
         @Path("logId") logId: String
     ): Response<ApiResponse<ConfirmFallLogResponse>>
+
+    // ===== Notifications (알림함) =====
+
+    // 낙상·페어링·오프라인 등 전체 알림 이력, 최신순
+    @GET("api/notifications/{userId}")
+    suspend fun getNotifications(
+        @Path("userId") userId: String
+    ): Response<ApiResponse<Map<String, List<NotificationLogResponse>>>>
+
+    // 알림 읽음(isRead) 처리
+    @PATCH("api/notifications/{userId}/{notificationId}/read")
+    suspend fun markNotificationRead(
+        @Path("userId") userId: String,
+        @Path("notificationId") notificationId: String
+    ): Response<ApiResponse<NotificationLogResponse>>
 }

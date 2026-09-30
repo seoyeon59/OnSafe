@@ -47,6 +47,7 @@
     <!-- 연한 원형/배지 틴트 -->
     <color name="tint_neutral">#129FA6AC</color>  <!-- 회색 7% -->
     <color name="tint_danger">#12EF4444</color>   <!-- 위험 7% -->
+    <color name="tint_warning">#12F59E0B</color>  <!-- 주의 7% -->
     <color name="tint_standby">#269CA3AF</color>  <!-- 대기 15% -->
 
     <!-- 흰색 오버레이 사다리 — 어두운/컬러 배경 위에 얹는 층 -->
