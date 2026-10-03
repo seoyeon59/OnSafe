@@ -173,7 +173,9 @@ class LoginActivity : AppCompatActivity() {
                 SessionCheck.UNKNOWN
             }
             when (result) {
-                SessionCheck.VALID -> proceedAfterConsent(fetchPendingConsents())
+                // 자동 로그인은 로그인 API 미경유 — 재동의 목록 별도 조회, 실패 시 통과(차단 중이면 이후 403으로 표시).
+                // 세션 검증 후 순차 호출 — 병렬이면 무효 토큰 시 전역 만료 처리가 겹쳐 로그인 화면 이중 재시작
+                SessionCheck.VALID -> proceedAfterConsent(fetchPendingConsents(this@LoginActivity).orEmpty())
                 // 판정 불가일 땐 통과시킨다. 개별 요청이 401을 받으면 그때 정리된다.
                 SessionCheck.UNKNOWN -> startOnboarding()
                 SessionCheck.INVALID -> {
@@ -184,18 +186,6 @@ class LoginActivity : AppCompatActivity() {
             }
         }
     }
-
-    // 자동 로그인은 로그인 API 미경유 — 재동의 목록 별도 조회.
-    // 조회 실패 시 통과 — 서버 차단 중이면 이후 403으로 재동의 창 표시
-    // 세션 검증 후 순차 호출 — 병렬이면 무효 토큰 시 전역 만료 처리가 겹쳐 로그인 화면 이중 재시작
-    private suspend fun fetchPendingConsents(): List<PendingConsent> =
-        try {
-            ApiClient.api.getPendingConsents(TokenManager.getUserId(this)).body()?.data.orEmpty()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            emptyList()
-        }
 
     // 재동의 대기 약관 있으면 창부터 — 동의(경미 개정은 확인·나중에) 후 온보딩
     private fun proceedAfterConsent(pending: List<PendingConsent>) {

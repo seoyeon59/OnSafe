@@ -1,6 +1,8 @@
 package com.example.on_safe.ui.login
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
 import android.widget.LinearLayout
@@ -9,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.lifecycleScope
+import com.example.on_safe.OnSafeApp
 import com.example.on_safe.R
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.ConsentAgreeItem
@@ -23,7 +26,9 @@ import com.example.on_safe.util.cardDialog
 import com.example.on_safe.util.openTermsUrl
 import com.example.on_safe.util.toast
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 약관 재동의 창
@@ -50,20 +55,27 @@ class ConsentDialog private constructor(
     private fun show() {
         bind()
         btnAgree.setOnClickListener { agree() }
-        btnDecline.setOnClickListener { if (blocking) logout() else later() }
+        btnDecline.setOnClickListener { if (blocking) logout() else close() }
         dialog.setOnKeyListener { _, keyCode, event ->
             if (keyCode != KeyEvent.KEYCODE_BACK) return@setOnKeyListener false
             if (event.action == KeyEvent.ACTION_UP) {
-                if (blocking) activity.moveTaskToBack(true) else later()
+                if (blocking) activity.moveTaskToBack(true) else close()
             }
             true
         }
+        // 화면 종료 시 창 정리 — 창 누수·Activity 참조 잔존 방지
+        val destroyObserver = LifecycleEventObserver { _, e ->
+            if (e == Lifecycle.Event.ON_DESTROY) {
+                if (current === this) current = null
+                dialog.dismiss()
+            }
+        }
+        activity.lifecycle.addObserver(destroyObserver)
         // 닫힘 알림은 비동기 — 새 창이 이미 등록됐으면 유지
-        dialog.setOnDismissListener { if (current === this) current = null }
-        // 화면 종료 시 창 정리 — 창 누수·중복 방지 표시 잔존 방지
-        activity.lifecycle.addObserver(LifecycleEventObserver { _, e ->
-            if (e == Lifecycle.Event.ON_DESTROY) dialog.dismiss()
-        })
+        dialog.setOnDismissListener {
+            activity.lifecycle.removeObserver(destroyObserver)
+            if (current === this) current = null
+        }
         dialog.show()
     }
 
@@ -113,7 +125,7 @@ class ConsentDialog private constructor(
                 }
                 val failure = response.failure("약관 동의에 실패했습니다.")
                 // 창을 띄운 사이 재개정 — 최신 목록 재조회
-                if (failure.code == "CONSENT_VERSION_MISMATCH") reload(userId)
+                if (failure.code == "CONSENT_VERSION_MISMATCH") reload()
                 else activity.toast(failure.message)
             } catch (e: CancellationException) {
                 throw e
@@ -128,21 +140,18 @@ class ConsentDialog private constructor(
     // 동의 반영된 새 토큰 발급 — 기존 access 토큰에 차단 표시(cr) 잔존
     private suspend fun finish() {
         when (renewTokens(activity)) {
-            200 -> {
-                dialog.dismiss()
-                onDone()
-            }
-            401 -> {
+            ApiClient.RefreshOutcome.OK -> close()
+            ApiClient.RefreshOutcome.INVALID -> {
                 dialog.dismiss()
                 SessionEvents.expire(activity)
             }
             // 동의는 저장 상태 — 재시도 시 재기록 후 토큰 교체
-            else -> activity.toast("잠시 후 다시 시도해주세요.")
+            ApiClient.RefreshOutcome.FAILED -> activity.toast("잠시 후 다시 시도해주세요.")
         }
     }
 
-    private suspend fun reload(userId: String) {
-        val latest = ApiClient.api.getPendingConsents(userId).body()?.data
+    private suspend fun reload() {
+        val latest = fetchPendingConsents(activity)
         if (latest.isNullOrEmpty()) finish() else rebind(latest)
     }
 
@@ -152,7 +161,8 @@ class ConsentDialog private constructor(
         activity.toast("약관이 다시 변경되었습니다. 확인 후 동의해주세요.")
     }
 
-    private fun later() {
+    // 닫고 다음 단계 — 동의 완료·경미 개정 나중에 공용
+    private fun close() {
         dialog.dismiss()
         onDone()
     }
@@ -191,40 +201,40 @@ class ConsentDialog private constructor(
         }
 
         /**
-         * 사용 중 403 CONSENT_REQUIRED — 현재 화면 위 표시, 화면 전환 없음(카메라 촬영 유지).
+         * 사용 중 403 CONSENT_REQUIRED(OkHttp 스레드) — 현재 화면 위 표시, 화면 전환 없음(카메라 촬영 유지).
+         * 백그라운드(보이는 화면 없음)면 건너뜀 — 다음 403 수신 시 재시도.
          * 대기 목록 없음 = 다른 기기에서 동의 완료 → 차단 표시만 남은 토큰 교체
          */
-        fun showForBlocked(activity: AppCompatActivity) {
-            if (checking || current?.activity === activity) return
+        fun onConsentRequired() = mainHandler.post {
+            val activity = OnSafeApp.resumed?.get() as? AppCompatActivity ?: return@post
+            if (checking || current?.activity === activity) return@post
             checking = true
             activity.lifecycleScope.launch {
                 try {
-                    val pending = ApiClient.api.getPendingConsents(TokenManager.getUserId(activity))
-                        .body()?.data.orEmpty()
+                    val pending = fetchPendingConsents(activity) ?: return@launch
                     if (pending.isEmpty()) renewTokens(activity)
                     else show(activity, pending) { activity.toast("약관 동의가 반영되었습니다.") }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    // 통신 실패 — 다음 403 수신 시 재시도
                 } finally {
                     checking = false
                 }
             }
         }
+
+        private val mainHandler = Handler(Looper.getMainLooper())
     }
 }
 
-/**
- * refresh 토큰으로 토큰 교체 — 재동의 후 차단 표시(cr) 제거용.
- * 반환: 성공 200, 그 외 HTTP 코드(토큰 없음은 401 취급). 통신 실패는 예외 그대로
- */
-internal suspend fun renewTokens(context: Context): Int {
-    val refreshToken = TokenManager.getRefreshToken(context)
-    if (refreshToken.isNullOrBlank()) return 401
-    val response = ApiClient.api.refresh(refreshToken)
-    val tokens = response.body()?.data
-    if (!response.isOk || tokens == null) return response.code()
-    TokenManager.updateAccessToken(context, tokens.accessToken, tokens.refreshToken)
-    return 200
-}
+/** 재동의 대기 약관 조회 — 통신·서버 실패 시 null */
+internal suspend fun fetchPendingConsents(context: Context): List<PendingConsent>? =
+    try {
+        val response = ApiClient.api.getPendingConsents(TokenManager.getUserId(context))
+        if (response.isOk) response.body()?.data.orEmpty() else null
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
+    }
+
+// 블로킹 교체를 IO 스레드로 — 인증기와 같은 락 공유
+private suspend fun renewTokens(context: Context): ApiClient.RefreshOutcome =
+    withContext(Dispatchers.IO) { ApiClient.refreshTokens(TokenManager.getAccessToken(context)) }

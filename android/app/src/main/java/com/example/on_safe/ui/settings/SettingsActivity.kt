@@ -22,8 +22,6 @@ import androidx.core.content.ContextCompat
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
-import com.example.on_safe.messaging.FcmTokenRegistrar
-import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.NavTab
 import com.example.on_safe.util.TermsLinks
@@ -112,24 +110,11 @@ class SettingsActivity : AppCompatActivity() {
 
         viewModel.withdrawResult.observe(this) { result ->
             if (result != null) {
-                toast(result.message)
-                if (result.success) {
-                    // 서버가 탈퇴 파기에서 FCM 토큰 삭제 — 기기 정리만
-                    FcmTokenRegistrar.clearLocal(this)
-                    TokenManager.clearSession(this)
-                    goToLogin()
-                }
+                // 서버가 탈퇴 파기에서 FCM 토큰 삭제 — 기기 정리만
+                if (result.success) SessionEvents.signOut(this, result.message) else toast(result.message)
                 viewModel.onWithdrawHandled()
             }
         }
-    }
-
-    private fun goToLogin() {
-        startActivity(
-            Intent(this, LoginActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-        )
     }
 
     override fun onResume() {

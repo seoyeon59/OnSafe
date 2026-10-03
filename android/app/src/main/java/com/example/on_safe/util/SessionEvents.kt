@@ -6,12 +6,9 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import com.example.on_safe.OnSafeApp
 import com.example.on_safe.messaging.FcmTokenRegistrar
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.LogoutRequest
-import com.example.on_safe.ui.login.ConsentDialog
 import com.example.on_safe.ui.login.LoginActivity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -21,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong
  * 세션 종료·전환 전역 처리 — 로그인 화면으로 이동(작업 스택 정리).
  * - expire: 서버가 세션을 끊음(INVALID_TOKEN·refresh 401·WS 1008·비밀번호 변경)
  * - logout: 사용자 로그아웃
- * - requireConsent: 403 CONSENT_REQUIRED — 세션 유지, 현재 화면 위 재동의 창(화면 전환 없음)
+ * - signOut: 로컬 정리만(서버 처리 완료 후 — 회원탈퇴 등)
  */
 object SessionEvents {
 
@@ -37,20 +34,14 @@ object SessionEvents {
         if (prev != 0L && now - prev < DEDUPE_MS) return
         if (!lastExpiredAt.compareAndSet(prev, now)) return
 
+        signOut(context, message)
+    }
+
+    fun signOut(context: Context, message: String) {
         val app = context.applicationContext
         TokenManager.clearSession(app)
         FcmTokenRegistrar.clearLocal(app)
         goToLogin(app, message)
-    }
-
-    // 백그라운드(보이는 화면 없음)면 건너뜀 — 다음 403 수신 시 재시도.
-    // 로그인 화면은 자동 로그인 흐름이 직접 처리
-    fun requireConsent() {
-        Handler(Looper.getMainLooper()).post {
-            val activity = OnSafeApp.resumed?.get() as? AppCompatActivity ?: return@post
-            if (activity is LoginActivity) return@post
-            ConsentDialog.showForBlocked(activity)
-        }
     }
 
     /**
@@ -64,9 +55,7 @@ object SessionEvents {
         val refreshToken = TokenManager.getRefreshToken(app)
         // FCM 토큰도 정리 전에 확보 — 서버가 로그아웃과 함께 해제
         val fcm = LogoutRequest(FcmTokenRegistrar.currentToken(app), FcmTokenRegistrar.deviceId(app))
-        FcmTokenRegistrar.clearLocal(app)
-        TokenManager.clearSession(app)
-        goToLogin(app, message)
+        signOut(app, message)
         AppScope.launch {
             try {
                 ApiClient.api.logout(accessToken?.let { "Bearer $it" }, refreshToken, fcm)
