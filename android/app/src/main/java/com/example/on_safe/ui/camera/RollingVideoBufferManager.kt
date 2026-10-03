@@ -1,5 +1,6 @@
 package com.example.on_safe.ui.camera
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -85,6 +86,8 @@ class RollingVideoBufferManager(private val context: Context) {
         mainHandler.postDelayed({ executor.shutdown() }, SHUTDOWN_GRACE_MS)
     }
 
+    // RECORD_AUDIO는 호출부(CameraModeActivity)가 카메라 권한과 함께 확인 후 시작
+    @SuppressLint("MissingPermission")
     private fun rotateSegment() {
         if (!running) return
         currentRecording?.stop()
