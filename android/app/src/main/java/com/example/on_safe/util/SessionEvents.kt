@@ -6,9 +6,12 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import com.example.on_safe.OnSafeApp
 import com.example.on_safe.messaging.FcmTokenRegistrar
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.LogoutRequest
+import com.example.on_safe.ui.login.ConsentDialog
 import com.example.on_safe.ui.login.LoginActivity
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -18,31 +21,36 @@ import java.util.concurrent.atomic.AtomicLong
  * 세션 종료·전환 전역 처리 — 로그인 화면으로 이동(작업 스택 정리).
  * - expire: 서버가 세션을 끊음(INVALID_TOKEN·refresh 401·WS 1008·비밀번호 변경)
  * - logout: 사용자 로그아웃
- * - requireConsent: 403 CONSENT_REQUIRED — 세션 유지, 로그인 화면의 자동 로그인이 재동의 창 표시
+ * - requireConsent: 403 CONSENT_REQUIRED — 세션 유지, 현재 화면 위 재동의 창(화면 전환 없음)
  */
 object SessionEvents {
 
     const val MSG_EXPIRED = "세션이 만료되어 다시 로그인해주세요."
 
-    // 403 CONSENT_REQUIRED로 로그인 화면 진입 표시
-    const val EXTRA_CONSENT_REQUIRED = "extra_consent_required"
-
-    // 동시 요청 여러 개가 한꺼번에 실패해도 1회만 처리
+    // 동시 요청 여러 개가 한꺼번에 401을 받아도 1회만 처리
     private const val DEDUPE_MS = 5_000L
     private val lastExpiredAt = AtomicLong(0L)
-    private val lastConsentAt = AtomicLong(0L)
 
     fun expire(context: Context, message: String = MSG_EXPIRED) {
-        if (!claimOnce(lastExpiredAt)) return
+        val now = SystemClock.elapsedRealtime()
+        val prev = lastExpiredAt.get()
+        if (prev != 0L && now - prev < DEDUPE_MS) return
+        if (!lastExpiredAt.compareAndSet(prev, now)) return
+
         val app = context.applicationContext
         TokenManager.clearSession(app)
         FcmTokenRegistrar.clearLocal(app)
         goToLogin(app, message)
     }
 
-    fun requireConsent(context: Context) {
-        if (!claimOnce(lastConsentAt)) return
-        goToLogin(context.applicationContext, "변경된 약관에 동의가 필요합니다.", consentRequired = true)
+    // 백그라운드(보이는 화면 없음)면 건너뜀 — 다음 403 수신 시 재시도.
+    // 로그인 화면은 자동 로그인 흐름이 직접 처리
+    fun requireConsent() {
+        Handler(Looper.getMainLooper()).post {
+            val activity = OnSafeApp.resumed?.get() as? AppCompatActivity ?: return@post
+            if (activity is LoginActivity) return@post
+            ConsentDialog.showForBlocked(activity)
+        }
     }
 
     /**
@@ -70,21 +78,13 @@ object SessionEvents {
         }
     }
 
-    private fun claimOnce(lastAt: AtomicLong): Boolean {
-        val now = SystemClock.elapsedRealtime()
-        val prev = lastAt.get()
-        if (prev != 0L && now - prev < DEDUPE_MS) return false
-        return lastAt.compareAndSet(prev, now)
-    }
-
     // OkHttp 스레드에서도 호출되므로 UI 작업은 메인 스레드로
-    private fun goToLogin(app: Context, message: String, consentRequired: Boolean = false) {
+    private fun goToLogin(app: Context, message: String) {
         Handler(Looper.getMainLooper()).post {
             Toast.makeText(app, message, Toast.LENGTH_LONG).show()
             app.startActivity(
                 Intent(app, LoginActivity::class.java)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                    .putExtra(EXTRA_CONSENT_REQUIRED, consentRequired)
             )
         }
     }

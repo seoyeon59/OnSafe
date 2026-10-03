@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 필수 약관 재동의 창 — 동의 전에는 닫히지 않음, 거부는 로그아웃 -->
+<!-- 약관 재동의 창 — 동작은 ConsentDialog 참고 -->
 <LinearLayout
     android:clipToOutline="true"
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -35,7 +35,9 @@
 
         </FrameLayout>
 
+        <!-- 제목·설명·버튼 문구는 필수/경미 개정에 따라 코드에서 지정 -->
         <TextView
+            android:id="@+id/tvConsentDialogTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -45,6 +47,7 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/tvConsentDialogMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"

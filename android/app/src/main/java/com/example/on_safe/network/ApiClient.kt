@@ -73,7 +73,7 @@ object ApiClient {
         chain.proceed(request).also { response ->
             // 개정 약관 미동의 차단(서버 스위치 ON) — 세션 유지한 채 로그인 화면의 재동의 창으로
             if (response.code == 403 && ::appContext.isInitialized && errorCode(response) == "CONSENT_REQUIRED") {
-                SessionEvents.requireConsent(appContext)
+                SessionEvents.requireConsent()
             }
         }
     }
