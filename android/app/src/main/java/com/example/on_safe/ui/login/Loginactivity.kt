@@ -28,10 +28,12 @@ import com.example.on_safe.BuildConfig
 import com.example.on_safe.R
 import com.example.on_safe.messaging.FcmTokenRegistrar
 import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.PendingConsent
 import com.example.on_safe.network.isOk
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.DoubleBackToExit
 import com.example.on_safe.util.INPUT_BORDER_ERROR
+import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.TermsLinks
 import com.example.on_safe.util.TokenManager
 import kotlinx.coroutines.CancellationException
@@ -141,7 +143,7 @@ class LoginActivity : AppCompatActivity() {
             FcmTokenRegistrar.registerIfLoggedIn(this)
             // 기기 등록은 카메라 모드 진입 시 수행 — 여기서 하면 보호자 폰이
             // 자기 자신을 카메라로 등록하게 됨 (CameraModeViewModel.registerDevice)
-            startOnboarding()
+            proceedAfterConsent(success.pendingConsents)
             viewModel.onLoginHandled()
         }
     }
@@ -172,8 +174,9 @@ class LoginActivity : AppCompatActivity() {
                 SessionCheck.UNKNOWN
             }
             when (result) {
+                SessionCheck.VALID -> proceedAfterConsent(fetchPendingConsents())
                 // 판정 불가일 땐 통과시킨다. 개별 요청이 401을 받으면 그때 정리된다.
-                SessionCheck.VALID, SessionCheck.UNKNOWN -> startOnboarding()
+                SessionCheck.UNKNOWN -> startOnboarding()
                 SessionCheck.INVALID -> {
                     TokenManager.clearSession(this@LoginActivity)
                     Toast.makeText(this@LoginActivity, "세션이 만료되어 다시 로그인해주세요.", Toast.LENGTH_SHORT).show()
@@ -181,6 +184,33 @@ class LoginActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    // 자동 로그인은 로그인 API를 거치지 않아 재동의 목록 별도 조회.
+    // 조회 실패는 통과 — 서버 차단 시 403 CONSENT_REQUIRED가 이 화면으로 되돌림
+    private suspend fun fetchPendingConsents(): List<PendingConsent> =
+        try {
+            val pending = ApiClient.api.getPendingConsents(TokenManager.getUserId(this)).body()?.data.orEmpty()
+            // 차단돼 왔는데 대기 약관 없음 = 다른 기기에서 이미 동의 — 차단 표시만 남은 토큰 교체.
+            // 안 하면 온보딩 → 403 → 이 화면 반복
+            if (pending.isEmpty() && intent.getBooleanExtra(SessionEvents.EXTRA_CONSENT_REQUIRED, false)) {
+                renewTokens(this)
+            }
+            pending
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            emptyList()
+        }
+
+    // 재동의 대기 약관이 있으면 동의 창부터 — 동의해야 온보딩 진입
+    private fun proceedAfterConsent(pending: List<PendingConsent>) {
+        if (pending.isEmpty()) {
+            startOnboarding()
+            return
+        }
+        pbLoading.isVisible = false
+        ConsentDialog(this, pending, ::startOnboarding).show()
     }
 
     // 튜토리얼 미시청이면 튜토리얼부터(기기별 1회), 저장된 모드가 있으면 바로 해당 화면, 없으면 모드 선택

@@ -35,18 +35,13 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.Recorder
 import androidx.camera.video.VideoCapture
 import com.example.on_safe.R
-import com.example.on_safe.network.ApiClient
-import com.example.on_safe.messaging.FcmTokenRegistrar
 import com.example.on_safe.network.dto.LandmarkPoint
-import com.example.on_safe.network.dto.LogoutRequest
-import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.AppScope
 import com.example.on_safe.util.DisplayText
 import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.toast
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 private const val TAG = "CameraModeActivity"
@@ -621,33 +616,6 @@ class CameraModeActivity : AppCompatActivity() {
             android.content.res.ColorStateList.valueOf(bgColor)
     }
 
-    // 로컬 정리·화면 이동을 먼저 끝내고 서버 로그아웃은 뒤에 보낸다.
-    // 서버 응답을 기다리는 사이 화면이 사라지면 lifecycleScope가 취소되어
-    // 토큰이 남은 채로 "로그아웃됨"이 되던 문제 때문.
-    private fun handleLogout() {
-        // 로컬 정리 전에 두 토큰을 확보한다 — 정리 후에는 자동 부착이 비어 나가
-        // access 토큰이 서버 블랙리스트에 오르지 않는다.
-        val accessToken = TokenManager.getAccessToken(this)
-        val refreshToken = TokenManager.getRefreshToken(this)
-        // FCM 토큰도 정리 전에 확보 — 서버가 로그아웃과 함께 해제
-        val fcm = LogoutRequest(FcmTokenRegistrar.currentToken(this), FcmTokenRegistrar.deviceId(this))
-        FcmTokenRegistrar.clearLocal(this)
-        TokenManager.clearSession(this)
-        startActivity(Intent(this, LoginActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        })
-        // 리프레시 토큰 블랙리스트 등록 — 실패해도 로컬은 이미 정리된 상태
-        AppScope.launch {
-            try {
-                ApiClient.api.logout(accessToken?.let { "Bearer $it" }, refreshToken, fcm)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                // 무시 — 토큰은 이미 로컬에서 제거됨
-            }
-        }
-    }
-
     private fun areCameraPermissionsGranted(): Boolean =
         cameraPermissions.all { perm ->
             ContextCompat.checkSelfPermission(this, perm) == PackageManager.PERMISSION_GRANTED
@@ -683,7 +651,7 @@ class CameraModeActivity : AppCompatActivity() {
             layoutRes = R.layout.dialog_logout,
             cancelId = R.id.btnLogoutCancel,
             confirmId = R.id.btnLogoutConfirm,
-            onConfirm = ::handleLogout
+            onConfirm = { SessionEvents.logout(this) }
         )
     }
 

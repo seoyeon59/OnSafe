@@ -21,3 +21,16 @@ data class MarketingConsentResponse(
     // 미동의 상태면 시점이 없음
     val consentedAt: String?
 )
+
+// 필수 약관 재동의 (v4.13) — 로그인 응답 pending_consents·pending 조회·재동의 응답 공용.
+// required=false는 경미한 개정(확인만), 서버 차단 대상 아님
+data class PendingConsent(
+    val type: String,
+    val version: String,
+    val required: Boolean
+)
+
+// version은 pending에서 받은 값 그대로 — 다르면 409 CONSENT_VERSION_MISMATCH
+data class ConsentAgreeRequest(val consents: List<ConsentAgreeItem>)
+
+data class ConsentAgreeItem(val type: String, val version: String)

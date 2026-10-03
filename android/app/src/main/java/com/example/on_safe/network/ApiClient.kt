@@ -70,8 +70,18 @@ object ApiClient {
         } else {
             original
         }
-        chain.proceed(request)
+        chain.proceed(request).also { response ->
+            // 개정 약관 미동의 차단(서버 스위치 ON) — 세션 유지한 채 로그인 화면의 재동의 창으로
+            if (response.code == 403 && ::appContext.isInitialized && errorCode(response) == "CONSENT_REQUIRED") {
+                SessionEvents.requireConsent(appContext)
+            }
+        }
     }
+
+    // 원래 응답 본문 보존(peekBody) — 호출부가 다시 읽을 수 있음
+    private fun errorCode(response: Response): String? = runCatching {
+        gson.fromJson(response.peekBody(4096).string(), ApiResponse::class.java)?.code
+    }.getOrNull()
 
     // 자동 로그인 세션 검증 — 401 처리를 LoginActivity가 직접 하므로 전역 만료 이벤트 제외
     private const val VALIDATE_PATH = "api/auth/validate"
@@ -92,9 +102,7 @@ object ApiClient {
 
         // 만료(EXPIRED_TOKEN)만 refresh. 세션 무효(INVALID_TOKEN)는 refresh 없이 전역 만료 처리,
         // code 없는 401(프록시 등)도 refresh하지 않음. peekBody — 원래 응답 본문 보존
-        val code = runCatching {
-            gson.fromJson(response.peekBody(4096).string(), ApiResponse::class.java)?.code
-        }.getOrNull()
+        val code = errorCode(response)
         if (code != "EXPIRED_TOKEN") {
             if (code == "INVALID_TOKEN" && path != VALIDATE_PATH) SessionEvents.expire(appContext)
             return@Authenticator null

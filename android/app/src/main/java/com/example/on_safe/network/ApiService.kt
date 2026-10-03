@@ -173,6 +173,21 @@ interface ApiService {
         @Body request: MarketingConsentRequest
     ): Response<ApiResponse<MarketingConsentResponse>>
 
+    // ===== Consents (필수 약관 재동의) =====
+
+    // 자동 로그인 진입용 — 로그인 응답 pending_consents와 같은 목록
+    @GET("api/consents/{userId}/pending")
+    suspend fun getPendingConsents(
+        @Path("userId") userId: String
+    ): Response<ApiResponse<List<PendingConsent>>>
+
+    // 응답은 남은 재동의 목록 — 비면 refresh로 토큰 교체해야 차단 해제
+    @POST("api/consents/{userId}")
+    suspend fun agreeConsents(
+        @Path("userId") userId: String,
+        @Body request: ConsentAgreeRequest
+    ): Response<ApiResponse<List<PendingConsent>>>
+
     // ===== Camera (실시간 위험 지수) =====
 
     @GET("api/camera/score/{userId}")
