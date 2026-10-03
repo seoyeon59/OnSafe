@@ -28,8 +28,8 @@ class FindIdViewModel : ViewModel() {
     private val _toastMessage = MutableLiveData<String?>()
     val toastMessage: LiveData<String?> = _toastMessage
 
-    // 이름+이메일이 일치하는 아이디를 바로 조회
-    // TODO: [백엔드] findId에 rate limit이 없어 이름+이메일만으로 아이디 조회가 반복 가능.
+    // 이름+이메일이 일치하는 아이디 조회 — 서버가 앞 3자만 남기고 가림(tes*****).
+    // 요청 제한(IP 10회/h·메일 5회/h) 초과 시 서버 문구 그대로
     fun findId(name: String, email: String) {
         // 새로 조회할 때 이전 결과를 숨긴다 — 실패했는데 옛 아이디가 남아 보이지 않게
         setState { copy(isFindEnabled = false, isLoading = true, isResultVisible = false) }

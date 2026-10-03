@@ -171,6 +171,15 @@
                 android:textColor="@color/ink_900"
                 android:textStyle="bold" />
 
+            <!-- 서버가 일부 가린 아이디를 보내 이유 안내 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="개인정보 보호를 위해 아이디 일부를 가려서 표시합니다."
+                android:textColor="@color/ink_500"
+                android:textSize="@dimen/text_caption" />
+
         </LinearLayout>
 
         <!-- 여백 -->
