@@ -759,8 +759,7 @@ class CameraModeActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    // 투명 배경 + 제목 없음 + 화면 폭에 맞춘 최대 너비 + 바깥 터치로 안 닫힘 — 4개 다이얼로그 공통 설정
-    // 가로 화면이라 폭 85% 대신 고정 최대 폭
+    // 카메라 화면 4개 창 공통 — 가로 화면이라 폭 85% 대신 고정 최대 폭
     private fun buildBaseDialog(@LayoutRes layoutRes: Int): Dialog =
         cardDialog(this, layoutRes, resources.getDimensionPixelSize(R.dimen.logout_dialog_max_width))
 }

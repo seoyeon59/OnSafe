@@ -4,6 +4,7 @@ import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.view.LayoutInflater
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
@@ -19,11 +20,7 @@ fun cardDialog(context: Context, content: View, width: Int = defaultCardWidth(co
     }
 
 fun cardDialog(context: Context, @LayoutRes layoutRes: Int, width: Int = defaultCardWidth(context)): Dialog =
-    Dialog(context).apply {
-        requestWindowFeature(Window.FEATURE_NO_TITLE)
-        setContentView(layoutRes)
-        applyCardWindow(width)
-    }
+    cardDialog(context, LayoutInflater.from(context).inflate(layoutRes, null), width)
 
 // Dialog 상속 창(VerifyPasswordDialog 등)도 같은 틀 — setContentView 뒤 호출
 fun Dialog.applyCardWindow(width: Int = defaultCardWidth(context)) {
