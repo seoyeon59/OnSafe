@@ -6,6 +6,8 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.view.isInvisible
+import androidx.core.view.isVisible
 import com.example.on_safe.R
 
 /**
@@ -39,10 +41,12 @@ object RiskScoreCardBinder {
     /**
      * 점수 미수신 상태 표시.
      * 레이아웃 기본값에 맡길 경우 데이터 없이 "정상"으로 보이는 오표시 발생.
+     * loading: 연결 확인 중 — 점수 자리에 로딩 표시(멈춘 화면처럼 보이는 문제 방지)
      */
-    fun bindUnknown(cardRoot: View, message: String) {
+    fun bindUnknown(cardRoot: View, message: String, loading: Boolean = false) {
         val color = ContextCompat.getColor(cardRoot.context, R.color.ink_500)
         applyText(cardRoot, DisplayText.NO_SCORE, DisplayText.UNKNOWN_LEVEL, "", message, color)
+        applyLoading(cardRoot, loading)
         applyProgress(cardRoot, ratio = 0f, color = color)
         // 이전 DANGER 테두리 잔존 방지용 해제
         applyDangerBorder(cardRoot, danger = false, color = color)
@@ -52,6 +56,7 @@ object RiskScoreCardBinder {
         val level = RiskLevel.fromScore(score)
         val color = ContextCompat.getColor(cardRoot.context, level.colorRes)
         applyText(cardRoot, score.toString(), level.label, level.rangeText, level.message, color)
+        applyLoading(cardRoot, false)
         applyProgress(cardRoot, score.coerceIn(0, 100) / 100f, color)
         applyDangerBorder(cardRoot, danger = level == RiskLevel.DANGER, color = color)
     }
@@ -74,6 +79,13 @@ object RiskScoreCardBinder {
         }
         cardRoot.findViewById<TextView>(R.id.tvRiskRange).text = range
         cardRoot.findViewById<TextView>(R.id.tvRiskMessage).text = message
+    }
+
+    // 로딩 표시 없는 카드(낙상 알림 시트)는 건너뜀
+    private fun applyLoading(cardRoot: View, loading: Boolean) {
+        val pb = cardRoot.findViewById<View>(R.id.pbRiskLoading) ?: return
+        pb.isVisible = loading
+        cardRoot.findViewById<View>(R.id.tvRiskScore).isInvisible = loading
     }
 
     private fun applyProgress(cardRoot: View, ratio: Float, color: Int) {

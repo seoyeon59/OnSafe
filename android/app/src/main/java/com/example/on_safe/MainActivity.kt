@@ -209,11 +209,10 @@ class MainActivity : AppCompatActivity() {
             if (state.riskScore != null) {
                 RiskScoreCardBinder.bind(card, state.riskScore)
             } else {
-                // TODO: [UI] 상태별 문구는 riskUnknownMessage가 구분하지만 시각적 로딩 표시가 없어,
-                //       최초 진입·네트워크 지연 시 화면이 멈춘 것처럼 보인다. 알림 기록·사고이력처럼
-                //       로딩 인디케이터와 빈 상태를 갖출 것. 페어링 방식 변경으로 이 화면의 표시
-                //       내용이 달라질 예정이라 그 정리 후 착수.
-                RiskScoreCardBinder.bindUnknown(card, riskUnknownMessage(state.connectionState))
+                // 연결 확인·재확인 중에는 점수 자리에 로딩 표시
+                val loading = state.connectionState == ConnectionState.CONNECTING ||
+                    state.connectionState == ConnectionState.RECONNECTING
+                RiskScoreCardBinder.bindUnknown(card, riskUnknownMessage(state.connectionState), loading)
             }
         }
         viewModel.fallAlertEvent.observe(this) { event ->
