@@ -2,18 +2,16 @@ package com.example.on_safe.ui.settings
 
 import android.app.Dialog
 import android.content.Context
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
 import android.view.Window
-import android.view.WindowManager
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
 import com.example.on_safe.R
 import com.example.on_safe.util.onTextChanged
+import com.example.on_safe.util.applyCardWindow
 
 /**
  * 개인정보 수정 진입 전 본인 확인 다이얼로그.
@@ -31,13 +29,7 @@ class VerifyPasswordDialog(
         super.onCreate(savedInstanceState)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.dialog_verify_password)
-
-        // 배경 투명 + 둥근 모서리 유지
-        window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        window?.setLayout(
-            (context.resources.displayMetrics.widthPixels * 0.88).toInt(),
-            WindowManager.LayoutParams.WRAP_CONTENT
-        )
+        applyCardWindow()
 
         val etPassword  = findViewById<EditText>(R.id.etPassword)
         val btnTogglePw = findViewById<ImageButton>(R.id.btnTogglePw)

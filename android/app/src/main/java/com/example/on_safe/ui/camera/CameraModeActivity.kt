@@ -4,8 +4,6 @@ import android.Manifest
 import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
@@ -14,7 +12,6 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
 import android.view.View
-import android.view.Window
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -48,6 +45,7 @@ import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.toast
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import com.example.on_safe.util.cardDialog
 
 private const val TAG = "CameraModeActivity"
 
@@ -93,7 +91,7 @@ class CameraModeActivity : AppCompatActivity() {
         override fun run() {
             val elapsed = (System.currentTimeMillis() - recordingStartedAt) / 1000
             tvRecordingTimer.text = String.format(
-                "%02d:%02d:%02d", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60
+                java.util.Locale.US, "%02d:%02d:%02d", elapsed / 3600, (elapsed % 3600) / 60, elapsed % 60
             )
             timerHandler.postDelayed(this, 1000L)
         }
@@ -762,16 +760,7 @@ class CameraModeActivity : AppCompatActivity() {
     }
 
     // 투명 배경 + 제목 없음 + 화면 폭에 맞춘 최대 너비 + 바깥 터치로 안 닫힘 — 4개 다이얼로그 공통 설정
-    private fun buildBaseDialog(@LayoutRes layoutRes: Int): Dialog {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(layoutRes)
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            val maxWidth = resources.getDimensionPixelSize(R.dimen.logout_dialog_max_width)
-            setLayout(maxWidth, WindowManager.LayoutParams.WRAP_CONTENT)
-        }
-        dialog.setCanceledOnTouchOutside(false)
-        return dialog
-    }
+    // 가로 화면이라 폭 85% 대신 고정 최대 폭
+    private fun buildBaseDialog(@LayoutRes layoutRes: Int): Dialog =
+        cardDialog(this, layoutRes, resources.getDimensionPixelSize(R.dimen.logout_dialog_max_width))
 }

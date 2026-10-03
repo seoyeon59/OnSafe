@@ -1,13 +1,10 @@
 package com.example.on_safe.ui.history
 
 import android.Manifest
-import android.app.Dialog
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.content.res.ColorStateList
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.net.Uri
@@ -16,8 +13,6 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.provider.Settings
 import android.view.View
-import android.view.Window
-import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -38,6 +33,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.example.on_safe.util.cardDialog
 
 // 사고 이력 화면 (위험 이력만 표시 / 최신순·오래된순 정렬 / 영상 보기·다운로드·삭제)
 class AccidentHistoryActivity : AppCompatActivity() {
@@ -277,17 +273,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
     }
 
     private fun showDeleteDialog(entry: HistoryListItem.HistoryEntry) {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(R.layout.dialog_delete_history)
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            setLayout(
-                (resources.displayMetrics.widthPixels * 0.85).toInt(),
-                WindowManager.LayoutParams.WRAP_CONTENT
-            )
-        }
-        dialog.setCanceledOnTouchOutside(false)
+        val dialog = cardDialog(this, R.layout.dialog_delete_history)
 
         dialog.findViewById<TextView>(R.id.btnDeleteCancel).setOnClickListener {
             dialog.dismiss()
@@ -301,17 +287,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
 
     // 미디어 권한 팝업도 앱 내 공통 다이얼로그 스타일로 통일
     private fun showMediaPermissionSettingsDialog() {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(R.layout.dialog_permission_settings)
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            setLayout(
-                (resources.displayMetrics.widthPixels * 0.85).toInt(),
-                WindowManager.LayoutParams.WRAP_CONTENT
-            )
-        }
-        dialog.setCanceledOnTouchOutside(false)
+        val dialog = cardDialog(this, R.layout.dialog_permission_settings)
 
         dialog.findViewById<TextView>(R.id.tvPermDialogMessage).text =
             "사진/영상 권한이 '다시 묻지 않음'으로\n거부되었습니다. 앱 설정에서 직접 허용해주세요."
