@@ -187,6 +187,7 @@ class LoginActivity : AppCompatActivity() {
 
     // 자동 로그인은 로그인 API 미경유 — 재동의 목록 별도 조회.
     // 조회 실패 시 통과 — 서버 차단 중이면 이후 403으로 재동의 창 표시
+    // 세션 검증 후 순차 호출 — 병렬이면 무효 토큰 시 전역 만료 처리가 겹쳐 로그인 화면 이중 재시작
     private suspend fun fetchPendingConsents(): List<PendingConsent> =
         try {
             ApiClient.api.getPendingConsents(TokenManager.getUserId(this)).body()?.data.orEmpty()

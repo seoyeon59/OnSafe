@@ -133,8 +133,6 @@ class SettingsViewModel : ViewModel() {
         }
     }
 
-    // 서버 호출 실패와 무관하게 로컬 로그아웃은 항상 진행.
-    // fcm: 이 기기 FCM 토큰 — 서버가 세션 종료와 함께 해제
     // 비밀번호 확인 → 재인증 티켓 → 탈퇴. 서버 성공 시에만 Activity가 로컬 정리
     fun withdraw(userId: String, password: String) {
         if (userId.isBlank()) {

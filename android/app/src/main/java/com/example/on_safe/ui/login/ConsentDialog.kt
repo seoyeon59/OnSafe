@@ -58,7 +58,8 @@ class ConsentDialog private constructor(
             }
             true
         }
-        dialog.setOnDismissListener { current = null }
+        // 닫힘 알림은 비동기 — 새 창이 이미 등록됐으면 유지
+        dialog.setOnDismissListener { if (current === this) current = null }
         // 화면 종료 시 창 정리 — 창 누수·중복 방지 표시 잔존 방지
         activity.lifecycle.addObserver(LifecycleEventObserver { _, e ->
             if (e == Lifecycle.Event.ON_DESTROY) dialog.dismiss()
@@ -182,8 +183,10 @@ class ConsentDialog private constructor(
         private var checking = false
 
         // 로그인·자동 로그인용 — 목록 보유, 종료 시 [onDone]으로 온보딩
+        // 다른 화면에 남은 창은 정리 후 새 화면에 표시 — 같은 화면이면 기존 창 유지
         fun show(activity: AppCompatActivity, items: List<PendingConsent>, onDone: () -> Unit) {
-            if (current != null || items.isEmpty()) return
+            if (items.isEmpty()) return
+            current?.let { if (it.activity === activity) return else it.dialog.dismiss() }
             current = ConsentDialog(activity, items, onDone).also { it.show() }
         }
 
@@ -192,7 +195,7 @@ class ConsentDialog private constructor(
          * 대기 목록 없음 = 다른 기기에서 동의 완료 → 차단 표시만 남은 토큰 교체
          */
         fun showForBlocked(activity: AppCompatActivity) {
-            if (current != null || checking) return
+            if (checking || current?.activity === activity) return
             checking = true
             activity.lifecycleScope.launch {
                 try {
