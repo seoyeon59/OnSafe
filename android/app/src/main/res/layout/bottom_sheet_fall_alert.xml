@@ -91,100 +91,13 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- 점수 카드 — 하위 id가 include_risk_score_card.xml과 같아야 RiskScoreCardBinder가 동작 -->
-        <!-- TODO: include_risk_score_card.xml로 통합 검토 — 현재 같은 구조가 두 벌 -->
-        <LinearLayout
+        <!-- 점수 카드 — 홈과 같은 공통 카드 -->
+        <include
             android:id="@+id/alertRiskScoreCard"
+            layout="@layout/include_risk_score_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_card"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="16dp">
-
-            <FrameLayout
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:background="@drawable/bg_card"
-                android:backgroundTint="@color/surface_bg">
-
-                <TextView
-                    android:id="@+id/tvRiskScore"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="88"
-                    android:textColor="@color/status_danger"
-                    android:textSize="@dimen/text_display"
-                    android:textStyle="bold" />
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/tvRiskStatusBadge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_pill"
-                        android:backgroundTint="@color/status_danger"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="2dp"
-                        android:text="위험"
-                        android:textColor="@color/surface_white"
-                        android:textSize="@dimen/text_body"
-                        android:textStyle="bold" />
-
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="0dp"
-                        android:layout_weight="1" />
-
-                    <TextView
-                        android:id="@+id/tvRiskRange"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="위험 구간 76~100"
-                        android:textColor="@color/ink_500"
-                        android:textSize="@dimen/text_caption" />
-                </LinearLayout>
-
-                <FrameLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="8dp"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/bg_progress_track">
-
-                    <View
-                        android:id="@+id/progressFill"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:background="@drawable/bg_progress_fill"
-                        android:backgroundTint="@color/status_danger" />
-                </FrameLayout>
-
-                <TextView
-                    android:id="@+id/tvRiskMessage"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="낙상이 의심됩니다. 즉시 확인이 필요합니다."
-                    android:textColor="@color/ink_900"
-                    android:textSize="@dimen/text_caption" />
-            </LinearLayout>
-        </LinearLayout>
+            android:layout_marginTop="12dp" />
 
         <!-- 119 신고하기 버튼 -->
         <LinearLayout

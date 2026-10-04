@@ -30,7 +30,9 @@ class FallVideoUploader {
         try {
             val uploadUrlResponse = ApiClient.api.getUploadUrl(userId, logId)
             val uploadUrlBody = uploadUrlResponse.body()
-            val uploadUrl = uploadUrlBody?.data?.get("upload_url")
+            val uploadUrl = uploadUrlBody?.data?.uploadUrl
+            // 서명에 포함된 형식 그대로 사용 — 불일치 시 GCS 403
+            val contentType = uploadUrlBody?.data?.contentType ?: "video/mp4"
             if (!uploadUrlResponse.isSuccessful || uploadUrlBody?.success != true || uploadUrl.isNullOrBlank()) {
                 if (BuildConfig.DEBUG) Log.w(TAG, "업로드 URL 발급 실패 (logId=$logId): ${uploadUrlResponse.errorBody()?.string()}")
                 else Log.w(TAG, "업로드 URL 발급 실패 (logId=$logId)")
@@ -38,11 +40,11 @@ class FallVideoUploader {
                 return
             }
 
-            val requestBody = clipFile.asRequestBody("video/mp4".toMediaType())
+            val requestBody = clipFile.asRequestBody(contentType.toMediaType())
             val putRequest = Request.Builder()
                 .url(uploadUrl)
                 .put(requestBody)
-                .addHeader("Content-Type", "video/mp4")
+                .addHeader("Content-Type", contentType)
                 .build()
 
             // 원인 파악용 상태 코드·응답 본문 기록 (404=버킷 없음, 403=서명·Content-Type 불일치 등)
