@@ -6,7 +6,6 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.example.on_safe.R
 
@@ -103,17 +102,10 @@ class AccidentHistoryAdapter(
         private val btnWatchVideo: LinearLayout = view.findViewById(R.id.btnWatchVideo)
         private val btnDownload:   ImageButton  = view.findViewById(R.id.btnDownload)
         private val btnDelete:     ImageButton  = view.findViewById(R.id.btnDelete)
-        private val ivPlayOverlay: View         = view.findViewById(R.id.ivThumbnailPlay)
 
         fun bind(entry: HistoryListItem.HistoryEntry) {
             // 영상 길이 오해 방지용 "감지 시각" 접두어 — 알림 상세 모달과 표현 통일
             tvTime.text = "감지 시각 · ${entry.time}"
-
-            // 영상 없음·준비 중은 흐리게 — 누르면 사유 안내(토스트)라 클릭은 유지
-            val videoAlpha = if (entry.hasVideo) 1f else 0.4f
-            btnWatchVideo.alpha = videoAlpha
-            btnDownload.alpha = videoAlpha
-            ivPlayOverlay.isVisible = entry.hasVideo
 
             btnWatchVideo.setOnClickListener { onWatchVideo(entry) }
             btnDownload.setOnClickListener   { onDownload(entry) }
