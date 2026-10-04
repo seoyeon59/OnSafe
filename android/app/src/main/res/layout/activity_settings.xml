@@ -180,13 +180,7 @@
                         app:trackTint="@color/switch_track_tint" />
                 </LinearLayout>
 
-                <!-- 구분선 + 서브 섹션 -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/border_subtle"
-                    android:layout_marginHorizontal="8dp" />
-
+                <!-- 서브 섹션 — 박스 자체가 구분, 별도 구분선 없음 -->
                 <LinearLayout
                     android:id="@+id/subSectionNotify"
                     android:layout_width="match_parent"
@@ -207,7 +201,8 @@
                         <FrameLayout
                             android:layout_width="32dp"
                             android:layout_height="32dp"
-                            android:background="@drawable/bg_card">
+                            android:background="@drawable/bg_icon_item"
+                            android:backgroundTint="@color/surface_white">
 
                             <ImageView
                                 android:id="@+id/ivSoundIcon"
@@ -269,7 +264,8 @@
                         <FrameLayout
                             android:layout_width="32dp"
                             android:layout_height="32dp"
-                            android:background="@drawable/bg_card">
+                            android:background="@drawable/bg_icon_item"
+                            android:backgroundTint="@color/surface_white">
 
                             <ImageView
                                 android:id="@+id/ivVibrationIcon"
