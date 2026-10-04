@@ -40,6 +40,8 @@ import java.util.Locale
 private const val PAIRING_TAG = "guardian_pair"
 private const val STATE_PAIRED = "paired"
 private const val STATE_PAIRING_DEFERRED = "pairing_deferred"
+private const val STATE_WARD_ID = "paired_ward_id"
+private const val STATE_WARD_NAME = "paired_ward_name"
 
 class MainActivity : AppCompatActivity() {
 
@@ -93,8 +95,12 @@ class MainActivity : AppCompatActivity() {
         observeViewModel()
 
         savedInstanceState?.let {
-            isPaired = it.getBoolean(STATE_PAIRED)
             pairingDeferred = it.getBoolean(STATE_PAIRING_DEFERRED)
+            // 피보호자 정보까지 있어야 연결 상태 복원 — 없으면 진입 확인(getWards)으로 재판정.
+            // 전체화면 회전 등 재생성 후 해제 시 "연결 정보 없음"이 뜨던 문제
+            pairedWardUserId = it.getString(STATE_WARD_ID)
+            pairedWardName = it.getString(STATE_WARD_NAME)
+            isPaired = it.getBoolean(STATE_PAIRED) && pairedWardUserId != null
         }
 
         // 모달이 화면 재생성 뒤에 결과를 돌려줘도 받을 수 있도록 항상 등록한다.
@@ -103,9 +109,9 @@ class MainActivity : AppCompatActivity() {
         ) { _, result ->
             when {
                 // 실제 관계 성립 완료(FCM pairing_approved 이후 리트리거되는 경로).
+                // 피보호자 정보는 getWards로 받아 채움 — 해제 버튼에 필요
                 result.getBoolean(GuardianPairingDialogFragment.RESULT_PAIRED) -> {
-                    isPaired = true
-                    renderPairingButton()
+                    checkGuardianPairingOnEntry()
                     viewModel.startPolling(TokenManager.getUserId(this))
                 }
                 // 요청 전송됨 — 승인 대기 상태. 이번 방문 동안은 모달 재표시 안 하되, 다음 진입에서
@@ -148,6 +154,8 @@ class MainActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
         outState.putBoolean(STATE_PAIRED, isPaired)
         outState.putBoolean(STATE_PAIRING_DEFERRED, pairingDeferred)
+        outState.putString(STATE_WARD_ID, pairedWardUserId)
+        outState.putString(STATE_WARD_NAME, pairedWardName)
     }
 
     // 진입 시 한 번만이 아니라 홈이 다시 보일 때마다 확인한다 — 오프라인으로 판정을
