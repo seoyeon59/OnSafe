@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -314,6 +315,8 @@ class MainActivity : AppCompatActivity() {
         dot.backgroundTintList = ColorStateList.valueOf(color)
         tv.text = state.label
         tv.setTextColor(color)
+        // 미연결·대기 중 LIVE 표시는 오인 유발
+        findViewById<View>(R.id.layoutHomeLiveBadge).isVisible = state == ConnectionState.CONNECTED
     }
 
     // 점수 미수신 사유별 문구 분기 — 사용자가 취할 조치가 달라 상태별로 구분

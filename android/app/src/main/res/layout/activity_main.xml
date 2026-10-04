@@ -213,13 +213,16 @@
                 android:backgroundTint="@color/ink_900"
                 android:clipToOutline="true">
 
+                <!-- LIVE 뱃지 — 카메라 기기 연결 중에만 표시 -->
                 <LinearLayout
+                    android:id="@+id/layoutHomeLiveBadge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="top|start"
                     android:layout_margin="12dp"
                     android:background="@drawable/bg_pill"
                     android:backgroundTint="@color/status_danger"
+                    android:visibility="gone"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="8dp"
