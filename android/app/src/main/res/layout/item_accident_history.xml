@@ -27,8 +27,9 @@
                 android:contentDescription="@null"
                 android:scaleType="centerCrop" />
 
-            <!-- 재생 아이콘 오버레이 -->
+            <!-- 재생 아이콘 오버레이 — 영상 있을 때만 -->
             <ImageView
+                android:id="@+id/ivThumbnailPlay"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_gravity="center"
