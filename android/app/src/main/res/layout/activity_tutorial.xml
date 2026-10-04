@@ -32,7 +32,7 @@
             android:max="100"
             android:progressDrawable="@drawable/bg_progress_tutorial" />
 
-        <!-- 페이지 카운터: "1/6" -->
+        <!-- 페이지 카운터: "현재/전체" -->
         <TextView
             android:id="@+id/tvPageCounter"
             android:layout_width="wrap_content"
@@ -67,13 +67,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/progressRow">
 
-        <!-- 페이지 이미지 — TutorialActivity.pages에 리소스를 채우면 표시, 비어 있으면 gone -->
+        <!-- 페이지 이미지 — 세로 기준 전체 표시(온보딩이라 스크롤 없음), 좌우 여백은 흰 배경과 동일 -->
         <ImageView
             android:id="@+id/ivPageImage"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:contentDescription="@null"
-            android:scaleType="centerInside"
+            android:scaleType="fitCenter"
             android:visibility="gone" />
 
     </FrameLayout>
