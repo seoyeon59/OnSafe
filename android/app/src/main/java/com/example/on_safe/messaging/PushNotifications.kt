@@ -1,5 +1,6 @@
 package com.example.on_safe.messaging
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -63,6 +64,8 @@ object PushNotifications {
      *
      * 낙상 계열은 알림 목록으로 직행(홈을 백스택에 배치). 그 외는 런처 인텐트로 앱 실행.
      */
+    // POST_NOTIFICATIONS 미허용 시 notify는 조용히 무시 — 예외 없음
+    @SuppressLint("MissingPermission")
     fun show(context: Context, event: String?, title: String?, body: String?) {
         val channelId = channelFor(event)
         val resolvedTitle = title?.takeIf { it.isNotBlank() } ?: defaultTitle(event)
