@@ -83,6 +83,14 @@ class CameraModeViewModel : ViewModel() {
         }
     }
 
+    // 연결 상태 재판정 — 승인 성립·해제·코드 소진(연결 요청 도착) 시. my-guardian 조회부터 다시 돈다.
+    // 백오프가 풀리지만 푸시 계기라 드물다
+    fun refreshPairing(userId: String) {
+        pairingCodeJob?.cancel()
+        pairingCodeJob = null
+        startPairingCodeAutoRefresh(userId)
+    }
+
     // my-guardian 조회로 페어링 여부 확인. 성공 시 UI 상태 반영하고 true 리턴.
     // 네트워크 실패는 "판정 불가"로 보고 false 리턴 — 코드 발급을 시도해 서버 검증에 맡긴다.
     private suspend fun checkAlreadyPaired(userId: String): Boolean {
@@ -101,7 +109,11 @@ class CameraModeViewModel : ViewModel() {
                         )
                     }
                     true
-                } else false
+                } else {
+                    // 재판정 경로 — 다른 쪽에서 해제됐으면 연결 표시를 걷는다
+                    setState { copy(isPaired = false, pairedGuardianUserId = null, pairedGuardianName = null) }
+                    false
+                }
             } else false
         } catch (e: CancellationException) {
             throw e

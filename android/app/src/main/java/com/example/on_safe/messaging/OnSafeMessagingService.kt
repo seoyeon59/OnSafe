@@ -2,6 +2,7 @@ package com.example.on_safe.messaging
 
 import android.util.Log
 import com.example.on_safe.BuildConfig
+import com.example.on_safe.ui.pairing.PairingApprovalDialog
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
@@ -34,6 +35,8 @@ class OnSafeMessagingService : FirebaseMessagingService() {
 
         PushNotifications.show(applicationContext, event, title, body)
         PushEventBus.publish(PushEvent(event, data))
+        // 보호자 연결 요청 — 승인해야 성립하므로 보이는 화면 위에 바로 승인 창
+        if (event == PairingApprovalDialog.EVENT) PairingApprovalDialog.offer(data, message.sentTime)
     }
 
     private companion object {
