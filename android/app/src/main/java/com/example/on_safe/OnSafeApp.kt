@@ -1,10 +1,13 @@
 package com.example.on_safe
 
+import android.app.Activity
 import android.app.Application
+import android.os.Bundle
 import com.example.on_safe.messaging.FcmTokenRegistrar
 import com.example.on_safe.messaging.PushNotifications
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.util.CrashLogger
+import java.lang.ref.WeakReference
 
 class OnSafeApp : Application() {
     override fun onCreate() {
@@ -18,5 +21,24 @@ class OnSafeApp : Application() {
         // 자동 로그인 사용자의 토큰을 서버와 재동기화 — 앱 재설치·토큰 롤오버 후 최신화.
         // (미로그인이거나 google-services.json 미설정이면 내부에서 안전하게 건너뜀)
         FcmTokenRegistrar.registerIfLoggedIn(this)
+
+        // 사용 중 재동의 창을 띄울 현재 화면 추적
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityResumed(activity: Activity) { resumed = WeakReference(activity) }
+            override fun onActivityPaused(activity: Activity) {
+                if (resumed?.get() === activity) resumed = null
+            }
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+            override fun onActivityStarted(activity: Activity) = Unit
+            override fun onActivityStopped(activity: Activity) = Unit
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+            override fun onActivityDestroyed(activity: Activity) = Unit
+        })
+    }
+
+    companion object {
+        // 앞에 보이는 화면 — 백그라운드면 null
+        var resumed: WeakReference<Activity>? = null
+            private set
     }
 }

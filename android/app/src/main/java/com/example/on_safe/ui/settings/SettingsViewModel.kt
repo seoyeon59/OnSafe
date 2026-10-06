@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.DeleteUserRequest
-import com.example.on_safe.network.dto.LogoutRequest
 import com.example.on_safe.network.dto.NotificationSettingsRequest
 import com.example.on_safe.network.dto.NotificationSettingsResponse
 import com.example.on_safe.network.dto.VerifyPasswordRequest
@@ -36,10 +35,6 @@ class SettingsViewModel : ViewModel() {
 
     private val _toastEvent = MutableLiveData<SettingsToastEvent?>()
     val toastEvent: LiveData<SettingsToastEvent?> = _toastEvent
-
-    // 1회성 이벤트 — true면 로그아웃 완료, Activity가 소비 후 null로 리셋
-    private val _logoutEvent = MutableLiveData<Boolean?>()
-    val logoutEvent: LiveData<Boolean?> = _logoutEvent
 
     private val _withdrawResult = MutableLiveData<AuthResultEvent?>()
     val withdrawResult: LiveData<AuthResultEvent?> = _withdrawResult
@@ -138,21 +133,6 @@ class SettingsViewModel : ViewModel() {
         }
     }
 
-    // 서버 호출 실패와 무관하게 로컬 로그아웃은 항상 진행.
-    // fcm: 이 기기 FCM 토큰 — 서버가 세션 종료와 함께 해제
-    fun logout(accessToken: String?, refreshToken: String?, fcm: LogoutRequest) {
-        viewModelScope.launch {
-            try {
-                ApiClient.api.logout(accessToken?.let { "Bearer $it" }, refreshToken, fcm)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                // 무시하고 로컬 정리로 진행
-            }
-            _logoutEvent.value = true
-        }
-    }
-
     // 비밀번호 확인 → 재인증 티켓 → 탈퇴. 서버 성공 시에만 Activity가 로컬 정리
     fun withdraw(userId: String, password: String) {
         if (userId.isBlank()) {
@@ -184,10 +164,6 @@ class SettingsViewModel : ViewModel() {
 
     fun onToastHandled() {
         _toastEvent.value = null
-    }
-
-    fun onLogoutHandled() {
-        _logoutEvent.value = null
     }
 
     fun onWithdrawHandled() {

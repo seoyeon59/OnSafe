@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.network.dto.ApiResponse
+import com.example.on_safe.ui.login.ConsentDialog
 import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.TokenManager
 import com.google.gson.FieldNamingPolicy
@@ -70,8 +71,18 @@ object ApiClient {
         } else {
             original
         }
-        chain.proceed(request)
+        chain.proceed(request).also { response ->
+            // 개정 약관 미동의 차단(서버 스위치 ON) — 세션 유지, 현재 화면 위 재동의 창
+            if (response.code == 403 && ::appContext.isInitialized && errorCode(response) == "CONSENT_REQUIRED") {
+                ConsentDialog.onConsentRequired()
+            }
+        }
     }
+
+    // 원래 응답 본문 보존(peekBody) — 호출부가 다시 읽을 수 있음
+    private fun errorCode(response: Response): String? = runCatching {
+        gson.fromJson(response.peekBody(4096).string(), ApiResponse::class.java)?.code
+    }.getOrNull()
 
     // 자동 로그인 세션 검증 — 401 처리를 LoginActivity가 직접 하므로 전역 만료 이벤트 제외
     private const val VALIDATE_PATH = "api/auth/validate"
@@ -92,53 +103,59 @@ object ApiClient {
 
         // 만료(EXPIRED_TOKEN)만 refresh. 세션 무효(INVALID_TOKEN)는 refresh 없이 전역 만료 처리,
         // code 없는 401(프록시 등)도 refresh하지 않음. peekBody — 원래 응답 본문 보존
-        val code = runCatching {
-            gson.fromJson(response.peekBody(4096).string(), ApiResponse::class.java)?.code
-        }.getOrNull()
+        val code = errorCode(response)
         if (code != "EXPIRED_TOKEN") {
             if (code == "INVALID_TOKEN" && path != VALIDATE_PATH) SessionEvents.expire(appContext)
             return@Authenticator null
         }
 
-        synchronized(refreshLock) {
-            val requestAccessToken = response.request.header("Authorization")?.removePrefix("Bearer ")
-            val currentAccessToken = TokenManager.getAccessToken(appContext)
-
-            // 다른 스레드가 이미 갱신했다면 새 토큰으로 재시도만
-            if (!currentAccessToken.isNullOrBlank() && currentAccessToken != requestAccessToken) {
-                return@synchronized response.request.newBuilder()
-                    .header("Authorization", "Bearer $currentAccessToken")
-                    .build()
-            }
-
-            val refreshToken = TokenManager.getRefreshToken(appContext)
-            if (refreshToken.isNullOrBlank()) return@synchronized null
-
-            val refreshResponse = try {
-                runBlocking { api.refresh(refreshToken) }
-            } catch (e: Exception) {
-                if (BuildConfig.DEBUG) Log.w("ApiClient", "토큰 재발급 요청 실패", e)
-                null
-            }
-
-            val body = refreshResponse?.body()
-            val newTokens = body?.data
-            if (refreshResponse?.isSuccessful != true || body?.success != true || newTokens == null) {
-                // 401(토큰 무효·만료)만 세션 종료. 통신 실패·5xx(Redis 장애 등)는 세션 유지 —
-                // 일시 장애로 전체 사용자가 로그아웃되는 것 방지. 원래 요청은 401로 실패 처리
-                if (refreshResponse?.code() == 401 && path != VALIDATE_PATH) {
+        val requestAccessToken = response.request.header("Authorization")?.removePrefix("Bearer ")
+        when (refreshTokens(requestAccessToken)) {
+            RefreshOutcome.OK -> response.request.newBuilder()
+                .header("Authorization", "Bearer ${TokenManager.getAccessToken(appContext)}")
+                .build()
+            RefreshOutcome.INVALID -> {
+                // 401(토큰 무효·만료)만 세션 종료 — 원래 요청은 401로 실패 처리
+                if (path != VALIDATE_PATH) {
                     if (BuildConfig.DEBUG) Log.w("ApiClient", "토큰 재발급 거부 — 세션 만료 처리")
                     SessionEvents.expire(appContext)
                 }
-                return@synchronized null
+                null
             }
-
-            // 조용한 자동 갱신 — login_time은 그대로 두고 토큰만 교체 (saveTokens 아님)
-            TokenManager.updateAccessToken(appContext, newTokens.accessToken, newTokens.refreshToken)
-            response.request.newBuilder()
-                .header("Authorization", "Bearer ${newTokens.accessToken}")
-                .build()
+            RefreshOutcome.FAILED -> null
         }
+    }
+
+    // 토큰 교체 결과 — FAILED는 통신 실패·5xx 등 일시 장애(세션 유지)
+    enum class RefreshOutcome { OK, INVALID, FAILED }
+
+    /**
+     * refresh 토큰으로 토큰 교체 — 인증기·재동의 창 공용.
+     * refreshLock으로 직렬화: 서버가 refresh 토큰을 바꿔 주므로 동시 교체 시 한쪽이 401로 로그아웃되는 문제 방지.
+     * [staleAccessToken]과 저장 토큰이 다르면 다른 스레드가 이미 교체한 것으로 보고 OK.
+     * 블로킹 호출 — 메인 스레드 금지
+     */
+    fun refreshTokens(staleAccessToken: String?): RefreshOutcome = synchronized(refreshLock) {
+        val current = TokenManager.getAccessToken(appContext)
+        if (!current.isNullOrBlank() && current != staleAccessToken) return RefreshOutcome.OK
+
+        val refreshToken = TokenManager.getRefreshToken(appContext)
+        if (refreshToken.isNullOrBlank()) return RefreshOutcome.FAILED
+
+        val refreshResponse = try {
+            runBlocking { api.refresh(refreshToken) }
+        } catch (e: Exception) {
+            if (BuildConfig.DEBUG) Log.w("ApiClient", "토큰 재발급 요청 실패", e)
+            return RefreshOutcome.FAILED
+        }
+        val newTokens = refreshResponse.body()?.data
+        if (!refreshResponse.isOk || newTokens == null) {
+            // 통신 실패·5xx(Redis 장애 등)는 세션 유지 — 일시 장애로 전체 로그아웃 방지
+            return if (refreshResponse.code() == 401) RefreshOutcome.INVALID else RefreshOutcome.FAILED
+        }
+        // 조용한 자동 갱신 — login_time 유지, 토큰만 교체(saveTokens 아님)
+        TokenManager.updateAccessToken(appContext, newTokens.accessToken, newTokens.refreshToken)
+        RefreshOutcome.OK
     }
 
     // 자기 자신 + priorResponse 체인 길이 — 재시도 횟수 판정용

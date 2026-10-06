@@ -1,20 +1,15 @@
 package com.example.on_safe.ui.settings
 
 import android.Manifest
-import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.MotionEvent
 import android.view.View
-import android.view.Window
-import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -27,13 +22,12 @@ import androidx.core.content.ContextCompat
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.ResetPasswordActivity
-import com.example.on_safe.messaging.FcmTokenRegistrar
-import com.example.on_safe.network.dto.LogoutRequest
-import com.example.on_safe.ui.login.LoginActivity
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.NavTab
 import com.example.on_safe.util.TermsLinks
+import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.TokenManager
+import com.example.on_safe.util.cardDialog
 import com.example.on_safe.util.openTermsUrl
 import com.example.on_safe.util.setupBottomNav
 import com.example.on_safe.util.toast
@@ -54,7 +48,6 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var rowEditProfile: LinearLayout
     private lateinit var rowChangePassword: LinearLayout
     private lateinit var rowPrivacyPolicy: LinearLayout
-    private lateinit var rowFaq: LinearLayout
     private lateinit var rowLogout: LinearLayout
     private lateinit var rowWithdraw: LinearLayout
 
@@ -115,37 +108,13 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        viewModel.logoutEvent.observe(this) { fired ->
-            if (fired == true) {
-                // 서버 토큰 해제는 로그아웃 본문이 처리 — 여기선 기기 정리만
-                FcmTokenRegistrar.clearLocal(this)
-                TokenManager.clearSession(this)
-                toast("로그아웃 되었습니다.")
-                goToLogin()
-                viewModel.onLogoutHandled()
-            }
-        }
-
         viewModel.withdrawResult.observe(this) { result ->
             if (result != null) {
-                toast(result.message)
-                if (result.success) {
-                    // 서버가 탈퇴 파기에서 FCM 토큰 삭제 — 기기 정리만
-                    FcmTokenRegistrar.clearLocal(this)
-                    TokenManager.clearSession(this)
-                    goToLogin()
-                }
+                // 서버가 탈퇴 파기에서 FCM 토큰 삭제 — 기기 정리만
+                if (result.success) SessionEvents.signOut(this, result.message) else toast(result.message)
                 viewModel.onWithdrawHandled()
             }
         }
-    }
-
-    private fun goToLogin() {
-        startActivity(
-            Intent(this, LoginActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-        )
     }
 
     override fun onResume() {
@@ -169,7 +138,6 @@ class SettingsActivity : AppCompatActivity() {
         rowEditProfile     = findViewById(R.id.rowEditProfile)
         rowChangePassword  = findViewById(R.id.rowChangePassword)
         rowPrivacyPolicy   = findViewById(R.id.rowPrivacyPolicy)
-        rowFaq             = findViewById(R.id.rowFaq)
         rowLogout          = findViewById(R.id.rowLogout)
         rowWithdraw        = findViewById(R.id.rowWithdraw)
         tvUserName         = findViewById(R.id.tvUserName)
@@ -248,17 +216,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun showNotificationSettingsDialog() {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(R.layout.dialog_permission_settings)
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            setLayout(
-                (resources.displayMetrics.widthPixels * 0.85).toInt(),
-                WindowManager.LayoutParams.WRAP_CONTENT
-            )
-        }
-        dialog.setCanceledOnTouchOutside(false)
+        val dialog = cardDialog(this, layoutInflater.inflate(R.layout.dialog_permission_settings, null))
 
         dialog.findViewById<TextView>(R.id.tvPermDialogMessage).text =
             "알림 권한이 '다시 묻지 않음'으로\n거부되었습니다. 앱 설정에서 직접 허용해주세요."
@@ -361,11 +319,6 @@ class SettingsActivity : AppCompatActivity() {
             openTermsUrl(TermsLinks.ALL)
         }
 
-        // TODO: FAQ 페이지 구현 (WebView 또는 전용 Activity)
-        rowFaq.setOnClickListener {
-            toast("자주 묻는 질문 준비 중입니다.")
-        }
-
         rowLogout.setOnClickListener {
             showLogoutConfirm()
         }
@@ -390,28 +343,12 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun showLogoutConfirm() {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(R.layout.dialog_logout)
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            setLayout(
-                (resources.displayMetrics.widthPixels * 0.85).toInt(),
-                WindowManager.LayoutParams.WRAP_CONTENT
-            )
-        }
-        dialog.setCanceledOnTouchOutside(false)
-
-        dialog.findViewById<TextView>(R.id.btnLogoutCancel).setOnClickListener {
+        val content = layoutInflater.inflate(R.layout.dialog_logout, null)
+        val dialog = cardDialog(this, content)
+        content.findViewById<TextView>(R.id.btnLogoutCancel).setOnClickListener { dialog.dismiss() }
+        content.findViewById<TextView>(R.id.btnLogoutConfirm).setOnClickListener {
             dialog.dismiss()
-        }
-        dialog.findViewById<TextView>(R.id.btnLogoutConfirm).setOnClickListener {
-            dialog.dismiss()
-            viewModel.logout(
-                TokenManager.getAccessToken(this),
-                TokenManager.getRefreshToken(this),
-                LogoutRequest(FcmTokenRegistrar.currentToken(this), FcmTokenRegistrar.deviceId(this))
-            )
+            SessionEvents.logout(this)
         }
         dialog.show()
     }

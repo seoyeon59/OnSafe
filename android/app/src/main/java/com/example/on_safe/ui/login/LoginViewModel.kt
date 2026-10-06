@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.LoginRequest
+import com.example.on_safe.network.dto.PendingConsent
 import com.example.on_safe.network.errorMessage
 import com.example.on_safe.network.isOk
 import kotlinx.coroutines.CancellationException
@@ -23,7 +24,9 @@ data class LoginUiState(
 data class LoginSuccess(
     val accessToken: String,
     val refreshToken: String,
-    val userId: String
+    val userId: String,
+    // 비어 있지 않으면 온보딩 전 재동의 창
+    val pendingConsents: List<PendingConsent>
 )
 
 class LoginViewModel : ViewModel() {
@@ -45,7 +48,9 @@ class LoginViewModel : ViewModel() {
                 )
                 val data = response.body()?.data
                 if (response.isOk && data != null) {
-                    _loginSuccess.value = LoginSuccess(data.accessToken, data.refreshToken, data.userId)
+                    _loginSuccess.value = LoginSuccess(
+                        data.accessToken, data.refreshToken, data.userId, data.pendingConsents.orEmpty()
+                    )
                 } else {
                     val message = response.errorMessage("아이디 또는 비밀번호가 올바르지 않습니다.")
                     // 서버 응답 원문은 디버그에서만 — 릴리즈 logcat 노출 방지

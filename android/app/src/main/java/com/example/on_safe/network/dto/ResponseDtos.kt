@@ -22,7 +22,9 @@ data class LoginResponse(
     val accessToken: String,
     val refreshToken: String,
     // 미사용 — "Bearer" 고정값이라 헤더 조립은 ApiClient가 직접 처리. 서버 스펙 명시 목적으로 유지
-    val tokenType: String
+    val tokenType: String,
+    // 재동의 필요 약관(v4.13) — 구버전 서버 응답엔 없어 nullable
+    val pendingConsents: List<PendingConsent>? = null
 )
 
 data class FindIdResponse(

@@ -28,6 +28,7 @@ import com.example.on_safe.BuildConfig
 import com.example.on_safe.R
 import com.example.on_safe.messaging.FcmTokenRegistrar
 import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.dto.PendingConsent
 import com.example.on_safe.network.isOk
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.DoubleBackToExit
@@ -141,7 +142,7 @@ class LoginActivity : AppCompatActivity() {
             FcmTokenRegistrar.registerIfLoggedIn(this)
             // 기기 등록은 카메라 모드 진입 시 수행 — 여기서 하면 보호자 폰이
             // 자기 자신을 카메라로 등록하게 됨 (CameraModeViewModel.registerDevice)
-            startOnboarding()
+            proceedAfterConsent(success.pendingConsents)
             viewModel.onLoginHandled()
         }
     }
@@ -172,8 +173,11 @@ class LoginActivity : AppCompatActivity() {
                 SessionCheck.UNKNOWN
             }
             when (result) {
+                // 자동 로그인은 로그인 API 미경유 — 재동의 목록 별도 조회, 실패 시 통과(차단 중이면 이후 403으로 표시).
+                // 세션 검증 후 순차 호출 — 병렬이면 무효 토큰 시 전역 만료 처리가 겹쳐 로그인 화면 이중 재시작
+                SessionCheck.VALID -> proceedAfterConsent(fetchPendingConsents(this@LoginActivity).orEmpty())
                 // 판정 불가일 땐 통과시킨다. 개별 요청이 401을 받으면 그때 정리된다.
-                SessionCheck.VALID, SessionCheck.UNKNOWN -> startOnboarding()
+                SessionCheck.UNKNOWN -> startOnboarding()
                 SessionCheck.INVALID -> {
                     TokenManager.clearSession(this@LoginActivity)
                     Toast.makeText(this@LoginActivity, "세션이 만료되어 다시 로그인해주세요.", Toast.LENGTH_SHORT).show()
@@ -181,6 +185,16 @@ class LoginActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    // 재동의 대기 약관 있으면 창부터 — 동의(경미 개정은 확인·나중에) 후 온보딩
+    private fun proceedAfterConsent(pending: List<PendingConsent>) {
+        if (pending.isEmpty()) {
+            startOnboarding()
+            return
+        }
+        pbLoading.isVisible = false
+        ConsentDialog.show(this, pending, ::startOnboarding)
     }
 
     // 튜토리얼 미시청이면 튜토리얼부터(기기별 1회), 저장된 모드가 있으면 바로 해당 화면, 없으면 모드 선택
