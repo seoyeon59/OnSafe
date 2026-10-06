@@ -23,6 +23,15 @@ val localProperties = Properties().apply {
 }
 val jusoApiKey: String = localProperties.getProperty("JUSO_API_KEY", "")
 
+// 디버그 빌드가 붙을 개발 서버 — 기본은 에뮬레이터(10.0.2.2 = 개발 PC의 localhost).
+// 실기기는 USB 연결 후 adb reverse 로 포트를 넘기고 local.properties 에서 바꾼다:
+//   DEV_SERVER_HOST=localhost   (adb reverse tcp:8080 tcp:8080)
+//   DEV_AI_PORT=18000           (폰에서 8000 이 이미 쓰일 때: adb reverse tcp:18000 tcp:8000)
+// http 허용 호스트는 network_security_config.xml(10.0.2.2·127.0.0.1·localhost)과 맞출 것
+val devServerHost: String = localProperties.getProperty("DEV_SERVER_HOST", "10.0.2.2")
+val devApiPort: String = localProperties.getProperty("DEV_API_PORT", "8080")
+val devAiPort: String = localProperties.getProperty("DEV_AI_PORT", "8000")
+
 android {
     namespace = "com.example.on_safe"
     compileSdk = 35
@@ -47,13 +56,12 @@ android {
 
     buildTypes {
         debug {
-            // 에뮬레이터: 10.0.2.2 = 개발 PC의 localhost
-            // 실기기 테스트 시 개발 PC의 실제 IP 주소로 변경 필요 (예: "http://192.168.x.x:8080/")
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/\"")
+            // 서버 위치는 위 devServerHost 설명 참고 (기본: 에뮬레이터)
+            buildConfigField("String", "BASE_URL", "\"http://$devServerHost:$devApiPort/\"")
             // Python AI 서버(docker-compose 기준 8000 포트) WS 스트림 엔드포인트. BASE_URL과 동일한 컨벤션.
-            buildConfigField("String", "AI_WS_URL", "\"ws://10.0.2.2:8000/ws/stream\"")
+            buildConfigField("String", "AI_WS_URL", "\"ws://$devServerHost:$devAiPort/ws/stream\"")
             // devices API는 Python 서버 전용 — Kotlin 중복분은 스펙 v4.2에서 제거
-            buildConfigField("String", "AI_BASE_URL", "\"http://10.0.2.2:8000/\"")
+            buildConfigField("String", "AI_BASE_URL", "\"http://$devServerHost:$devAiPort/\"")
             buildConfigField("String", "JUSO_API_KEY", "\"$jusoApiKey\"")
         }
         release {
