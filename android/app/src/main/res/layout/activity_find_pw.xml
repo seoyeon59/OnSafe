@@ -45,6 +45,7 @@
 
     <!-- 본문 -->
     <LinearLayout
+        android:clipToPadding="false"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -67,7 +68,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="가입한 아이디·이름·이메일이 모두 일치하면 새 비밀번호를 설정할 수 있습니다."
+                android:text="가입 정보가 모두 일치하면 새 비밀번호를 설정할 수 있습니다."
                 android:textSize="@dimen/text_caption"
                 android:textColor="@color/ink_500"
                 android:lineSpacingExtra="4dp"

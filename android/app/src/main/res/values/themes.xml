@@ -19,13 +19,23 @@
         <item name="colorControlHighlight">@color/ripple_primary</item>
         <item name="android:textColorHighlight">@color/text_highlight_primary</item>
         <!-- 자동완성 강조 배경 — 기본 사각형이 둥근 입력칸을 벗어나는 문제 해결 -->
-        <item name="android:autofilledHighlight">@drawable/bg_autofill_highlight</item>
+        <item name="android:autofilledHighlight" tools:targetApi="26">@drawable/bg_autofill_highlight</item>
         <!-- 앱 전체 기본 폰트: Pretendard (400/500/600/700 자동 매핑) -->
         <item name="android:fontFamily">@font/pretendard</item>
+        <!-- 그림자 균일화 — 방향 그림자(spot)는 화면 아래·긴 카드일수록 하단이 진해져 카드마다 달라 보임.
+             spot을 낮추고 사방 균일한 ambient를 올려 위치·높이와 무관하게 같은 그림자 -->
+        <item name="android:spotShadowAlpha">0.06</item>
+        <item name="android:ambientShadowAlpha">0.07</item>
+        <!-- 한글 어절 단위 줄바꿈 — "긴/급"처럼 단어 중간 끊김 방지(API 33+) -->
+        <item name="android:textViewStyle">@style/Widget.OnSafe.TextView</item>
         <!-- Android 15(API 35)에서 강제되는 edge-to-edge 모드 옵트아웃 -->
         <!-- 레이아웃이 edge-to-edge 대응 완료 전까지 시스템 바 겹침 방지 -->
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement" tools:targetApi="35">true</item>
     </style>
 
     <style name="Theme.OnSafe" parent="Base.Theme.OnSafe" />
+
+    <style name="Widget.OnSafe.TextView" parent="android:Widget.TextView">
+        <item name="android:lineBreakWordStyle" tools:targetApi="33">phrase</item>
+    </style>
 </resources>

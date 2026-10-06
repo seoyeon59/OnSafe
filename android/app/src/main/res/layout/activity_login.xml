@@ -234,7 +234,7 @@
                 android:textStyle="bold"
                 android:visibility="gone" />
 
-            <!-- 아이디찾기 / 비밀번호찾기 / 회원가입 -->
+            <!-- 아이디 찾기 / 비밀번호 찾기 -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -270,27 +270,34 @@
                     android:textColor="@color/ink_500"
                     android:paddingHorizontal="@dimen/space_sm" />
 
-                <View
-                    android:layout_width="1dp"
-                    android:layout_height="12dp"
-                    android:background="@color/border_subtle" />
+            </LinearLayout>
 
-                <!--
-                  TODO: [UX] 회원가입은 신규 사용자의 유일한 진입점인데 찾기 링크와 같은 위계로
-                        묻혀 있다. 터치 크기는 48dp로 보정했으나 위계 개선(별도 행 분리 등)은
-                        디자인 확정 후 결정할 것.
-                -->
+            <!-- 회원가입 — 신규 사용자 유일 진입점이라 찾기 링크와 행 분리 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="아직 계정이 없으신가요?"
+                    android:textColor="@color/ink_500"
+                    android:textSize="@dimen/text_body" />
+
                 <TextView
                     android:id="@+id/tvRegister"
                     android:layout_width="wrap_content"
                     android:layout_height="@dimen/touch_min"
-                    android:layout_marginHorizontal="@dimen/space_xs"
+                    android:layout_marginStart="@dimen/space_xs"
                     android:gravity="center"
+                    android:paddingHorizontal="@dimen/space_sm"
                     android:text="회원가입"
-                    android:textSize="@dimen/text_body"
                     android:textColor="@color/primary_blue"
-                    android:textStyle="bold"
-                    android:paddingHorizontal="@dimen/space_sm" />
+                    android:textSize="@dimen/text_body"
+                    android:textStyle="bold" />
 
             </LinearLayout>
 

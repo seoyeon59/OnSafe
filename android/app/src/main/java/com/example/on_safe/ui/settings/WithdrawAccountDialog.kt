@@ -2,15 +2,13 @@ package com.example.on_safe.ui.settings
 
 import android.app.Dialog
 import android.content.Context
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.Window
-import android.view.WindowManager
 import android.widget.EditText
 import android.widget.TextView
 import com.example.on_safe.R
 import com.example.on_safe.util.onTextChanged
+import com.example.on_safe.util.applyCardWindow
 
 /**
  * 회원탈퇴 확인 다이얼로그.
@@ -25,13 +23,7 @@ class WithdrawAccountDialog(
         super.onCreate(savedInstanceState)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.dialog_withdraw_account)
-
-        // 배경 투명 + 모서리 둥글게
-        window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        window?.setLayout(
-            (context.resources.displayMetrics.widthPixels * 0.88).toInt(),
-            WindowManager.LayoutParams.WRAP_CONTENT
-        )
+        applyCardWindow()
 
         val etConfirm = findViewById<EditText>(R.id.etWithdrawConfirm)
         val btnWithdraw = findViewById<TextView>(R.id.btnWithdraw)

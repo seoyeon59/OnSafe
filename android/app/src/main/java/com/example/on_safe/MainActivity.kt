@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -39,6 +40,8 @@ import java.util.Locale
 private const val PAIRING_TAG = "guardian_pair"
 private const val STATE_PAIRED = "paired"
 private const val STATE_PAIRING_DEFERRED = "pairing_deferred"
+private const val STATE_WARD_ID = "paired_ward_id"
+private const val STATE_WARD_NAME = "paired_ward_name"
 
 class MainActivity : AppCompatActivity() {
 
@@ -92,8 +95,12 @@ class MainActivity : AppCompatActivity() {
         observeViewModel()
 
         savedInstanceState?.let {
-            isPaired = it.getBoolean(STATE_PAIRED)
             pairingDeferred = it.getBoolean(STATE_PAIRING_DEFERRED)
+            // 피보호자 정보까지 있어야 연결 상태 복원 — 없으면 진입 확인(getWards)으로 재판정.
+            // 전체화면 회전 등 재생성 후 해제 시 "연결 정보 없음"이 뜨던 문제
+            pairedWardUserId = it.getString(STATE_WARD_ID)
+            pairedWardName = it.getString(STATE_WARD_NAME)
+            isPaired = it.getBoolean(STATE_PAIRED) && pairedWardUserId != null
         }
 
         // 모달이 화면 재생성 뒤에 결과를 돌려줘도 받을 수 있도록 항상 등록한다.
@@ -102,9 +109,9 @@ class MainActivity : AppCompatActivity() {
         ) { _, result ->
             when {
                 // 실제 관계 성립 완료(FCM pairing_approved 이후 리트리거되는 경로).
+                // 피보호자 정보는 getWards로 받아 채움 — 해제 버튼에 필요
                 result.getBoolean(GuardianPairingDialogFragment.RESULT_PAIRED) -> {
-                    isPaired = true
-                    renderPairingButton()
+                    checkGuardianPairingOnEntry()
                     viewModel.startPolling(TokenManager.getUserId(this))
                 }
                 // 요청 전송됨 — 승인 대기 상태. 이번 방문 동안은 모달 재표시 안 하되, 다음 진입에서
@@ -147,6 +154,8 @@ class MainActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
         outState.putBoolean(STATE_PAIRED, isPaired)
         outState.putBoolean(STATE_PAIRING_DEFERRED, pairingDeferred)
+        outState.putString(STATE_WARD_ID, pairedWardUserId)
+        outState.putString(STATE_WARD_NAME, pairedWardName)
     }
 
     // 진입 시 한 번만이 아니라 홈이 다시 보일 때마다 확인한다 — 오프라인으로 판정을
@@ -209,11 +218,10 @@ class MainActivity : AppCompatActivity() {
             if (state.riskScore != null) {
                 RiskScoreCardBinder.bind(card, state.riskScore)
             } else {
-                // TODO: [UI] 상태별 문구는 riskUnknownMessage가 구분하지만 시각적 로딩 표시가 없어,
-                //       최초 진입·네트워크 지연 시 화면이 멈춘 것처럼 보인다. 알림 기록·사고이력처럼
-                //       로딩 인디케이터와 빈 상태를 갖출 것. 페어링 방식 변경으로 이 화면의 표시
-                //       내용이 달라질 예정이라 그 정리 후 착수.
-                RiskScoreCardBinder.bindUnknown(card, riskUnknownMessage(state.connectionState))
+                // 연결 확인·재확인 중에는 점수 자리에 로딩 표시
+                val loading = state.connectionState == ConnectionState.CONNECTING ||
+                    state.connectionState == ConnectionState.RECONNECTING
+                RiskScoreCardBinder.bindUnknown(card, riskUnknownMessage(state.connectionState), loading)
             }
         }
         viewModel.fallAlertEvent.observe(this) { event ->
@@ -315,6 +323,8 @@ class MainActivity : AppCompatActivity() {
         dot.backgroundTintList = ColorStateList.valueOf(color)
         tv.text = state.label
         tv.setTextColor(color)
+        // 미연결·대기 중 LIVE 표시는 오인 유발
+        findViewById<View>(R.id.layoutHomeLiveBadge).isVisible = state == ConnectionState.CONNECTED
     }
 
     // 점수 미수신 사유별 문구 분기 — 사용자가 취할 조치가 달라 상태별로 구분

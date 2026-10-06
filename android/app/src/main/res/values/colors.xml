@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 기본 -->
-    <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="primary_blue">#4D80FF</color>
 
@@ -66,6 +65,4 @@
 
     <!-- 모달 배경 딤 -->
     <color name="scrim_dim">#80000000</color>
-    <!-- 카메라 미리보기 위 코드 오버레이 — 밝은 영상에서도 읽히도록 더 진하게 -->
-    <color name="scrim_strong">#B3000000</color>
 </resources>

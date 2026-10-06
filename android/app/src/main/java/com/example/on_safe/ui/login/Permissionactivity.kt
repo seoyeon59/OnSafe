@@ -1,23 +1,19 @@
 package com.example.on_safe.ui.login
 
 import android.Manifest
-import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.view.Window
-import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.on_safe.R
+import com.example.on_safe.util.cardDialog
 
 // 온보딩 권한 요청 화면
 // 플로우: 로그인 → 튜토리얼 → 권한 요청 → 모드 선택 → 메인 or 카메라
@@ -81,17 +77,7 @@ class PermissionActivity : AppCompatActivity() {
         }
 
     private fun showGoToSettingsDialog() {
-        val dialog = Dialog(this)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(R.layout.dialog_permission_settings)
-        dialog.window?.apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            setLayout(
-                (resources.displayMetrics.widthPixels * 0.85).toInt(),
-                WindowManager.LayoutParams.WRAP_CONTENT
-            )
-        }
-        dialog.setCanceledOnTouchOutside(false)
+        val dialog = cardDialog(this, R.layout.dialog_permission_settings)
 
         dialog.findViewById<TextView>(R.id.tvPermDialogMessage).text =
             "일부 권한이 '다시 묻지 않음'으로\n거부되었습니다. 앱 설정에서 직접 허용해주세요."
