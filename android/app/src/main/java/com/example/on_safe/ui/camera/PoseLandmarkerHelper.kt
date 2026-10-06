@@ -77,7 +77,7 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
 
     /**
      * [ImageAnalysis]의 Analyzer로 등록해 쓰는 프레임 콜백.
-     * TODO: planes[0].rowStride가 width*4와 다른 기기에서 이미지가 어긋날 수 있음 — 실기기 확인 필요.
+     * toBitmap()이 행 여백(rowStride ≠ width*4) 처리 — 버퍼 직접 복사 시 기기별 이미지 어긋남 방지
      */
     fun analyze(imageProxy: ImageProxy) {
         val landmarker = poseLandmarker
@@ -86,8 +86,7 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
             return
         }
 
-        val bitmapBuffer = Bitmap.createBitmap(imageProxy.width, imageProxy.height, Bitmap.Config.ARGB_8888)
-        bitmapBuffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer)
+        val bitmapBuffer = imageProxy.toBitmap()
         val rotationDegrees = imageProxy.imageInfo.rotationDegrees
         imageProxy.close()
 

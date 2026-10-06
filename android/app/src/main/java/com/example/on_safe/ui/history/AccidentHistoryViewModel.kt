@@ -73,7 +73,7 @@ class AccidentHistoryViewModel : ViewModel() {
             try {
                 val response = ApiClient.api.getFallLogVideo(userId, entry.id)
                 val body = response.body()
-                val signedUrl = body?.data?.get("signed_url")
+                val signedUrl = body?.data?.signedUrl
                 if (response.isSuccessful && body?.success == true && signedUrl != null) {
                     _videoUrlEvent.value = VideoUrlEvent(signedUrl, entry, forDownload)
                 } else {

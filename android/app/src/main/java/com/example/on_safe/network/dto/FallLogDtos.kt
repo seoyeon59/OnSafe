@@ -21,3 +21,12 @@ data class ConfirmFallLogResponse(
     val logId: String,
     val isConfirmed: Boolean
 )
+
+// 재생·다운로드용 signed URL(1시간) — 누락 대비 nullable
+data class FallLogVideoResponse(val signedUrl: String?)
+
+// 업로드용 signed PUT URL(10분) — content_type은 서명에 포함돼 PUT 헤더와 일치 필요
+data class UploadUrlResponse(
+    val uploadUrl: String?,
+    val contentType: String?
+)
