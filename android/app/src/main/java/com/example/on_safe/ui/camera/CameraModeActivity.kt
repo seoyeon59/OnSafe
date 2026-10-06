@@ -31,7 +31,11 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.Recorder
 import androidx.camera.video.VideoCapture
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.on_safe.R
+import com.example.on_safe.messaging.PushEventBus
 import com.example.on_safe.network.dto.LandmarkPoint
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.AppScope
@@ -162,6 +166,14 @@ class CameraModeActivity : AppCompatActivity() {
         // 피보호자용 페어링 코드 발급 + 15분 TTL 만료 직전 자동 재발급 시작.
         // 이미 페어링됐으면 ViewModel 이 my-guardian 조회 후 발급을 스킵한다.
         viewModel.startPairingCodeAutoRefresh(userId)
+        // 연결 요청 도착(코드 소진)·승인 성립·해제 푸시 — 코드 오버레이·보호자 표시 재판정
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                PushEventBus.events.collect { push ->
+                    if (push.event?.startsWith("pairing") == true) viewModel.refreshPairing(userId)
+                }
+            }
+        }
         // 앱 heartbeat 2분 주기 시작 — PowerManager 로 절전모드 여부도 함께 전송.
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager
         viewModel.startHeartbeat { powerManager.isPowerSaveMode }
