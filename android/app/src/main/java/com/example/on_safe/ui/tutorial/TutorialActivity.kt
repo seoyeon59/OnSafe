@@ -24,12 +24,11 @@ class TutorialActivity : AppCompatActivity() {
 
     // 항목을 추가/삭제하면 진행 바·카운터·버튼 문구가 모두 자동 반영
     private val pages: List<TutorialPage> = listOf(
-        TutorialPage(),   // 1페이지
-        TutorialPage(),   // 2페이지
-        TutorialPage(),   // 3페이지
-        TutorialPage(),   // 4페이지
-        TutorialPage(),   // 5페이지
-        TutorialPage(),   // 6페이지
+        TutorialPage(R.drawable.tutorial_1),   // 앱 소개
+        TutorialPage(R.drawable.tutorial_2),   // 카메라 설치 방법
+        TutorialPage(R.drawable.tutorial_3),   // 위험 감지 시 대응
+        TutorialPage(R.drawable.tutorial_4),   // 위험 점수 안내
+        TutorialPage(R.drawable.tutorial_5),   // 사고 이력 화면
     )
 
     private val totalPages get() = pages.size
