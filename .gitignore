@@ -11,3 +11,6 @@ desktop.ini
 .idea/deviceManager.xml
 .idea/deploymentTargetSelector.xml
 .idea/deploymentTargetDropDown.xml
+
+# Python 바이트코드 캐시 (ai-server)
+__pycache__/
