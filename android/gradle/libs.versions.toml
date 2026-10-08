@@ -22,6 +22,9 @@ lifecycleRuntimeKtx = "2.7.0"
 firebaseBom = "33.7.0"
 googleServices = "4.4.2"
 
+# 보호자 실시간 영상 시청(LiveKit) — 2026-10 기준 Maven Central 최신
+livekit = "2.29.0"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -51,6 +54,8 @@ androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", ve
 # FCM — 버전은 BoM(firebase-bom)에서 통일 관리하므로 messaging 은 version 을 생략한다
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
+
+livekit-android = { group = "io.livekit", name = "livekit-android", version.ref = "livekit" }
 
 
 [plugins]

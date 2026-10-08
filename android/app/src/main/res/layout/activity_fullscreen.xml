@@ -1,18 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/surface_dark">
 
-    <!-- TODO: 여기에 카메라 피드 뷰 연결 -->
-    <TextView
+    <!-- 실시간 영상 렌더러 자리 — LiveViewController가 세션마다 렌더러를 넣고 뺀다 -->
+    <FrameLayout
+        android:id="@+id/liveVideoFrame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- 연결 중·종료 안내 — 영상 수신 중에는 숨김 -->
+    <LinearLayout
+        android:id="@+id/layoutLiveOverlay"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:text="실시간 화면"
-        android:textColor="@color/surface_white"
-        android:textSize="@dimen/text_title" />
+        android:layout_marginHorizontal="@dimen/space_md"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <ProgressBar
+            android:id="@+id/pbLive"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:indeterminateTint="@color/surface_white"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvLiveMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textColor="@color/surface_white"
+            android:textSize="@dimen/text_body"
+            tools:text="피보호자 카메라 영상을 요청하는 중…" />
+
+        <TextView
+            android:id="@+id/btnLiveRetry"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_pill"
+            android:backgroundTint="@color/primary_blue"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:text="다시 시도"
+            android:textColor="@color/surface_white"
+            android:textSize="@dimen/text_body"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- LIVE 뱃지 — 피보호자 영상을 실제로 수신 중일 때만 표시 -->
+    <LinearLayout
+        android:id="@+id/layoutFullscreenLiveBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        android:background="@drawable/bg_pill"
+        android:backgroundTint="@color/status_danger"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="4dp"
+        android:visibility="gone">
+
+        <View
+            android:layout_width="5dp"
+            android:layout_height="5dp"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="@color/surface_white" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:text="LIVE"
+            android:textColor="@color/surface_white"
+            android:textSize="@dimen/text_tab"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <!-- 좌측 상단 뒤로가기 버튼 (투명 배경, 파란 아이콘) -->
     <ImageButton

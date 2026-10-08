@@ -213,7 +213,58 @@
                 android:backgroundTint="@color/ink_900"
                 android:clipToOutline="true">
 
-                <!-- LIVE 뱃지 — 카메라 기기 연결 중에만 표시 -->
+                <!-- 실시간 영상 렌더러 자리 — LiveViewController가 세션마다 렌더러를 넣고 뺀다 -->
+                <FrameLayout
+                    android:id="@+id/liveVideoFrame"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <!-- 시청 전·연결 중·종료 안내 — 영상 수신 중에는 숨김 -->
+                <LinearLayout
+                    android:id="@+id/layoutLiveOverlay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginHorizontal="@dimen/space_md"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+
+                    <ProgressBar
+                        android:id="@+id/pbLive"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:indeterminateTint="@color/surface_white"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvLiveMessage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center"
+                        android:textColor="@color/surface_white"
+                        android:textSize="@dimen/text_caption"
+                        tools:text="피보호자 카메라 영상을 요청하는 중…" />
+
+                    <TextView
+                        android:id="@+id/btnLiveStart"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_pill"
+                        android:backgroundTint="@color/primary_blue"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground"
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="8dp"
+                        android:text="실시간 보기"
+                        android:textColor="@color/surface_white"
+                        android:textSize="@dimen/text_body"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- LIVE 뱃지 — 피보호자 영상을 실제로 수신 중일 때만 표시 -->
                 <LinearLayout
                     android:id="@+id/layoutHomeLiveBadge"
                     android:layout_width="wrap_content"
