@@ -73,8 +73,8 @@ class MainViewModel : ViewModel() {
     private var allReadAtMillis = 0L
 
     // userId 조회는 Context 필요 — Activity가 전달.
-    // 위험 점수는 카메라를 켠 피보호자 기준이라 wardUserId로 조회한다(서버가 연결된 보호자 조회 허용).
-    // 알림·기기 ID는 로그인한 본인 기준 그대로.
+    // 위험 점수·카메라 기기는 카메라를 켠 피보호자 기준이라 wardUserId로 조회한다
+    // (서버가 연결된 보호자 조회 허용). 알림은 로그인한 본인 기준 그대로.
     fun startPolling(userId: String, wardUserId: String?) {
         stopPolling()
 
@@ -84,14 +84,18 @@ class MainViewModel : ViewModel() {
         }
 
         refreshUnreadBadge(userId)
-        refreshDeviceId(userId)
 
         if (wardUserId.isNullOrBlank()) {
             pollingWardUserId = null
             lastRiskLevel = null
-            setState { copy(connectionState = ConnectionState.NOT_PAIRED, riskScore = null) }
+            // 이전 피보호자의 기기 ID 잔존 방지
+            setState { copy(connectionState = ConnectionState.NOT_PAIRED, riskScore = null, deviceId = null) }
             return
         }
+
+        // 피보호자가 바뀌면 응답 전까지 이전 대상의 기기 ID가 남지 않게 비운다
+        if (wardUserId != pollingWardUserId) setState { copy(deviceId = null) }
+        refreshDeviceId(wardUserId)
 
         if (wardUserId != pollingWardUserId) lastRiskLevel = null
         pollingWardUserId = wardUserId
@@ -135,17 +139,22 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    // 계정당 카메라 1대 전제로 첫 항목만 사용.
+    // 피보호자 계정당 카메라 1대 전제로 첫 항목만 사용.
     // devices의 status·last_seen은 서버 미갱신이라 미사용 — 연결 표시는 위험 지수 폴링 담당
-    private fun refreshDeviceId(userId: String) {
+    private fun refreshDeviceId(wardUserId: String) {
         viewModelScope.launch {
             val deviceId = try {
-                ApiClient.aiApi.getDevices(userId).body()?.devices?.firstOrNull()?.deviceId
+                val response = ApiClient.aiApi.getDevices(wardUserId)
+                // 403(보호자 인가 미배포 서버)·5xx를 "기기 미등록"으로 단정하지 않는다
+                if (!response.isSuccessful) return@launch
+                response.body()?.devices?.firstOrNull()?.deviceId
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
                 return@launch   // 조회 실패 시 기존 표시를 유지한다
             }
+            // 응답 대기 중 피보호자가 바뀌었으면 이전 대상의 기기 ID로 덮어쓰지 않는다
+            if (wardUserId != pollingWardUserId) return@launch
             setState { copy(deviceId = deviceId) }
         }
     }

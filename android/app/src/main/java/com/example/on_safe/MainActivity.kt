@@ -233,7 +233,10 @@ class MainActivity : AppCompatActivity() {
     private fun observeViewModel() {
         viewModel.uiState.observe(this) { state ->
             applyConnectionState(state.connectionState)
-            findViewById<TextView>(R.id.tvDeviceId).text = DisplayText.deviceIdLabel(state.deviceId)
+            // 미연결이면 "기기 미등록"이 아니라 조회 대상 자체가 없는 것 — 다음 행동을 안내
+            findViewById<TextView>(R.id.tvDeviceId).text =
+                if (state.connectionState == ConnectionState.NOT_PAIRED) DisplayText.DEVICE_NOT_PAIRED
+                else DisplayText.deviceIdLabel(state.deviceId)
             updateNotificationBell(state.hasUnread)
             val card = findViewById<View>(R.id.riskScoreCard)
             val notPaired = state.connectionState == ConnectionState.NOT_PAIRED
