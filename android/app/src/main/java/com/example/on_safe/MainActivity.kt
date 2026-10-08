@@ -236,14 +236,26 @@ class MainActivity : AppCompatActivity() {
             findViewById<TextView>(R.id.tvDeviceId).text = DisplayText.deviceIdLabel(state.deviceId)
             updateNotificationBell(state.hasUnread)
             val card = findViewById<View>(R.id.riskScoreCard)
-            if (state.riskScore != null) {
-                RiskScoreCardBinder.bind(card, state.riskScore)
-            } else {
-                // 연결 확인·재확인 중에는 점수 자리에 로딩 표시
-                val loading = state.connectionState == ConnectionState.CONNECTING ||
-                    state.connectionState == ConnectionState.RECONNECTING
-                RiskScoreCardBinder.bindUnknown(card, riskUnknownMessage(state.connectionState), loading)
+            val notPaired = state.connectionState == ConnectionState.NOT_PAIRED
+            when {
+                state.riskScore != null -> RiskScoreCardBinder.bind(card, state.riskScore)
+                // 연결 전 — 카드 자체를 페어링 진입점으로 안내
+                notPaired -> RiskScoreCardBinder.bindUnknown(
+                    card, riskUnknownMessage(state.connectionState),
+                    badge = DisplayText.NOT_PAIRED_LEVEL
+                )
+                else -> {
+                    // 연결 확인·재확인 중에는 점수 자리에 로딩 표시
+                    val loading = state.connectionState == ConnectionState.CONNECTING ||
+                        state.connectionState == ConnectionState.RECONNECTING
+                    RiskScoreCardBinder.bindUnknown(card, riskUnknownMessage(state.connectionState), loading)
+                }
             }
+            // 연결 전에만 탭 가능 — 그 외엔 누를 수 있어 보이는 피드백이 오해 유발
+            card.isClickable = notPaired
+            card.foreground = if (notPaired) {
+                ContextCompat.getDrawable(this, selectableItemBackground)
+            } else null
         }
         viewModel.fallAlertEvent.observe(this) { event ->
             if (event != null) {
@@ -275,14 +287,27 @@ class MainActivity : AppCompatActivity() {
         }
         // 연결됨: 해제 확인 / 미연결: 코드 입력 모달 재진입("나중에" 이후 경로)
         findViewById<View>(R.id.btnPairingMain).setOnClickListener {
-            if (isPaired) {
-                showUnpairDialog()
-            } else if (supportFragmentManager.findFragmentByTag(PAIRING_TAG) == null) {
-                pairingDeferred = false
-                GuardianPairingDialogFragment().show(supportFragmentManager, PAIRING_TAG)
-            }
+            if (isPaired) showUnpairDialog() else openPairingDialog()
         }
+        // 미연결 안내 카드 — 클릭 가능 여부는 상태 관찰에서 NOT_PAIRED일 때만 켠다
+        findViewById<View>(R.id.riskScoreCard).setOnClickListener {
+            if (!isPaired) openPairingDialog()
+        }
+        findViewById<View>(R.id.riskScoreCard).isClickable = false
         renderPairingButton()
+    }
+
+    private fun openPairingDialog() {
+        if (supportFragmentManager.findFragmentByTag(PAIRING_TAG) != null) return
+        pairingDeferred = false
+        GuardianPairingDialogFragment().show(supportFragmentManager, PAIRING_TAG)
+    }
+
+    // 카드 탭 피드백(리플) — 테마 속성이라 리소스 id로 직접 참조 불가
+    private val selectableItemBackground: Int by lazy {
+        android.util.TypedValue().also {
+            theme.resolveAttribute(android.R.attr.selectableItemBackground, it, true)
+        }.resourceId
     }
 
     private fun showUnpairDialog() {
@@ -356,7 +381,7 @@ class MainActivity : AppCompatActivity() {
         ConnectionState.INFERENCE_ERROR -> "낙상 감지 일시 중단 — 카메라 상태를 확인해주세요."
         ConnectionState.SLOW -> "낙상 감지 처리 지연 중 — 잠시 후 다시 확인해주세요."
         ConnectionState.RECONNECTING -> "연결 재확인 중 — 잠시만 기다려주세요."
-        ConnectionState.NOT_PAIRED -> "피보호자를 연결하면 위험 지수가 표시됩니다."
+        ConnectionState.NOT_PAIRED -> "피보호자를 연결하면 위험 지수가 표시됩니다.\n눌러서 연결하기"
         else -> "위험 지수를 확인하는 중입니다."
     }
 

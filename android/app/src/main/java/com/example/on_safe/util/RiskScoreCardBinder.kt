@@ -42,10 +42,16 @@ object RiskScoreCardBinder {
      * 점수 미수신 상태 표시.
      * 레이아웃 기본값에 맡길 경우 데이터 없이 "정상"으로 보이는 오표시 발생.
      * loading: 연결 확인 중 — 점수 자리에 로딩 표시(멈춘 화면처럼 보이는 문제 방지)
+     * badge: 미수신 사유를 배지로 구분할 때 지정(예: 피보호자 미연결)
      */
-    fun bindUnknown(cardRoot: View, message: String, loading: Boolean = false) {
+    fun bindUnknown(
+        cardRoot: View,
+        message: String,
+        loading: Boolean = false,
+        badge: String = DisplayText.UNKNOWN_LEVEL
+    ) {
         val color = ContextCompat.getColor(cardRoot.context, R.color.ink_500)
-        applyText(cardRoot, DisplayText.NO_SCORE, DisplayText.UNKNOWN_LEVEL, "", message, color)
+        applyText(cardRoot, DisplayText.NO_SCORE, badge, "", message, color)
         applyLoading(cardRoot, loading)
         applyProgress(cardRoot, ratio = 0f, color = color)
         // 이전 DANGER 테두리 잔존 방지용 해제
