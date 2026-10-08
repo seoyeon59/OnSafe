@@ -22,6 +22,12 @@ object DisplayText {
     // 정상/주의/위험 어느 쪽도 단정할 수 없는 상태의 배지 문구
     const val UNKNOWN_LEVEL = "확인 중"
 
+    // 피보호자 연결 전 배지 문구 — "확인 중"이면 무언가 진행 중인 것처럼 보임
+    const val NOT_PAIRED_LEVEL = "미연결"
+
+    // 기기 ID 자리 — 피보호자 연결 전에는 조회할 기기가 없음
+    const val DEVICE_NOT_PAIRED = "피보호자를 연결하면 기기 정보가 표시됩니다"
+
     /** "홍길동 보호자님" 자리 — 이름 누락 시 계정 표기로 대체 */
     fun guardianTitle(name: String?): String =
         if (name.isNullOrBlank()) "보호자 계정" else "$name 보호자님"

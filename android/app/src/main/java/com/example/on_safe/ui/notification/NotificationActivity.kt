@@ -58,6 +58,8 @@ class NotificationActivity : AppCompatActivity() {
         rvNotifications.layoutManager = LinearLayoutManager(this)
         rvNotifications.adapter = adapter
 
+        // 알림함은 수신자 기준(서버가 보호자 각자에게 알림 저장) — 사고 이력·위험 지수와 달리
+        // 연결된 피보호자 ID가 아니라 로그인한 본인 ID로 조회·읽음 처리한다.
         userId = TokenManager.getUserId(this)
         btnRetry.setOnClickListener { viewModel.load(userId) }
 

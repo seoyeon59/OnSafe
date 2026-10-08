@@ -111,8 +111,7 @@ class MainActivity : AppCompatActivity() {
                 // 실제 관계 성립 완료(FCM pairing_approved 이후 리트리거되는 경로).
                 // 피보호자 정보는 getWards로 받아 채움 — 해제 버튼에 필요
                 result.getBoolean(GuardianPairingDialogFragment.RESULT_PAIRED) -> {
-                    checkGuardianPairingOnEntry()
-                    viewModel.startPolling(TokenManager.getUserId(this))
+                    refreshPairingAndPolling()
                 }
                 // 요청 전송됨 — 승인 대기 상태. 이번 방문 동안은 모달 재표시 안 하되, 다음 진입에서
                 // getWards 로 성립 여부 재판정한다(승인되면 hasWards=true 로 자동 반영).
@@ -171,24 +170,33 @@ class MainActivity : AppCompatActivity() {
                 val response = ApiClient.api.getWards(userId)
                 // 서버가 답을 주지 못한 경우(401·5xx)도 판정 불가로 본다 — 세션이 끊긴
                 // 상태에서 모달을 띄우면 코드를 넣어도 계속 실패한다.
-                if (!response.isOk) return@launch
+                if (!response.isOk) {
+                    viewModel.markWardUnknown()
+                    return@launch
+                }
                 response.body()?.data?.wards.orEmpty()
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
                 // 네트워크 오류 시엔 모달 강제 표시하지 않음 — 사용자가 오프라인 상태에서도
                 // 홈은 볼 수 있어야 함. 통신이 회복되면 다음 onResume에서 재판정.
+                viewModel.markWardUnknown()
                 return@launch
             }
             if (wards.isNotEmpty()) {
                 isPaired = true
-                // 1:1 정책상 최대 1건. 해제 버튼에서 counterpart 로 쓴다.
+                // 1:1 정책상 최대 1건. 해제 버튼·위험 점수 폴링 대상으로 쓴다.
                 pairedWardUserId = wards.first().userId
                 pairedWardName = wards.first().name
                 renderPairingButton()
+                restartPolling()
                 return@launch
             }
+            // 해제·대체 푸시로 재확인한 경우 이전 피보호자 정보가 남아 있으면 안 된다
+            pairedWardUserId = null
+            pairedWardName = null
             renderPairingButton()
+            restartPolling()
             // 응답이 늦게 오면 이미 onSaveInstanceState를 지났을 수 있다.
             // 그 상태에서 show()는 commit이라 IllegalStateException으로 죽는다.
             if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
@@ -200,8 +208,21 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         NotificationPermissionBanner.refresh(this)
-        viewModel.startPolling(TokenManager.getUserId(this))
+        refreshPairingAndPolling()
+    }
+
+    // 피보호자 조회가 진행 중이면 그 결과(restartPolling)를 기다린다 — 먼저 시작하면
+    // 조회 전 "미연결"이 잠깐 보였다가 바뀐다.
+    private fun refreshPairingAndPolling() {
         checkGuardianPairingOnEntry()
+        if (pairingCheckJob?.isActive != true) restartPolling()
+    }
+
+    // 위험 점수는 연결된 피보호자 기준 — 미연결이면 null로 넘겨 폴링하지 않는다.
+    // 조회 응답이 onPause 뒤에 도착하면 백그라운드 폴링이 되므로 건너뛴다(다음 onResume에서 시작).
+    private fun restartPolling() {
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
+        viewModel.startPolling(TokenManager.getUserId(this), pairedWardUserId.takeIf { isPaired })
     }
 
     override fun onPause() {
@@ -212,17 +233,32 @@ class MainActivity : AppCompatActivity() {
     private fun observeViewModel() {
         viewModel.uiState.observe(this) { state ->
             applyConnectionState(state.connectionState)
-            findViewById<TextView>(R.id.tvDeviceId).text = DisplayText.deviceIdLabel(state.deviceId)
+            // 미연결이면 "기기 미등록"이 아니라 조회 대상 자체가 없는 것 — 다음 행동을 안내
+            findViewById<TextView>(R.id.tvDeviceId).text =
+                if (state.connectionState == ConnectionState.NOT_PAIRED) DisplayText.DEVICE_NOT_PAIRED
+                else DisplayText.deviceIdLabel(state.deviceId)
             updateNotificationBell(state.hasUnread)
             val card = findViewById<View>(R.id.riskScoreCard)
-            if (state.riskScore != null) {
-                RiskScoreCardBinder.bind(card, state.riskScore)
-            } else {
-                // 연결 확인·재확인 중에는 점수 자리에 로딩 표시
-                val loading = state.connectionState == ConnectionState.CONNECTING ||
-                    state.connectionState == ConnectionState.RECONNECTING
-                RiskScoreCardBinder.bindUnknown(card, riskUnknownMessage(state.connectionState), loading)
+            val notPaired = state.connectionState == ConnectionState.NOT_PAIRED
+            when {
+                state.riskScore != null -> RiskScoreCardBinder.bind(card, state.riskScore)
+                // 연결 전 — 카드 자체를 페어링 진입점으로 안내
+                notPaired -> RiskScoreCardBinder.bindUnknown(
+                    card, riskUnknownMessage(state.connectionState),
+                    badge = DisplayText.NOT_PAIRED_LEVEL
+                )
+                else -> {
+                    // 연결 확인·재확인 중에는 점수 자리에 로딩 표시
+                    val loading = state.connectionState == ConnectionState.CONNECTING ||
+                        state.connectionState == ConnectionState.RECONNECTING
+                    RiskScoreCardBinder.bindUnknown(card, riskUnknownMessage(state.connectionState), loading)
+                }
             }
+            // 연결 전에만 탭 가능 — 그 외엔 누를 수 있어 보이는 피드백이 오해 유발
+            card.isClickable = notPaired
+            card.foreground = if (notPaired) {
+                ContextCompat.getDrawable(this, selectableItemBackground)
+            } else null
         }
         viewModel.fallAlertEvent.observe(this) { event ->
             if (event != null) {
@@ -254,14 +290,27 @@ class MainActivity : AppCompatActivity() {
         }
         // 연결됨: 해제 확인 / 미연결: 코드 입력 모달 재진입("나중에" 이후 경로)
         findViewById<View>(R.id.btnPairingMain).setOnClickListener {
-            if (isPaired) {
-                showUnpairDialog()
-            } else if (supportFragmentManager.findFragmentByTag(PAIRING_TAG) == null) {
-                pairingDeferred = false
-                GuardianPairingDialogFragment().show(supportFragmentManager, PAIRING_TAG)
-            }
+            if (isPaired) showUnpairDialog() else openPairingDialog()
         }
+        // 미연결 안내 카드 — 클릭 가능 여부는 상태 관찰에서 NOT_PAIRED일 때만 켠다
+        findViewById<View>(R.id.riskScoreCard).setOnClickListener {
+            if (!isPaired) openPairingDialog()
+        }
+        findViewById<View>(R.id.riskScoreCard).isClickable = false
         renderPairingButton()
+    }
+
+    private fun openPairingDialog() {
+        if (supportFragmentManager.findFragmentByTag(PAIRING_TAG) != null) return
+        pairingDeferred = false
+        GuardianPairingDialogFragment().show(supportFragmentManager, PAIRING_TAG)
+    }
+
+    // 카드 탭 피드백(리플) — 테마 속성이라 리소스 id로 직접 참조 불가
+    private val selectableItemBackground: Int by lazy {
+        android.util.TypedValue().also {
+            theme.resolveAttribute(android.R.attr.selectableItemBackground, it, true)
+        }.resourceId
     }
 
     private fun showUnpairDialog() {
@@ -292,6 +341,7 @@ class MainActivity : AppCompatActivity() {
                     pairedWardUserId = null
                     pairedWardName = null
                     renderPairingButton()
+                    restartPolling()
                     android.widget.Toast.makeText(this@MainActivity, "피보호자 연결이 해제되었어요.", android.widget.Toast.LENGTH_SHORT).show()
                     // pairingDeferred 는 이번 방문 동안 재확인만 억제하는 값이라 그대로 두면 홈에 계속 남는다.
                     // 명시 해제 후엔 다음 진입 때 페어링 모달이 다시 뜨도록 리셋.
@@ -334,6 +384,7 @@ class MainActivity : AppCompatActivity() {
         ConnectionState.INFERENCE_ERROR -> "낙상 감지 일시 중단 — 카메라 상태를 확인해주세요."
         ConnectionState.SLOW -> "낙상 감지 처리 지연 중 — 잠시 후 다시 확인해주세요."
         ConnectionState.RECONNECTING -> "연결 재확인 중 — 잠시만 기다려주세요."
+        ConnectionState.NOT_PAIRED -> "피보호자를 연결하면 위험 지수가 표시됩니다.\n눌러서 연결하기"
         else -> "위험 지수를 확인하는 중입니다."
     }
 
