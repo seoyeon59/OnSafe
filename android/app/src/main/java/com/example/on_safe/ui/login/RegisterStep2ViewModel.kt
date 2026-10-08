@@ -44,9 +44,8 @@ data class RegisterStep2UiState(
     val isEmailCheckEnabled: Boolean = true,
     val isEmailChecked: Boolean = false,
 
-    // 이름 / 주소 (별도 유효성 없이 비어있는지만 확인)
+    // 이름 (별도 유효성 없이 비어있는지만 확인)
     val isNameFilled: Boolean = false,
-    val isAddressFilled: Boolean = false,
 
     val isLoading: Boolean = false,
     val isCompleteEnabled: Boolean = false
@@ -174,11 +173,9 @@ class RegisterStep2ViewModel : ViewModel() {
         recomputeComplete()
     }
 
-    // ── 주소 (주소 검색 결과 복귀 시에만 호출) ──
+    // ── 주소 (주소 검색 결과 복귀 시에만 호출, 선택 항목) ──
     fun onAddressChanged(address: String) {
         addressText = address
-        setState { copy(isAddressFilled = address.isNotEmpty()) }
-        recomputeComplete()
     }
 
     // ── 이메일 ──
@@ -284,7 +281,7 @@ class RegisterStep2ViewModel : ViewModel() {
     }
 
     // 완료 버튼 판정과 안내 문구의 기준을 하나로 유지 — 미충족 항목 없음 = 가입 가능
-    // (etAddressDetail은 선택 항목 → 필수 조건 제외)
+    // (주소·상세주소는 선택 항목 → 필수 조건 제외)
     private fun firstMissingRequirement(s: RegisterStep2UiState): String? = when {
         idText.isEmpty() -> "아이디를 입력해주세요."
         !s.isIdChecked -> "아이디 중복확인을 해주세요."
@@ -294,7 +291,6 @@ class RegisterStep2ViewModel : ViewModel() {
         s.phoneValidation !is FieldValidation.Valid -> "전화번호 형식을 확인해주세요."
         s.emailValidation !is FieldValidation.Valid -> "이메일 형식을 확인해주세요."
         !s.isEmailChecked -> "이메일 중복확인을 해주세요."
-        !s.isAddressFilled -> "주소를 입력해주세요."
         else -> null
     }
 
