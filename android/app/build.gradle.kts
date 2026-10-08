@@ -126,6 +126,9 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
 
+    // 보호자 실시간 영상 시청 — LiveKit 방 구독(서버가 구독 전용 토큰 발급)
+    implementation(libs.livekit.android)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

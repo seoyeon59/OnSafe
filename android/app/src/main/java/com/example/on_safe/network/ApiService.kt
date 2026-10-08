@@ -201,6 +201,20 @@ interface ApiService {
     @POST("api/camera/heartbeat")
     suspend fun heartbeat(@Body request: HeartbeatRequest): Response<ApiResponse<Unit>>
 
+    // ===== Live (보호자 실시간 영상) =====
+
+    // 시청 시작·연장 겸용 — 진행 중 세션이 있으면 만료만 지금+5분으로 연장(횟수 제한·열람 기록 제외는 서버 처리)
+    @POST("api/live/{elderUserId}/session")
+    suspend fun startLiveSession(
+        @Path("elderUserId") elderUserId: String
+    ): Response<ApiResponse<LiveSessionResponse>>
+
+    // 시청 종료 — 이미 끝난 세션이어도 성공(멱등). 서버가 LiveKit 방까지 삭제해 송출도 멈춘다
+    @DELETE("api/live/{elderUserId}/session")
+    suspend fun endLiveSession(
+        @Path("elderUserId") elderUserId: String
+    ): Response<ApiResponse<Unit>>
+
     // ===== Fall Logs (사고 이력) =====
 
     @GET("api/fall-logs/{userId}")
