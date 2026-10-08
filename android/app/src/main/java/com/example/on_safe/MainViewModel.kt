@@ -26,7 +26,9 @@ enum class ConnectionState(val label: String, val colorRes: Int) {
     // 프레임은 도착하나 추론 결과만 정체 — 저사양 기기의 처리 지연
     SLOW("낙상 감지 처리 지연 중", R.color.status_warning),
     // 프레임 도착이 막 끊김 — STANDBY 확정 전 유예 구간
-    RECONNECTING("연결 재확인 중", R.color.status_warning)
+    RECONNECTING("연결 재확인 중", R.color.status_warning),
+    // 연결된 피보호자 없음 — 조회할 대상이 없어 폴링하지 않는다
+    NOT_PAIRED("피보호자 미연결", R.color.status_standby)
 }
 
 // 홈 화면 상태 — 연결 상태 + 최신 위험 점수(폴링 전이라 아직 없으면 null) + 미읽음 알림 유무
@@ -51,6 +53,9 @@ class MainViewModel : ViewModel() {
 
     private var pollingJob: Job? = null
 
+    // 직전 폴링 대상 — 피보호자가 바뀌면 이전 대상의 등급을 이어받지 않는다
+    private var pollingWardUserId: String? = null
+
     // DANGER 신규 진입 판별용 직전 등급
     private var lastRiskLevel: RiskScoreCardBinder.RiskLevel? = null
 
@@ -67,8 +72,10 @@ class MainViewModel : ViewModel() {
     // 알림 화면에서 "모두 읽음" 상태로 돌아온 시각 — 서버 반영 지연 중 빨간 점 재점등 방지
     private var allReadAtMillis = 0L
 
-    // userId 조회는 Context 필요 — Activity가 전달
-    fun startPolling(userId: String) {
+    // userId 조회는 Context 필요 — Activity가 전달.
+    // 위험 점수는 카메라를 켠 피보호자 기준이라 wardUserId로 조회한다(서버가 연결된 보호자 조회 허용).
+    // 알림·기기 ID는 로그인한 본인 기준 그대로.
+    fun startPolling(userId: String, wardUserId: String?) {
         stopPolling()
 
         if (userId.isBlank()) {
@@ -76,6 +83,18 @@ class MainViewModel : ViewModel() {
             return
         }
 
+        refreshUnreadBadge(userId)
+        refreshDeviceId(userId)
+
+        if (wardUserId.isNullOrBlank()) {
+            pollingWardUserId = null
+            lastRiskLevel = null
+            setState { copy(connectionState = ConnectionState.NOT_PAIRED, riskScore = null) }
+            return
+        }
+
+        if (wardUserId != pollingWardUserId) lastRiskLevel = null
+        pollingWardUserId = wardUserId
         lastUpdatedAt = null
         lastDeviceSeenAt = null
         updatedAtStaleTicks = 0
@@ -84,15 +103,19 @@ class MainViewModel : ViewModel() {
         // 첫 응답 전 직전 FAILED 잔상 제거
         setState { copy(connectionState = ConnectionState.CONNECTING) }
 
-        refreshUnreadBadge(userId)
-        refreshDeviceId(userId)
-
         pollingJob = viewModelScope.launch {
             while (isActive) {
-                fetchRiskScoreOnce(userId)
+                fetchRiskScoreOnce(wardUserId)
                 delay(POLLING_INTERVAL_MS)
             }
         }
+    }
+
+    // 피보호자 연결 여부를 확인하지 못함(getWards 실패) — 조회 대상을 모르니 폴링을 멈추고
+    // "미연결"이 아닌 "불러오지 못함"으로 표시한다. 다음 홈 진입 때 재확인.
+    fun markWardUnknown() {
+        stopPolling()
+        setState { copy(connectionState = ConnectionState.FAILED, riskScore = null) }
     }
 
     // 알림 화면 진입해야만 뱃지가 갱신되던 문제 — 홈 복귀 시마다 직접 확인
