@@ -520,6 +520,9 @@ class CameraModeActivity : AppCompatActivity() {
 
     // 촬영 시작: 프리뷰 + ImageAnalysis + VideoCapture를 한 번에 바인딩.
     // 종료 시 카메라를 놓으므로 여기서 프리뷰도 함께 다시 붙는다(Preview 객체는 재사용).
+    // 실시간 영상(LiveKit) 송출용 use case를 4번째로 추가하지 않는다 — 기기별 동시 사용 가능 조합이
+    // 3개까지인 경우가 많아 바인딩이 실패할 수 있다. 송출은 ImageAnalysis 프레임을
+    // PoseLandmarkerHelper.frameSink → LiveVideoSource(커스텀 영상 소스)로 재사용한다.
     private fun bindStreamingUseCases(helper: PoseLandmarkerHelper, bufferManager: RollingVideoBufferManager) {
         val provider = cameraProvider ?: return
         val preview = previewUseCase ?: return
