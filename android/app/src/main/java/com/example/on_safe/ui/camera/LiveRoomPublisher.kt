@@ -4,8 +4,11 @@ import android.content.Context
 import android.util.Log
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.data.repository.LivePublishCredentials
+import io.livekit.android.AudioOptions
 import io.livekit.android.ConnectOptions
 import io.livekit.android.LiveKit
+import io.livekit.android.LiveKitOverrides
+import io.livekit.android.audio.NoAudioHandler
 import io.livekit.android.events.DisconnectReason
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.events.collect
@@ -55,7 +58,15 @@ class LiveRoomPublisher(
     fun connect(credentials: LivePublishCredentials) {
         if (isActive) return
         closingByClient = false
-        val newRoom = LiveKit.create(appContext).also { room = it }
+        // 네이티브 라이브러리 로드 실패 등이 메인 스레드에서 새면 앱(녹화·분석)이 죽는다
+        val newRoom = try {
+            LiveKit.create(appContext, overrides = NO_AUDIO_OVERRIDES)
+        } catch (e: Exception) {
+            if (BuildConfig.DEBUG) Log.w(TAG, "LiveKit 방 생성 실패", e)
+            listener.onEnded("create_failed: ${e.javaClass.simpleName}")
+            return
+        }
+        room = newRoom
         job = scope.launch {
             // SharedFlow라 접속 전에 구독해야 접속 직후 이벤트를 놓치지 않는다
             launch(start = CoroutineStart.UNDISPATCHED) {
@@ -104,8 +115,8 @@ class LiveRoomPublisher(
         val current = job
         job = null
         room?.let {
-            it.disconnect()
-            it.release()
+            runCatching { it.disconnect() }
+            runCatching { it.release() }
         }
         room = null
         current?.cancel()
@@ -113,5 +124,15 @@ class LiveRoomPublisher(
 
     private companion object {
         const val TAG = "LivePublish"
+
+        // 낙상 녹화(롤링 버퍼)가 마이크를 쓰고 있다. LiveKit 기본 오디오 처리는 접속 시 통화 모드 전환·
+        // 오디오 포커스 요청·마이크 예열을 해 녹화 오디오와 부딪힐 수 있어 전부 끈다(영상만 송출)
+        val NO_AUDIO_OVERRIDES = LiveKitOverrides(
+            audioOptions = AudioOptions(
+                audioHandler = NoAudioHandler(),
+                disableCommunicationModeWorkaround = true,
+                disableAudioPrewarming = true
+            )
+        )
     }
 }
