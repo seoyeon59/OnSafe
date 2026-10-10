@@ -1,5 +1,6 @@
 package com.example.on_safe.ui.camera
 
+import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -14,6 +15,7 @@ import com.example.on_safe.messaging.LiveRequestInbox
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.DeviceRegisterRequest
 import com.example.on_safe.network.dto.HeartbeatRequest
+import io.livekit.android.room.Room
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -44,8 +46,11 @@ sealed class LivePublishState {
     /** live_request를 꺼내 송출 토큰을 받는 중 */
     object FetchingToken : LivePublishState()
 
-    /** 송출 토큰 확보 — 송출 담당이 [CameraModeViewModel.onLivePublishStarted]로 넘겨받는다 */
+    /** 송출 토큰 확보 — 곧바로 LiveKit 방 접속을 시작한다 */
     data class Ready(val credentials: LivePublishCredentials) : LivePublishState()
+
+    /** 송출 전용 토큰으로 LiveKit 방 접속 완료 — 영상 트랙은 이 방에 붙인다 */
+    data class Connected(val room: String) : LivePublishState()
 }
 
 class CameraModeViewModel : ViewModel() {
@@ -61,6 +66,13 @@ class CameraModeViewModel : ViewModel() {
 
     // Ready를 아무도 넘겨받지 않으면 세션 만료 시각에 비운다 — 송출 중 표시가 남아 다음 요청을 막지 않게
     private var liveReadyExpiryJob: Job? = null
+
+    // LiveKit 방 접속 — 화면 회전에도 끊기지 않게 ViewModel이 소유(Application Context 사용)
+    private var liveRoomPublisher: LiveRoomPublisher? = null
+
+    // 송출 중인 LiveKit 방 — 영상 트랙 송출 담당이 쓴다. 접속 전·종료 후 null
+    var liveRoom: Room? = null
+        private set
 
     // 페어링 코드 자동 재발급 루프 — 중복 실행 방지용 참조
     private var pairingCodeJob: Job? = null
@@ -218,8 +230,11 @@ class CameraModeViewModel : ViewModel() {
      * 카메라 모드가 꺼져 있을 때 온 요청도 만료 전이면 진입 직후 처리된다(수신함이 보관).
      * 이미 도는 감시가 있으면 재시작 안 함.
      */
-    fun startLiveRequestWatch() {
+    fun startLiveRequestWatch(context: Context) {
         if (liveRequestJob?.isActive == true) return
+        if (liveRoomPublisher == null) {
+            liveRoomPublisher = LiveRoomPublisher(context.applicationContext, viewModelScope, liveRoomListener)
+        }
         liveRequestJob = viewModelScope.launch {
             // StateFlow라 처리 중에 새 요청이 와도 끝난 뒤 최신 요청 하나로 이어 받는다
             LiveRequestInbox.pending.collect { pending ->
@@ -238,7 +253,9 @@ class CameraModeViewModel : ViewModel() {
         when (val result = LivePublishTokenSource.fetch(request)) {
             is PublishTokenResult.Success -> {
                 _livePublishState.value = LivePublishState.Ready(result.credentials)
+                // 접속이 끝나지 않은 채 세션이 만료되는 경우 대비 — 접속되면 해제한다
                 scheduleReadyExpiry(result.credentials)
+                liveRoomPublisher?.connect(result.credentials) ?: resetLivePublish()
             }
             else -> {
                 if (BuildConfig.DEBUG) Log.w("CameraMode", "송출 토큰 미발급 — $result")
@@ -252,31 +269,42 @@ class CameraModeViewModel : ViewModel() {
         liveReadyExpiryJob = viewModelScope.launch {
             delay((credentials.expiresAtMillis - System.currentTimeMillis()).coerceAtLeast(0L))
             val state = _livePublishState.value
-            if (state is LivePublishState.Ready && state.credentials == credentials) resetLivePublish()
+            if (state is LivePublishState.Ready && state.credentials == credentials) {
+                liveRoomPublisher?.disconnect()
+                resetLivePublish()
+            }
         }
     }
 
-    /** 송출 담당이 Ready를 넘겨받아 송출을 시작함 — 이후 종료는 LiveKit 연결 끊김 기준(자체 타이머로 멈추지 않음) */
-    fun onLivePublishStarted() {
-        liveReadyExpiryJob?.cancel()
-        liveReadyExpiryJob = null
-    }
+    private val liveRoomListener = object : LiveRoomPublisher.Listener {
+        // 접속 완료 — 이후 종료는 LiveKit 연결 끊김 기준(자체 타이머로 멈추지 않음)
+        override fun onConnected(room: Room) {
+            liveReadyExpiryJob?.cancel()
+            liveReadyExpiryJob = null
+            liveRoom = room
+            _livePublishState.value = LivePublishState.Connected(room.name.orEmpty())
+        }
 
-    /** 송출 종료(방 삭제로 끊김 등) — 다음 live_request를 받을 수 있게 비운다 */
-    fun onLivePublishEnded() {
-        resetLivePublish()
+        // 접속 실패·서버의 방 삭제 — 다음 live_request를 받을 수 있게 비운다
+        override fun onEnded(reason: String) {
+            if (BuildConfig.DEBUG) Log.d("CameraMode", "송출 종료 — $reason")
+            resetLivePublish()
+        }
     }
 
     private fun resetLivePublish() {
         liveReadyExpiryJob?.cancel()
         liveReadyExpiryJob = null
+        liveRoom = null
         _livePublishState.value = LivePublishState.Idle
         LiveRequestInbox.isPublishing = false
     }
 
     override fun onCleared() {
         super.onCleared()
-        // 카메라 모드 종료 — 송출 중 표시가 남으면 다음 카메라 모드가 요청을 받지 못한다
+        // 카메라 모드 종료 — 방에서 나가고, 송출 중 표시가 남아 다음 카메라 모드가 요청을 못 받는 일이 없게 비운다
+        liveRoomPublisher?.disconnect()
+        liveRoomPublisher = null
         resetLivePublish()
     }
 

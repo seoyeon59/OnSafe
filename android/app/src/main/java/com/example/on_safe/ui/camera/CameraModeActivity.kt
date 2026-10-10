@@ -177,8 +177,8 @@ class CameraModeActivity : AppCompatActivity() {
         // 앱 heartbeat 2분 주기 시작 — PowerManager 로 절전모드 여부도 함께 전송.
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager
         viewModel.startHeartbeat { powerManager.isPowerSaveMode }
-        // 보호자 실시간 영상 송출 요청(live_request) 감시 — 요청이 오면 송출 토큰을 받는다
-        viewModel.startLiveRequestWatch()
+        // 보호자 실시간 영상 송출 요청(live_request) 감시 — 요청이 오면 송출 토큰을 받아 LiveKit 방에 접속한다
+        viewModel.startLiveRequestWatch(this)
 
         // 권한이 있으면 바로 카메라 켜고, 없으면 권한 요청
         if (areCameraPermissionsGranted()) {
