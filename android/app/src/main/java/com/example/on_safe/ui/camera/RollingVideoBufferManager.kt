@@ -14,7 +14,9 @@ import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
 import java.io.File
 import java.util.ArrayDeque
-import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
  * 카메라 바인딩은 [CameraModeActivity] 소유(`videoCapture` 제공만 하고 바인딩은 안 함).
@@ -29,16 +31,27 @@ class RollingVideoBufferManager(private val context: Context) {
         private const val PRE_EVENT_SEGMENTS = 8       // 약 2분
         private const val POST_EVENT_SEGMENTS = 8      // 약 2분
         private const val TARGET_BITRATE = 1_500_000
-        // stop() 직후 남은 Finalize 이벤트 전달 대기용 유예 — 즉시 shutdown 시 예외
-        private const val SHUTDOWN_GRACE_MS = 1_000L
+        // 할 일이 없으면 이 시간 뒤 스레드가 스스로 끝난다 — 직접 shutdown하지 않는다(아래 executor 참고)
+        private const val EXECUTOR_IDLE_TIMEOUT_SEC = 30L
     }
 
-    private val executor = Executors.newSingleThreadExecutor()
+    /**
+     * 녹화 이벤트 수신·클립 합성 전용 단일 스레드.
+     *
+     * 예전에는 Recorder 내부(인코더)에도 이 실행기를 넘기고 stop() 1초 뒤 shutdown했다. 기기에 따라
+     * 정지 후 인코더 출력이 1초를 넘겨 이어지면 종료된 실행기에 작업이 들어가 RejectedExecutionException으로
+     * 앱이 죽었다(촬영 정지 시 크래시). 그래서
+     * - Recorder 내부는 CameraX 기본 실행기를 쓰게 두고,
+     * - 이 실행기는 shutdown하지 않는다 — 대신 유휴 시 스레드가 스스로 끝나게 해 인스턴스마다 스레드가 쌓이지 않는다.
+     * 늦게 도착한 Finalize·합성 작업도 거절되지 않는다.
+     */
+    private val executor = ThreadPoolExecutor(
+        1, 1, EXECUTOR_IDLE_TIMEOUT_SEC, TimeUnit.SECONDS, LinkedBlockingQueue()
+    ).apply { allowCoreThreadTimeOut(true) }
 
     val videoCapture: VideoCapture<Recorder> by lazy {
         val recorder = Recorder.Builder()
             .setQualitySelector(QualitySelector.from(Quality.HD))
-            .setExecutor(executor)
             .setTargetVideoEncodingBitRate(TARGET_BITRATE)
             .build()
         VideoCapture.withOutput(recorder)
@@ -51,6 +64,9 @@ class RollingVideoBufferManager(private val context: Context) {
     private val segments = ArrayDeque<File>()
     private var currentRecording: Recording? = null
     private var segmentIndex = 0
+
+    // 메인(start·stop)과 녹화 이벤트 스레드(Finalize)가 함께 읽는다
+    @Volatile
     private var running = false
 
     // 위험 이벤트 스플라이스 진행 상태 — 한 번에 하나만, synchronized(this)로 보호
@@ -82,8 +98,8 @@ class RollingVideoBufferManager(private val context: Context) {
             onClipReady = null
             onClipError = null
         }
-        // 인스턴스마다 executor가 생기므로 반드시 정리 — 남은 Finalize 전달 위해 유예
-        mainHandler.postDelayed({ executor.shutdown() }, SHUTDOWN_GRACE_MS)
+        // executor는 shutdown하지 않는다 — 마지막 세그먼트의 Finalize가 이 뒤에 도착할 수 있다.
+        // 유휴가 되면 스레드가 스스로 끝난다(EXECUTOR_IDLE_TIMEOUT_SEC)
     }
 
     // RECORD_AUDIO는 호출부(CameraModeActivity)가 카메라 권한과 함께 확인 후 시작
@@ -111,6 +127,11 @@ class RollingVideoBufferManager(private val context: Context) {
     }
 
     private fun onSegmentFinalized(file: File) {
+        // stop() 뒤에 마무리된 마지막 세그먼트 — 버퍼는 이미 비웠으니 캐시에 남기지 않는다
+        if (!running) {
+            file.delete()
+            return
+        }
         synchronized(this) {
             segments.addLast(file)
             while (segments.size > RING_BUFFER_CAPACITY) {
