@@ -444,6 +444,8 @@ class CameraModeActivity : AppCompatActivity() {
                     if (watching && !guardianWatchingView.isVisible) {
                         // 화면보호기로 어두워져 있어도 시청 시작은 알아차리게 잠시 밝힌다
                         screenSaverController.wakeBriefly()
+                        // 화면을 보고 있지 않아도 알 수 있게 소리·진동(리소스로 설정 — LiveWatchAlert)
+                        LiveWatchAlert.play(this@CameraModeActivity)
                         guardianWatchingView.announceForAccessibility("보호자가 실시간 영상을 보고 있습니다")
                     }
                     guardianWatchingView.isVisible = watching
