@@ -95,8 +95,9 @@ class LiveRoomPublisher(
     private fun end(reason: String) {
         if (closingByClient) return
         closingByClient = true
-        release()
+        // 영상 트랙 정리(리스너)를 방 해제보다 먼저 — 해제된 방에서 송출을 내리지 않게
         listener.onEnded(reason)
+        release()
     }
 
     private fun release() {

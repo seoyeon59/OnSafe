@@ -368,6 +368,8 @@ class CameraModeActivity : AppCompatActivity() {
                         createPoseListener()
                     )
                     val helper = poseLandmarkerHelper ?: return@runOnUiThread
+                    // 분석 프레임을 실시간 영상 송출에도 넘긴다(송출 중이 아니면 ViewModel이 버림)
+                    helper.frameSink = viewModel::pushLiveFrame
                     helper.start()
                     val bufferManager = RollingVideoBufferManager(this@CameraModeActivity)
                     rollingVideoBufferManager = bufferManager

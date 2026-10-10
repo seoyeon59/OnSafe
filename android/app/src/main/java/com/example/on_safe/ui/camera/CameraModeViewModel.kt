@@ -1,6 +1,7 @@
 package com.example.on_safe.ui.camera
 
 import android.content.Context
+import android.graphics.Bitmap
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -49,8 +50,11 @@ sealed class LivePublishState {
     /** 송출 토큰 확보 — 곧바로 LiveKit 방 접속을 시작한다 */
     data class Ready(val credentials: LivePublishCredentials) : LivePublishState()
 
-    /** 송출 전용 토큰으로 LiveKit 방 접속 완료 — 영상 트랙은 이 방에 붙인다 */
+    /** 송출 전용 토큰으로 LiveKit 방 접속 완료 — 영상 트랙 송출 준비 중 */
     data class Connected(val room: String) : LivePublishState()
+
+    /** 분석 프레임을 영상 트랙으로 송출 중 — 보호자가 보고 있는 상태 */
+    data class Publishing(val room: String) : LivePublishState()
 }
 
 class CameraModeViewModel : ViewModel() {
@@ -70,9 +74,17 @@ class CameraModeViewModel : ViewModel() {
     // LiveKit 방 접속 — 화면 회전에도 끊기지 않게 ViewModel이 소유(Application Context 사용)
     private var liveRoomPublisher: LiveRoomPublisher? = null
 
-    // 송출 중인 LiveKit 방 — 영상 트랙 송출 담당이 쓴다. 접속 전·종료 후 null
+    // 송출 중인 LiveKit 방 — 접속 전·종료 후 null
     var liveRoom: Room? = null
         private set
+
+    // 분석 프레임 → LiveKit 영상 트랙
+    private val liveVideoSource = LiveVideoSource()
+
+    /** 분석 스레드에서 호출(PoseLandmarkerHelper.frameSink) — 송출 중일 때만 프레임을 넘긴다 */
+    fun pushLiveFrame(bitmap: Bitmap) {
+        liveVideoSource.pushFrame(bitmap)
+    }
 
     // 페어링 코드 자동 재발급 루프 — 중복 실행 방지용 참조
     private var pairingCodeJob: Job? = null
@@ -269,10 +281,7 @@ class CameraModeViewModel : ViewModel() {
         liveReadyExpiryJob = viewModelScope.launch {
             delay((credentials.expiresAtMillis - System.currentTimeMillis()).coerceAtLeast(0L))
             val state = _livePublishState.value
-            if (state is LivePublishState.Ready && state.credentials == credentials) {
-                liveRoomPublisher?.disconnect()
-                resetLivePublish()
-            }
+            if (state is LivePublishState.Ready && state.credentials == credentials) leaveLiveRoom()
         }
     }
 
@@ -282,7 +291,17 @@ class CameraModeViewModel : ViewModel() {
             liveReadyExpiryJob?.cancel()
             liveReadyExpiryJob = null
             liveRoom = room
-            _livePublishState.value = LivePublishState.Connected(room.name.orEmpty())
+            val roomName = room.name.orEmpty()
+            _livePublishState.value = LivePublishState.Connected(roomName)
+            viewModelScope.launch {
+                if (liveVideoSource.publish(room)) {
+                    // 송출 등록 사이에 방이 끊겼으면 상태를 되살리지 않는다
+                    if (liveRoom === room) _livePublishState.value = LivePublishState.Publishing(roomName)
+                } else if (liveRoom === room) {
+                    // 영상을 못 보내면 보호자는 기다리다 실패한다 — 방에서 나와 다음 요청을 받는다
+                    leaveLiveRoom()
+                }
+            }
         }
 
         // 접속 실패·서버의 방 삭제 — 다음 live_request를 받을 수 있게 비운다
@@ -292,9 +311,16 @@ class CameraModeViewModel : ViewModel() {
         }
     }
 
+    // 우리 쪽에서 송출 종료 — 영상 트랙을 먼저 내리고(reset) 방을 해제한다
+    private fun leaveLiveRoom() {
+        resetLivePublish()
+        liveRoomPublisher?.disconnect()
+    }
+
     private fun resetLivePublish() {
         liveReadyExpiryJob?.cancel()
         liveReadyExpiryJob = null
+        liveVideoSource.stop()
         liveRoom = null
         _livePublishState.value = LivePublishState.Idle
         LiveRequestInbox.isPublishing = false
@@ -303,9 +329,8 @@ class CameraModeViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         // 카메라 모드 종료 — 방에서 나가고, 송출 중 표시가 남아 다음 카메라 모드가 요청을 못 받는 일이 없게 비운다
-        liveRoomPublisher?.disconnect()
+        leaveLiveRoom()
         liveRoomPublisher = null
-        resetLivePublish()
     }
 
     // 페어링 해제 — 양방향(피보호자·보호자 어느 쪽에서 호출해도 동작).
