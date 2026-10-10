@@ -6,12 +6,20 @@ import androidx.lifecycle.ViewModel
 import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.example.on_safe.BuildConfig
+import com.example.on_safe.data.repository.LivePublishCredentials
+import com.example.on_safe.data.repository.LivePublishTokenSource
+import com.example.on_safe.data.repository.PublishTokenResult
+import com.example.on_safe.messaging.LiveRequest
+import com.example.on_safe.messaging.LiveRequestInbox
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.DeviceRegisterRequest
 import com.example.on_safe.network.dto.HeartbeatRequest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -29,10 +37,30 @@ data class CameraModeUiState(
     val pairedGuardianName: String? = null,
 )
 
+/** 실시간 영상 송출 준비 상태 — LiveKit 송출 담당이 [Ready]를 받아 송출을 시작한다 */
+sealed class LivePublishState {
+    object Idle : LivePublishState()
+
+    /** live_request를 꺼내 송출 토큰을 받는 중 */
+    object FetchingToken : LivePublishState()
+
+    /** 송출 토큰 확보 — 송출 담당이 [CameraModeViewModel.onLivePublishStarted]로 넘겨받는다 */
+    data class Ready(val credentials: LivePublishCredentials) : LivePublishState()
+}
+
 class CameraModeViewModel : ViewModel() {
 
     private val _uiState = MutableLiveData(CameraModeUiState())
     val uiState: LiveData<CameraModeUiState> = _uiState
+
+    private val _livePublishState = MutableStateFlow<LivePublishState>(LivePublishState.Idle)
+    val livePublishState: StateFlow<LivePublishState> = _livePublishState.asStateFlow()
+
+    // live_request 수신함 감시 — 카메라 모드 켜져 있는 동안만
+    private var liveRequestJob: Job? = null
+
+    // Ready를 아무도 넘겨받지 않으면 세션 만료 시각에 비운다 — 송출 중 표시가 남아 다음 요청을 막지 않게
+    private var liveReadyExpiryJob: Job? = null
 
     // 페어링 코드 자동 재발급 루프 — 중복 실행 방지용 참조
     private var pairingCodeJob: Job? = null
@@ -183,6 +211,73 @@ class CameraModeViewModel : ViewModel() {
     fun stopHeartbeat() {
         heartbeatJob?.cancel()
         heartbeatJob = null
+    }
+
+    /**
+     * 실시간 영상 송출 요청 감시 — 수신함([LiveRequestInbox])에 요청이 들어오면 꺼내 송출 토큰을 받는다.
+     * 카메라 모드가 꺼져 있을 때 온 요청도 만료 전이면 진입 직후 처리된다(수신함이 보관).
+     * 이미 도는 감시가 있으면 재시작 안 함.
+     */
+    fun startLiveRequestWatch() {
+        if (liveRequestJob?.isActive == true) return
+        liveRequestJob = viewModelScope.launch {
+            // StateFlow라 처리 중에 새 요청이 와도 끝난 뒤 최신 요청 하나로 이어 받는다
+            LiveRequestInbox.pending.collect { pending ->
+                if (pending == null) return@collect
+                if (_livePublishState.value != LivePublishState.Idle) return@collect
+                val request = LiveRequestInbox.take() ?: return@collect
+                fetchPublishToken(request)
+            }
+        }
+    }
+
+    private suspend fun fetchPublishToken(request: LiveRequest) {
+        _livePublishState.value = LivePublishState.FetchingToken
+        // 토큰을 받는 동안 같은 세션의 재요청이 쌓이지 않게 송출 중으로 표시
+        LiveRequestInbox.isPublishing = true
+        when (val result = LivePublishTokenSource.fetch(request)) {
+            is PublishTokenResult.Success -> {
+                _livePublishState.value = LivePublishState.Ready(result.credentials)
+                scheduleReadyExpiry(result.credentials)
+            }
+            else -> {
+                if (BuildConfig.DEBUG) Log.w("CameraMode", "송출 토큰 미발급 — $result")
+                resetLivePublish()
+            }
+        }
+    }
+
+    private fun scheduleReadyExpiry(credentials: LivePublishCredentials) {
+        liveReadyExpiryJob?.cancel()
+        liveReadyExpiryJob = viewModelScope.launch {
+            delay((credentials.expiresAtMillis - System.currentTimeMillis()).coerceAtLeast(0L))
+            val state = _livePublishState.value
+            if (state is LivePublishState.Ready && state.credentials == credentials) resetLivePublish()
+        }
+    }
+
+    /** 송출 담당이 Ready를 넘겨받아 송출을 시작함 — 이후 종료는 LiveKit 연결 끊김 기준(자체 타이머로 멈추지 않음) */
+    fun onLivePublishStarted() {
+        liveReadyExpiryJob?.cancel()
+        liveReadyExpiryJob = null
+    }
+
+    /** 송출 종료(방 삭제로 끊김 등) — 다음 live_request를 받을 수 있게 비운다 */
+    fun onLivePublishEnded() {
+        resetLivePublish()
+    }
+
+    private fun resetLivePublish() {
+        liveReadyExpiryJob?.cancel()
+        liveReadyExpiryJob = null
+        _livePublishState.value = LivePublishState.Idle
+        LiveRequestInbox.isPublishing = false
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // 카메라 모드 종료 — 송출 중 표시가 남으면 다음 카메라 모드가 요청을 받지 못한다
+        resetLivePublish()
     }
 
     // 페어링 해제 — 양방향(피보호자·보호자 어느 쪽에서 호출해도 동작).

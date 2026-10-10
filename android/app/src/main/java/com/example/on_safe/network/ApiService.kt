@@ -215,6 +215,12 @@ interface ApiService {
         @Path("elderUserId") elderUserId: String
     ): Response<ApiResponse<Unit>>
 
+    // 피보호자(카메라 모드) 송출 토큰 — 토큰 사용자 본인 방, 진행 중 세션이 있을 때만.
+    // 세션 없음·만료 404 LIVE_SESSION_NOT_FOUND, 동의 철회 403 LIVE_NOT_ALLOWED. 응답 형식은 시청과 같고
+    // token만 송출 전용(유효시간 = 남은 세션 시간), request_delivered는 null
+    @POST("api/live/me/publish-token")
+    suspend fun issueLivePublishToken(): Response<ApiResponse<LiveSessionResponse>>
+
     // ===== Fall Logs (사고 이력) =====
 
     @GET("api/fall-logs/{userId}")
