@@ -44,6 +44,10 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
     private val frameCounter = AtomicInteger(0)
     private var startElapsedMs = 0L
 
+    // 분석 프레임을 함께 받을 곳(실시간 영상 송출) — 분석 스레드에서 회전된 Bitmap을 넘긴다
+    @Volatile
+    var frameSink: ((Bitmap) -> Unit)? = null
+
     fun start() {
         startElapsedMs = SystemClock.elapsedRealtime()
         frameCounter.set(0)
@@ -94,6 +98,13 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
         val rotatedBitmap = Bitmap.createBitmap(
             bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height, matrix, true
         )
+        // 실시간 영상 송출 — 추론과 같은 프레임을 넘긴다(카메라를 따로 열 수 없음).
+        // 송출 쪽 오류가 이 분석 스레드로 번지면 포즈 분석·랜드마크 전송이 멈추므로 여기서 끊는다
+        try {
+            frameSink?.invoke(rotatedBitmap)
+        } catch (_: Exception) {
+            // 송출은 부가 기능 — 프레임 하나 버리고 추론은 계속
+        }
 
         val mpImage = BitmapImageBuilder(rotatedBitmap).build()
         // IMAGE 모드 동기 추론 — analyze()는 단일 스레드 executor에서 호출되고 CameraX는

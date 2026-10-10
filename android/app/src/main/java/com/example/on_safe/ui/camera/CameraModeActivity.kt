@@ -25,6 +25,7 @@ import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -60,6 +61,9 @@ class CameraModeActivity : AppCompatActivity() {
     private lateinit var previewView: androidx.camera.view.PreviewView
     private lateinit var layoutStandby: LinearLayout
     private lateinit var layoutLiveBadge: LinearLayout
+
+    // 보호자 실시간 시청 표시(서버 명세상 필수) — 송출 중(Publishing)에만
+    private lateinit var guardianWatchingView: View
     private lateinit var layoutStatusBadge: LinearLayout
     private lateinit var viewStatusDot: View
     private lateinit var tvStatusText: TextView
@@ -177,6 +181,9 @@ class CameraModeActivity : AppCompatActivity() {
         // 앱 heartbeat 2분 주기 시작 — PowerManager 로 절전모드 여부도 함께 전송.
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager
         viewModel.startHeartbeat { powerManager.isPowerSaveMode }
+        // 보호자 실시간 영상 송출 요청(live_request) 감시 — 요청이 오면 송출 토큰을 받아 LiveKit 방에 접속한다
+        viewModel.startLiveRequestWatch(this)
+        observeLivePublish()
 
         // 권한이 있으면 바로 카메라 켜고, 없으면 권한 요청
         if (areCameraPermissionsGranted()) {
@@ -238,6 +245,9 @@ class CameraModeActivity : AppCompatActivity() {
     private fun bindViews() {
         val rootLayout = findViewById<FrameLayout>(android.R.id.content)
         screenSaverController = ScreenSaverController(window, rootLayout)
+        // "보호자가 보는 중" — 화면보호기도 rootLayout에 붙으므로 같은 층에 두고 elevation으로 그 위에 띄운다
+        guardianWatchingView = layoutInflater.inflate(R.layout.view_guardian_watching, rootLayout, false)
+            .also { rootLayout.addView(it) }
 
         previewView             = findViewById(R.id.previewView)
         layoutStandby           = findViewById(R.id.layoutStandby)
@@ -366,6 +376,8 @@ class CameraModeActivity : AppCompatActivity() {
                         createPoseListener()
                     )
                     val helper = poseLandmarkerHelper ?: return@runOnUiThread
+                    // 분석 프레임을 실시간 영상 송출에도 넘긴다(송출 중이 아니면 ViewModel이 버림)
+                    helper.frameSink = viewModel::pushLiveFrame
                     helper.start()
                     val bufferManager = RollingVideoBufferManager(this@CameraModeActivity)
                     rollingVideoBufferManager = bufferManager
@@ -422,6 +434,25 @@ class CameraModeActivity : AppCompatActivity() {
                 }
             }
         }
+
+    // 보호자가 보고 있으면(영상 송출 중) 반드시 알린다 — 감시받는 사람이 모르는 시청이 없도록
+    private fun observeLivePublish() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.livePublishState.collect { state ->
+                    val watching = state is LivePublishState.Publishing
+                    if (watching && !guardianWatchingView.isVisible) {
+                        // 화면보호기로 어두워져 있어도 시청 시작은 알아차리게 잠시 밝힌다
+                        screenSaverController.wakeBriefly()
+                        // 화면을 보고 있지 않아도 알 수 있게 소리·진동(리소스로 설정 — LiveWatchAlert)
+                        LiveWatchAlert.play(this@CameraModeActivity)
+                        guardianWatchingView.announceForAccessibility("보호자가 실시간 영상을 보고 있습니다")
+                    }
+                    guardianWatchingView.isVisible = watching
+                }
+            }
+        }
+    }
 
     // MediaPipe pose landmark 콜백 — 프레임을 그대로 WS로 중계
     private fun createPoseListener(): PoseLandmarkerHelper.Listener =
@@ -491,6 +522,9 @@ class CameraModeActivity : AppCompatActivity() {
 
     // 촬영 시작: 프리뷰 + ImageAnalysis + VideoCapture를 한 번에 바인딩.
     // 종료 시 카메라를 놓으므로 여기서 프리뷰도 함께 다시 붙는다(Preview 객체는 재사용).
+    // 실시간 영상(LiveKit) 송출용 use case를 4번째로 추가하지 않는다 — 기기별 동시 사용 가능 조합이
+    // 3개까지인 경우가 많아 바인딩이 실패할 수 있다. 송출은 ImageAnalysis 프레임을
+    // PoseLandmarkerHelper.frameSink → LiveVideoSource(커스텀 영상 소스)로 재사용한다.
     private fun bindStreamingUseCases(helper: PoseLandmarkerHelper, bufferManager: RollingVideoBufferManager) {
         val provider = cameraProvider ?: return
         val preview = previewUseCase ?: return
@@ -551,6 +585,8 @@ class CameraModeActivity : AppCompatActivity() {
 
     private fun setState(state: CameraState) {
         currentState = state
+        // 분석 프레임은 촬영 중에만 나온다 — 실시간 영상 송출 시작 허용 조건
+        viewModel.setCameraStreaming(state == CameraState.STREAMING)
         when (state) {
             CameraState.STANDBY -> {
                 stopRecordingTimer()

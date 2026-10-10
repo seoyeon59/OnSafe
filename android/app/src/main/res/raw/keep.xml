@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- release 리소스 축소(isShrinkResources)에서 지우지 않을 리소스.
+     live_watch_start는 LiveWatchAlert가 이름(getIdentifier)으로 찾아 코드 참조로 잡히지 않는다.
+     이 파일 자체는 빌드 시 APK에서 빠진다. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/live_watch_start" />

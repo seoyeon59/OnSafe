@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    보호자 실시간 시청 시작 알림 설정 (카메라 모드, LiveWatchAlert)
+
+    [소리] res/raw/live_watch_start.(ogg|mp3|wav) 파일을 넣으면 재생된다. 파일이 없으면 소리만 생략.
+           파일명은 영문 소문자·숫자·밑줄만 가능. 길이는 1~2초 권장(낙상 녹화에 함께 녹음된다).
+
+    [진동] 아래 숫자를 고치면 된다. 단위는 밀리초(ms)이고 "대기, 진동, 대기, 진동, …" 순서다.
+           첫 값은 시작 전 대기 시간. 비우면(<item> 없음) 진동하지 않는다.
+           예) 0, 400, 200, 400 → 바로 0.4초 진동, 0.2초 쉬고, 0.4초 진동
+-->
+<resources>
+    <integer-array name="live_watch_vibration_pattern">
+        <item>0</item>
+        <item>400</item>
+        <item>200</item>
+        <item>400</item>
+    </integer-array>
+</resources>

@@ -44,6 +44,14 @@ class ScreenSaverController(
         }
     }
 
+    /**
+     * 사용자가 알아야 할 상황(보호자 실시간 시청 시작 등) — 화면보호기로 어두워져 있으면 잠시 밝힌다.
+     * 화면보호기 자체는 유지한다(번인 방지).
+     */
+    fun wakeBriefly() {
+        if (screenSaverView != null) restoreBrightnessTemporarily()
+    }
+
     fun resetInactivityTimer() {
         handler.removeCallbacks(inactivityRunnable)
         handler.postDelayed(inactivityRunnable, INACTIVITY_TIMEOUT_MS)
