@@ -25,6 +25,7 @@ import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -60,6 +61,9 @@ class CameraModeActivity : AppCompatActivity() {
     private lateinit var previewView: androidx.camera.view.PreviewView
     private lateinit var layoutStandby: LinearLayout
     private lateinit var layoutLiveBadge: LinearLayout
+
+    // 보호자 실시간 시청 표시(서버 명세상 필수) — 송출 중(Publishing)에만
+    private lateinit var guardianWatchingView: View
     private lateinit var layoutStatusBadge: LinearLayout
     private lateinit var viewStatusDot: View
     private lateinit var tvStatusText: TextView
@@ -179,6 +183,7 @@ class CameraModeActivity : AppCompatActivity() {
         viewModel.startHeartbeat { powerManager.isPowerSaveMode }
         // 보호자 실시간 영상 송출 요청(live_request) 감시 — 요청이 오면 송출 토큰을 받아 LiveKit 방에 접속한다
         viewModel.startLiveRequestWatch(this)
+        observeLivePublish()
 
         // 권한이 있으면 바로 카메라 켜고, 없으면 권한 요청
         if (areCameraPermissionsGranted()) {
@@ -240,6 +245,9 @@ class CameraModeActivity : AppCompatActivity() {
     private fun bindViews() {
         val rootLayout = findViewById<FrameLayout>(android.R.id.content)
         screenSaverController = ScreenSaverController(window, rootLayout)
+        // "보호자가 보는 중" — 화면보호기도 rootLayout에 붙으므로 같은 층에 두고 elevation으로 그 위에 띄운다
+        guardianWatchingView = layoutInflater.inflate(R.layout.view_guardian_watching, rootLayout, false)
+            .also { rootLayout.addView(it) }
 
         previewView             = findViewById(R.id.previewView)
         layoutStandby           = findViewById(R.id.layoutStandby)
@@ -426,6 +434,23 @@ class CameraModeActivity : AppCompatActivity() {
                 }
             }
         }
+
+    // 보호자가 보고 있으면(영상 송출 중) 반드시 알린다 — 감시받는 사람이 모르는 시청이 없도록
+    private fun observeLivePublish() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.livePublishState.collect { state ->
+                    val watching = state is LivePublishState.Publishing
+                    if (watching && !guardianWatchingView.isVisible) {
+                        // 화면보호기로 어두워져 있어도 시청 시작은 알아차리게 잠시 밝힌다
+                        screenSaverController.wakeBriefly()
+                        guardianWatchingView.announceForAccessibility("보호자가 실시간 영상을 보고 있습니다")
+                    }
+                    guardianWatchingView.isVisible = watching
+                }
+            }
+        }
+    }
 
     // MediaPipe pose landmark 콜백 — 프레임을 그대로 WS로 중계
     private fun createPoseListener(): PoseLandmarkerHelper.Listener =

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "보호자가 보는 중" 표시 — 실시간 영상 송출 중에만. 화면보호기 위에도 떠야 해서
+     CameraModeActivity가 android.R.id.content에 직접 붙이고 elevation으로 맨 위에 둔다 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/layoutGuardianWatching"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="top|center_horizontal"
+    android:layout_marginTop="12dp"
+    android:background="@drawable/bg_pill"
+    android:backgroundTint="@color/status_danger"
+    android:elevation="24dp"
+    android:gravity="center_vertical"
+    android:importantForAccessibility="yes"
+    android:orientation="horizontal"
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="8dp"
+    android:visibility="gone">
+
+    <ImageView
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_eye"
+        app:tint="@color/surface_white" />
+
+    <TextView
+        android:id="@+id/tvGuardianWatching"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/space_sm"
+        android:fontFamily="@font/pretendard_bold"
+        android:includeFontPadding="false"
+        android:text="보호자가 실시간으로 보는 중"
+        android:textColor="@color/surface_white"
+        android:textSize="@dimen/text_body" />
+</LinearLayout>
