@@ -3,6 +3,7 @@ package com.example.on_safe.messaging
 import android.util.Log
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.ui.pairing.PairingApprovalDialog
+import com.example.on_safe.util.TokenManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
@@ -36,8 +37,12 @@ class OnSafeMessagingService : FirebaseMessagingService() {
 
         // 실시간 영상 송출 요청 — data 전용. 트레이 알림·화면 갱신 이벤트 없이 카메라 모드 수신함으로만 보낸다
         if (event == LiveRequestInbox.EVENT) {
-            val accepted = LiveRequestInbox.receive(data)
-            if (BuildConfig.DEBUG) Log.d(TAG, "live_request ${if (accepted) "보관" else "무시(만료·송출 중)"}")
+            val result = LiveRequestInbox.receive(
+                data = data,
+                myUserId = TokenManager.getUserId(applicationContext),
+                sentTimeMillis = message.sentTime
+            )
+            if (BuildConfig.DEBUG) Log.d(TAG, "live_request 처리 결과=$result")
             return
         }
 
