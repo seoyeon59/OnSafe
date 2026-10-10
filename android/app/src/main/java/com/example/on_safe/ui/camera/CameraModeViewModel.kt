@@ -2,6 +2,7 @@ package com.example.on_safe.ui.camera
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.os.SystemClock
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -23,6 +24,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -51,10 +53,14 @@ sealed class LivePublishState {
     data class Ready(val credentials: LivePublishCredentials) : LivePublishState()
 
     /** 송출 전용 토큰으로 LiveKit 방 접속 완료 — 영상 트랙 송출 준비 중 */
-    data class Connected(val room: String) : LivePublishState()
+    data class Connected(val room: String, val expiresAtMillis: Long) : LivePublishState()
 
-    /** 분석 프레임을 영상 트랙으로 송출 중 — 보호자가 보고 있는 상태 */
-    data class Publishing(val room: String) : LivePublishState()
+    /**
+     * 분석 프레임을 영상 트랙으로 송출 중 — 보호자가 보고 있는 상태.
+     * [expiresAtMillis]는 **참고용**(발급 시점 기준 세션 만료 예정, 기기 시계). 보호자 자동 연장은
+     * 피보호자에게 알리지 않아 실제 종료는 더 늦을 수 있다 — 이 값으로 송출을 멈추지 않는다.
+     */
+    data class Publishing(val room: String, val expiresAtMillis: Long) : LivePublishState()
 }
 
 class CameraModeViewModel : ViewModel() {
@@ -80,6 +86,21 @@ class CameraModeViewModel : ViewModel() {
 
     // 분석 프레임 → LiveKit 영상 트랙
     private val liveVideoSource = LiveVideoSource()
+
+    // 송출 시작 허용 조건 ① 카메라 모드 촬영 중 — 분석 프레임은 촬영(STREAMING) 중에만 나온다
+    private val cameraStreaming = MutableStateFlow(false)
+
+    // 송출 시작 허용 조건 ② 마지막 heartbeat 성공 시각(elapsedRealtime, 0=없음) —
+    // 서버가 카메라 온라인으로 보는 기준(6분)과 맞춘다
+    private val lastHeartbeatOkAt = MutableStateFlow(0L)
+
+    // 받은 송출 토큰의 참고용 만료 예정 시각 — 상태 표시용, 송출 중단 기준 아님
+    private var liveExpiresAtMillis = 0L
+
+    /** 카메라 모드 촬영 상태 — Activity가 상태 전환마다 알린다 */
+    fun setCameraStreaming(streaming: Boolean) {
+        cameraStreaming.value = streaming
+    }
 
     /** 분석 스레드에서 호출(PoseLandmarkerHelper.frameSink) — 송출 중일 때만 프레임을 넘긴다 */
     fun pushLiveFrame(bitmap: Bitmap) {
@@ -220,7 +241,9 @@ class CameraModeViewModel : ViewModel() {
         heartbeatJob = viewModelScope.launch {
             while (isActive) {
                 try {
-                    ApiClient.api.heartbeat(HeartbeatRequest(powerSaveMode = isPowerSaveMode()))
+                    val response = ApiClient.api.heartbeat(HeartbeatRequest(powerSaveMode = isPowerSaveMode()))
+                    // 서버에 실제로 기록된 경우만 — 실시간 영상 송출 시작 허용 기준
+                    if (response.isSuccessful) lastHeartbeatOkAt.value = SystemClock.elapsedRealtime()
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -239,7 +262,12 @@ class CameraModeViewModel : ViewModel() {
 
     /**
      * 실시간 영상 송출 요청 감시 — 수신함([LiveRequestInbox])에 요청이 들어오면 꺼내 송출 토큰을 받는다.
-     * 카메라 모드가 꺼져 있을 때 온 요청도 만료 전이면 진입 직후 처리된다(수신함이 보관).
+     *
+     * 송출 시작은 아래가 모두 맞을 때만 — 아니면 요청을 꺼내지 않고 만료 전까지 수신함에 둔다
+     * (조건이 갖춰지는 순간 다시 평가된다):
+     * - 카메라 모드가 촬영 중(분석 프레임이 나오는 상태)
+     * - 마지막 heartbeat 성공이 [HEARTBEAT_FRESH_MS](6분, 서버 오프라인 판정 기준) 이내
+     * 카메라 모드가 꺼져 있을 때 온 요청도 만료 전이면 진입 후 조건이 갖춰질 때 처리된다.
      * 이미 도는 감시가 있으면 재시작 안 함.
      */
     fun startLiveRequestWatch(context: Context) {
@@ -248,15 +276,28 @@ class CameraModeViewModel : ViewModel() {
             liveRoomPublisher = LiveRoomPublisher(context.applicationContext, viewModelScope, liveRoomListener)
         }
         liveRequestJob = viewModelScope.launch {
-            // StateFlow라 처리 중에 새 요청이 와도 끝난 뒤 최신 요청 하나로 이어 받는다
-            LiveRequestInbox.pending.collect { pending ->
+            // StateFlow 조합이라 처리 중에 새 요청·조건 변화가 와도 끝난 뒤 최신 값으로 다시 평가한다
+            combine(LiveRequestInbox.pending, cameraStreaming, lastHeartbeatOkAt) { pending, streaming, heartbeatAt ->
+                Triple(pending, streaming, heartbeatAt)
+            }.collect { (pending, streaming, heartbeatAt) ->
                 if (pending == null) return@collect
                 if (_livePublishState.value != LivePublishState.Idle) return@collect
+                if (!streaming) {
+                    if (BuildConfig.DEBUG) Log.d("CameraMode", "송출 요청 보류 — 촬영 중 아님")
+                    return@collect
+                }
+                if (!isHeartbeatFresh(heartbeatAt)) {
+                    if (BuildConfig.DEBUG) Log.d("CameraMode", "송출 요청 보류 — heartbeat 6분 초과·미기록")
+                    return@collect
+                }
                 val request = LiveRequestInbox.take() ?: return@collect
                 fetchPublishToken(request)
             }
         }
     }
+
+    private fun isHeartbeatFresh(heartbeatAt: Long): Boolean =
+        heartbeatAt > 0L && SystemClock.elapsedRealtime() - heartbeatAt <= HEARTBEAT_FRESH_MS
 
     private suspend fun fetchPublishToken(request: LiveRequest) {
         _livePublishState.value = LivePublishState.FetchingToken
@@ -264,6 +305,7 @@ class CameraModeViewModel : ViewModel() {
         LiveRequestInbox.isPublishing = true
         when (val result = LivePublishTokenSource.fetch(request)) {
             is PublishTokenResult.Success -> {
+                liveExpiresAtMillis = result.credentials.expiresAtMillis
                 _livePublishState.value = LivePublishState.Ready(result.credentials)
                 // 접속이 끝나지 않은 채 세션이 만료되는 경우 대비 — 접속되면 해제한다
                 scheduleReadyExpiry(result.credentials)
@@ -286,17 +328,26 @@ class CameraModeViewModel : ViewModel() {
     }
 
     private val liveRoomListener = object : LiveRoomPublisher.Listener {
-        // 접속 완료 — 이후 종료는 LiveKit 연결 끊김 기준(자체 타이머로 멈추지 않음)
+        // 접속 완료 — 이후 송출은 자체 타이머로 멈추지 않는다. 중단은 LiveKit 연결 끊김(서버의 방 삭제:
+        // 만료·보호자 종료·해제·동의 철회) 또는 카메라 모드 종료뿐. 보호자 자동 연장은 피보호자에게
+        // 알리지 않으므로 expires_at이 지나도 방이 살아 있으면 계속 송출해야 한다.
         override fun onConnected(room: Room) {
             liveReadyExpiryJob?.cancel()
             liveReadyExpiryJob = null
             liveRoom = room
             val roomName = room.name.orEmpty()
-            _livePublishState.value = LivePublishState.Connected(roomName)
+            val expiresAt = liveExpiresAtMillis
+            _livePublishState.value = LivePublishState.Connected(roomName, expiresAt)
             viewModelScope.launch {
                 if (liveVideoSource.publish(room)) {
                     // 송출 등록 사이에 방이 끊겼으면 상태를 되살리지 않는다
-                    if (liveRoom === room) _livePublishState.value = LivePublishState.Publishing(roomName)
+                    if (liveRoom === room) {
+                        _livePublishState.value = LivePublishState.Publishing(roomName, expiresAt)
+                        if (BuildConfig.DEBUG) {
+                            val remainSec = (expiresAt - System.currentTimeMillis()) / 1000
+                            Log.d("CameraMode", "송출 시작 — 참고용 만료까지 ${remainSec}초(연장 시 방 유지)")
+                        }
+                    }
                 } else if (liveRoom === room) {
                     // 영상을 못 보내면 보호자는 기다리다 실패한다 — 방에서 나와 다음 요청을 받는다
                     leaveLiveRoom()
@@ -322,6 +373,7 @@ class CameraModeViewModel : ViewModel() {
         liveReadyExpiryJob = null
         liveVideoSource.stop()
         liveRoom = null
+        liveExpiresAtMillis = 0L
         _livePublishState.value = LivePublishState.Idle
         LiveRequestInbox.isPublishing = false
     }
@@ -371,5 +423,7 @@ class CameraModeViewModel : ViewModel() {
         // 2분 — 백엔드 오프라인 임계(6분) 대비 3배 여유. 배터리 소모 vs 감지 지연 트레이드오프에서
         // 안전 서비스 특성상 감지 지연 최소화 쪽에 무게.
         const val HEARTBEAT_INTERVAL_MS = 120_000L
+        // 서버 HeartbeatWatchdogJob.OFFLINE_THRESHOLD(6분)와 같은 기준 — 넘으면 송출 시작 보류
+        const val HEARTBEAT_FRESH_MS = 6 * 60_000L
     }
 }
