@@ -298,6 +298,12 @@ class CameraModeViewModel : ViewModel() {
             }.collect { (pending, streaming, heartbeatAt) ->
                 if (pending == null) return@collect
                 if (_livePublishState.value != LivePublishState.Idle) return@collect
+                // 이 기기에서 동의가 꺼진 게 확인된 상태 — 서버도 403으로 거절하지만 토큰 요청 전에 버린다
+                if (_liveVideoConsent.value?.enabled == false) {
+                    if (BuildConfig.DEBUG) Log.d("CameraMode", "송출 요청 무시 — 영상 동의 꺼짐")
+                    LiveRequestInbox.clear()
+                    return@collect
+                }
                 if (!streaming) {
                     if (BuildConfig.DEBUG) Log.d("CameraMode", "송출 요청 보류 — 촬영 중 아님")
                     return@collect
@@ -356,12 +362,15 @@ class CameraModeViewModel : ViewModel() {
     }
 
     /**
-     * 실시간 영상 동의 변경. 끄면 서버가 진행 중 LIVE도 즉시 끊는다.
-     * 실패하면 이전 값으로 되돌린다 — 화면과 실제 동의가 어긋나지 않게.
+     * 실시간 영상 동의 변경. 실패하면 이전 값으로 되돌린다 — 화면과 실제 동의가 어긋나지 않게.
+     *
+     * 끄면(철회) 서버 응답을 기다리지 않고 이 기기의 송출부터 즉시 멈춘다. 서버도 방을 지워 끊지만
+     * (SettingsService → LiveSessionTerminator), 저장이 늦거나 실패해도 영상이 더 나가지 않게 한다.
      */
     fun setLiveVideoConsent(userId: String, enabled: Boolean) {
         val before = _liveVideoConsent.value ?: return
         if (userId.isBlank() || before.busy || before.enabled == null) return
+        if (!enabled) stopLivePublishForWithdrawal()
         _liveVideoConsent.value = before.copy(busy = true)
         viewModelScope.launch {
             val saved = try {
@@ -454,6 +463,15 @@ class CameraModeViewModel : ViewModel() {
 
     fun onLiveVideoConsentMessageShown() {
         _liveVideoConsentMessage.value = null
+    }
+
+    // 동의 철회 — 진행 중 송출(접속 중 포함)을 끊고, 보관 중인 송출 요청도 버린다
+    private fun stopLivePublishForWithdrawal() {
+        LiveRequestInbox.clear()
+        if (_livePublishState.value != LivePublishState.Idle) {
+            if (BuildConfig.DEBUG) Log.d("CameraMode", "영상 동의 철회 — 송출 즉시 중단")
+            leaveLiveRoom()
+        }
     }
 
     // 페어링 해제 — 양방향(피보호자·보호자 어느 쪽에서 호출해도 동작).
