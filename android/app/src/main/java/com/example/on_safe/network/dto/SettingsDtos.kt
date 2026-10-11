@@ -22,7 +22,10 @@ data class MarketingConsentResponse(
     val consentedAt: String?
 )
 
-// 실시간 영상(LIVE) 송출 동의 — GET /api/settings/live-video/{userId} (v4.16, 본인만)
+// 실시간 영상(LIVE) 송출 동의 변경 — PUT /api/settings/live-video/{userId} (v4.16, 본인만)
+data class LiveVideoSettingsRequest(val enabled: Boolean)
+
+// 실시간 영상(LIVE) 송출 동의 — GET·PUT /api/settings/live-video/{userId} 응답 (v4.16, 본인만)
 data class LiveVideoSettingsResponse(
     val enabled: Boolean,
     // 켜질 때·꺼질 때만 기록 — 없으면 null

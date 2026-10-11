@@ -183,6 +183,13 @@ interface ApiService {
         @Path("userId") userId: String
     ): Response<ApiResponse<LiveVideoSettingsResponse>>
 
+    // 실시간 영상(LIVE) 송출 동의 변경 — 본인만(카메라 모드 토글). 끄면(철회) 서버가 진행 중 LIVE도 끊는다
+    @PUT("api/settings/live-video/{userId}")
+    suspend fun updateLiveVideoSettings(
+        @Path("userId") userId: String,
+        @Body request: LiveVideoSettingsRequest
+    ): Response<ApiResponse<LiveVideoSettingsResponse>>
+
     // ===== Consents (필수 약관 재동의) =====
 
     // 자동 로그인 진입용 — 로그인 응답 pending_consents와 같은 목록

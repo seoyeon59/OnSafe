@@ -470,6 +470,63 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- 실시간 영상 동의 섹션 — 서버 live_video_enabled. 켤 때만 확인 창, 끌 때는 바로 철회 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                android:paddingEnd="8dp"
+                android:paddingStart="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/pretendard_semibold"
+                    android:letterSpacing="0.09"
+                    android:text="실시간 영상"
+                    android:textColor="@color/overlay_white_50"
+                    android:textSize="@dimen/text_tab" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:minHeight="@dimen/touch_min"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/pretendard_semibold"
+                        android:labelFor="@id/switchLiveVideoConsent"
+                        android:text="보호자 보기 허용"
+                        android:textColor="@color/overlay_white_75"
+                        android:textSize="@dimen/text_caption" />
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switchLiveVideoConsent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="보호자 실시간 영상 보기 허용"
+                        android:enabled="false"
+                        android:showText="false"
+                        app:thumbTint="@color/switch_thumb_tint"
+                        app:trackTint="@color/switch_track_tint" />
+                </LinearLayout>
+
+                <!-- 현재 상태·불러오기 실패 안내 -->
+                <TextView
+                    android:id="@+id/tvLiveVideoConsentStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/pretendard_regular"
+                    android:text="불러오는 중…"
+                    android:textColor="@color/overlay_white_50"
+                    android:textSize="@dimen/text_tab" />
+            </LinearLayout>
+
             <!-- 스페이서 -->
             <View
                 android:layout_width="match_parent"
