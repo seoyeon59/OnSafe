@@ -73,7 +73,9 @@
             android:textSize="@dimen/text_caption"
             android:visibility="gone" />
 
-        <!-- 실시간 영상 보기 허용(선택) — 기본 꺼짐. 승인 시 live_video_enabled로 항상 전송 -->
+        <!-- 실시간 영상 보기 허용(선택) — 서버의 현재 동의를 그대로 표시(조회 전·실패 시 꺼짐).
+             바꾸지 않으면 승인 때 값을 생략해 기존 동의가 이어진다 -->
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -103,6 +105,18 @@
                 android:text="허용하면 보호자가 요청할 때 이 기기의 카메라 화면을 실시간으로 볼 수 있어요. 보고 있는 동안에는 화면에 표시돼요."
                 android:textColor="@color/ink_500"
                 android:textSize="@dimen/text_caption" />
+
+            <!-- 이전에 허용해 둔 동의가 이어질 때만 — 새 보호자에게도 적용됨을 알린다 -->
+            <TextView
+                android:id="@+id/tvPairingLiveVideoCarried"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:paddingStart="32dp"
+                android:text="이전에 허용해 둔 설정이에요. 승인하면 이 보호자도 볼 수 있어요."
+                android:textColor="@color/primary_blue"
+                android:textSize="@dimen/text_caption"
+                android:visibility="gone" />
         </LinearLayout>
 
     </LinearLayout>

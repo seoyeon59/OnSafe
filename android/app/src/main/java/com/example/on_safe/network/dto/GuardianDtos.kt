@@ -14,9 +14,10 @@ data class PairRequest(
 )
 
 // 피보호자가 연결 요청을 승인할 때 body — 승인 창의 "실시간 영상 보기 허용" 선택 값(live_video_enabled).
-// 서버는 생략 시 기존 값을 유지하므로 앱은 항상 채워 보낸다(재페어링 시 이전 동의가 이어지지 않게)
+// null이면 Gson이 필드를 빼고 보내({}) 서버가 기존 동의를 유지한다 — 재페어링 시 이전 동의를 이어 가는 경로.
+// 승인 창은 현재 동의를 체크박스에 그대로 보여 주고, 바꿨을 때만 값을 채운다
 data class ApprovePairingRequest(
-    val liveVideoEnabled: Boolean
+    val liveVideoEnabled: Boolean?
 )
 
 // pair() 응답 — 즉시 성립이 아니라 피보호자 승인 대기 상태. request_id 는 승인/거부 엔드포인트에

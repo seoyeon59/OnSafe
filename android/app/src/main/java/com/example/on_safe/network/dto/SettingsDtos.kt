@@ -22,6 +22,14 @@ data class MarketingConsentResponse(
     val consentedAt: String?
 )
 
+// 실시간 영상(LIVE) 송출 동의 — GET /api/settings/live-video/{userId} (v4.16, 본인만)
+data class LiveVideoSettingsResponse(
+    val enabled: Boolean,
+    // 켜질 때·꺼질 때만 기록 — 없으면 null
+    val consentedAt: String?,
+    val withdrawnAt: String?
+)
+
 // 필수 약관 재동의 (v4.13) — 로그인 응답 pending_consents·pending 조회·재동의 응답 공용.
 // required=false는 경미한 개정(확인만), 서버 차단 대상 아님
 data class PendingConsent(
