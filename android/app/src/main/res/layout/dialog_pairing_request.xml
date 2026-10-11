@@ -73,6 +73,38 @@
             android:textSize="@dimen/text_caption"
             android:visibility="gone" />
 
+        <!-- 실시간 영상 보기 허용(선택) — 기본 꺼짐. 승인 시 live_video_enabled로 항상 전송 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_card"
+            android:backgroundTint="@color/surface_bg"
+            android:orientation="vertical"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp">
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cbPairingLiveVideo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:minHeight="@dimen/touch_min"
+                android:text="실시간 영상 보기 허용 (선택)"
+                android:textColor="@color/ink_900"
+                android:textSize="@dimen/text_body"
+                android:textStyle="bold"
+                app:buttonTint="@color/primary_blue" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="32dp"
+                android:text="허용하면 보호자가 요청할 때 이 기기의 카메라 화면을 실시간으로 볼 수 있어요. 보고 있는 동안에는 화면에 표시돼요."
+                android:textColor="@color/ink_500"
+                android:textSize="@dimen/text_caption" />
+        </LinearLayout>
+
     </LinearLayout>
 
     <!-- 구분선 -->
