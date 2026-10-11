@@ -5,6 +5,7 @@ import android.app.Dialog
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.widget.CheckBox
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -17,6 +18,7 @@ import com.example.on_safe.messaging.PushEvent
 import com.example.on_safe.messaging.PushEventBus
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.ApiResponse
+import com.example.on_safe.network.dto.ApprovePairingRequest
 import com.example.on_safe.network.failure
 import com.example.on_safe.network.isOk
 import com.example.on_safe.ui.login.LoginActivity
@@ -130,6 +132,8 @@ object PairingApprovalDialog {
         val dialog = cardDialog(activity, content).apply { setCancelable(false) }
         val btnApprove: TextView = content.findViewById(R.id.btnPairingApprove)
         val btnReject: TextView = content.findViewById(R.id.btnPairingReject)
+        // 실시간 영상 보기 허용(선택) — 기본 꺼짐, 사용자가 직접 켜야 한다
+        val cbLiveVideo: CheckBox = content.findViewById(R.id.cbPairingLiveVideo)
 
         content.findViewById<TextView>(R.id.tvPairingRequestMessage).text =
             "${request.guardianName}님이 보호자로 연결을 요청했어요."
@@ -141,22 +145,34 @@ object PairingApprovalDialog {
         fun setBusy(busy: Boolean) {
             btnApprove.isEnabled = !busy
             btnReject.isEnabled = !busy
+            // 요청 중에 값이 바뀌면 보낸 값과 화면이 어긋난다
+            cbLiveVideo.isEnabled = !busy
             btnApprove.text = if (busy) "처리 중…" else "승인"
         }
 
         fun respond(approve: Boolean) {
             val userId = TokenManager.getUserId(activity)
+            // 누른 순간의 선택값으로 고정 — 승인 때 항상 전송(생략하면 서버가 이전 동의를 유지)
+            val liveVideoEnabled = cbLiveVideo.isChecked
             setBusy(true)
             activity.lifecycleScope.launch {
                 try {
                     val outcome =
-                        if (approve) ApiClient.api.approvePairingRequest(userId, request.requestId).toOutcome()
-                        else ApiClient.api.rejectPairingRequest(userId, request.requestId).toOutcome()
+                        if (approve) {
+                            ApiClient.api.approvePairingRequest(
+                                userId, request.requestId, ApprovePairingRequest(liveVideoEnabled)
+                            ).toOutcome()
+                        } else {
+                            ApiClient.api.rejectPairingRequest(userId, request.requestId).toOutcome()
+                        }
                     when (outcome) {
                         Outcome.Done -> {
                             finish(request)
                             if (approve) {
-                                activity.toast("${request.guardianName}님과 보호자 연결이 완료되었어요.")
+                                activity.toast(
+                                    "${request.guardianName}님과 보호자 연결이 완료되었어요." +
+                                        if (liveVideoEnabled) "\n실시간 영상 보기를 허용했어요." else ""
+                                )
                                 PushEventBus.publish(PushEvent(EVENT_APPROVED_LOCAL, emptyMap()))
                             } else {
                                 activity.toast("연결 요청을 거절했어요.")

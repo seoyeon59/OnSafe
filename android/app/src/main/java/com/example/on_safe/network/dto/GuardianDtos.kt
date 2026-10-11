@@ -13,6 +13,12 @@ data class PairRequest(
     val code: String
 )
 
+// 피보호자가 연결 요청을 승인할 때 body — 승인 창의 "실시간 영상 보기 허용" 선택 값(live_video_enabled).
+// 서버는 생략 시 기존 값을 유지하므로 앱은 항상 채워 보낸다(재페어링 시 이전 동의가 이어지지 않게)
+data class ApprovePairingRequest(
+    val liveVideoEnabled: Boolean
+)
+
 // pair() 응답 — 즉시 성립이 아니라 피보호자 승인 대기 상태. request_id 는 승인/거부 엔드포인트에
 // 넘길 식별자, expires_in_seconds 는 요청이 자동 소멸되기까지 남은 시간(백엔드 기본 1800초=30분).
 data class PairingRequestResponse(

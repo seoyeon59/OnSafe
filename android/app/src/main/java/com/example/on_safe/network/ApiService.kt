@@ -116,10 +116,13 @@ interface ApiService {
     // 피보호자가 승인 요청을 승인 — 이 시점에 실제 guardian_links 관계가 생성된다.
     // 기존 관계(피보호자의 기존 보호자, 보호자의 기존 피보호자)가 있으면 자동으로 해제되고
     // 옛 파트너에게는 pairing_displaced FCM 이 발송된다.
+    // 본문 live_video_enabled는 승인 창의 "실시간 영상 보기 허용" 선택 값 — 항상 보낸다.
+    // 생략하면 서버가 기존 값을 유지해, 재페어링 시 이전 보호자에게 준 동의가 새 보호자에게 이어질 수 있다.
     @POST("api/guardian/{userId}/pairing-requests/{requestId}/approve")
     suspend fun approvePairingRequest(
         @Path("userId") userId: String,
-        @Path("requestId") requestId: String
+        @Path("requestId") requestId: String,
+        @Body request: ApprovePairingRequest
     ): Response<ApiResponse<WardResponse>>
 
     // 피보호자가 승인 요청을 거부 — Redis 요청이 소비되고 보호자에게 pairing_rejected FCM 발송.
