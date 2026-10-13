@@ -34,9 +34,14 @@ class RealNotificationRepository : NotificationRepository {
         ApiClient.api.markNotificationRead(userId, notificationId)
     }
 
-    // 낙상 모달의 명시 확인 — 사고 처리(isConfirmed)로 15분 재알림 중단
+    // 사고 확인 대상은 연결된 피보호자 (알림 수신자와 분리)
     override suspend fun confirmFall(userId: String, logId: String) {
-        ApiClient.api.confirmFallLog(userId, logId)
+        val wardUserId = WardSource.fetchPairedWardUserId(userId)
+            ?: throw IllegalStateException("연결된 피보호자가 없어 사고를 확인 처리하지 못했습니다.")
+        val response = ApiClient.api.confirmFallLog(wardUserId, logId)
+        if (!response.isOk) {
+            throw IllegalStateException(response.errorMessage("사고를 확인 처리하지 못했습니다."))
+        }
     }
 
     private fun NotificationLogResponse.toNotificationItem(): NotificationItem {

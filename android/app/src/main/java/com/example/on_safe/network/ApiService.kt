@@ -193,9 +193,6 @@ interface ApiService {
     @GET("api/camera/score/{userId}")
     suspend fun getRiskScore(@Path("userId") userId: String): Response<ApiResponse<RiskScoreResponse>>
 
-    @GET("api/camera/status/{userId}")
-    suspend fun getRiskStatus(@Path("userId") userId: String): Response<ApiResponse<RiskStatusResponse>>
-
     // 피보호자 앱 heartbeat — 카메라 모드 켜져 있는 동안 2분 주기로 호출.
     // 서버는 이 호출을 근거로 6분 이상 미수신 시 오프라인 판정 후 보호자에게 통지한다.
     @POST("api/camera/heartbeat")
