@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
+import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
@@ -26,6 +27,7 @@ import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -73,8 +75,10 @@ class CameraModeActivity : AppCompatActivity() {
     private lateinit var tvGuardianName: TextView
     private lateinit var tvDeviceId: TextView
 
-    // 실시간 영상 동의 토글 — 서버 값을 그리는 중엔 리스너가 "사용자 변경"으로 오인하지 않게 막는다
+    // 서버 상태 렌더링 중 사용자 변경 차단
     private lateinit var switchLiveVideoConsent: SwitchCompat
+    private lateinit var ivLiveVideoConsent: ImageView
+    private lateinit var layoutLiveVideoConsent: LinearLayout
     private lateinit var tvLiveVideoConsentStatus: TextView
     private var renderingLiveVideoConsent = false
     private lateinit var btnToggleRecording: LinearLayout
@@ -284,6 +288,8 @@ class CameraModeActivity : AppCompatActivity() {
         tvPairingCode           = findViewById(R.id.tvPairingCode)
         pairingCodeOverlay      = findViewById(R.id.pairingCodeOverlay)
         switchLiveVideoConsent  = findViewById(R.id.switchLiveVideoConsent)
+        ivLiveVideoConsent      = findViewById(R.id.ivLiveVideoConsent)
+        layoutLiveVideoConsent  = findViewById(R.id.layoutLiveVideoConsent)
         tvLiveVideoConsentStatus = findViewById(R.id.tvLiveVideoConsentStatus)
 
         layoutStatusBadge.background = statusBadgeBg
@@ -311,29 +317,50 @@ class CameraModeActivity : AppCompatActivity() {
         }
     }
 
-    // 서버 값을 그대로 그린다 — 모르면(조회 중·실패) 잠그고 켜짐/꺼짐을 단정하지 않는다
     private fun renderLiveVideoConsent(state: LiveVideoConsentState) {
         renderingLiveVideoConsent = true
         switchLiveVideoConsent.isChecked = state.enabled == true
         renderingLiveVideoConsent = false
         switchLiveVideoConsent.isEnabled = !state.busy && state.enabled != null
-        tvLiveVideoConsentStatus.text = when {
-            state.loadFailed -> "설정을 불러오지 못했어요. 눌러서 다시 시도"
-            state.enabled == null -> "불러오는 중…"
-            state.busy -> "저장 중…"
-            state.enabled -> "켜짐 — 보호자가 요청하면 영상이 전송돼요"
-            else -> "꺼짐 — 보호자가 영상을 볼 수 없어요"
+        val known = state.enabled != null
+        layoutLiveVideoConsent.visibility = if (known) View.VISIBLE else View.INVISIBLE
+        layoutLiveVideoConsent.alpha = if (state.busy) 0.5f else 1f
+        ivLiveVideoConsent.setImageResource(if (state.enabled == true) R.drawable.ic_eye else R.drawable.ic_eye_off)
+        val iconInset = resources.getDimensionPixelSize(R.dimen.space_sm)
+        ivLiveVideoConsent.layoutParams = (ivLiveVideoConsent.layoutParams as FrameLayout.LayoutParams).apply {
+            gravity = (if (state.enabled == true) Gravity.START else Gravity.END) or Gravity.CENTER_VERTICAL
+            marginStart = if (state.enabled == true) iconInset else 0
+            marginEnd = if (state.enabled == true) 0 else iconInset
         }
+        val statusRes = when {
+            state.loadFailed -> R.string.live_video_consent_retry
+            state.enabled == null -> R.string.live_video_consent_loading
+            state.busy -> R.string.live_video_consent_saving
+            state.enabled -> R.string.live_video_consent_allowed
+            else -> R.string.live_video_consent_blocked
+        }
+        tvLiveVideoConsentStatus.setText(statusRes)
+        tvLiveVideoConsentStatus.isVisible = state.busy || !known || state.loadFailed
+        val canRetry = state.loadFailed && !state.busy
+        tvLiveVideoConsentStatus.setOnClickListener(if (canRetry) View.OnClickListener {
+            viewModel.loadLiveVideoConsent(TokenManager.getUserId(this))
+        } else null)
+        tvLiveVideoConsentStatus.isClickable = canRetry
+        tvLiveVideoConsentStatus.isFocusable = canRetry
+        tvLiveVideoConsentStatus.minHeight = if (canRetry) {
+            resources.getDimensionPixelSize(R.dimen.touch_min)
+        } else 0
+        ViewCompat.setStateDescription(switchLiveVideoConsent, getString(statusRes))
     }
 
-    // 켜기는 동의 문구를 다시 보여 주고 확인받는다. 끄기(철회)는 확인 없이 바로
+    // 허용 전 재확인, 철회 즉시 저장
     private fun onLiveVideoConsentToggled(checked: Boolean) {
         val userId = TokenManager.getUserId(this)
         if (!checked) {
             viewModel.setLiveVideoConsent(userId, false)
             return
         }
-        // 확인 전까지는 꺼진 상태로 되돌려 둔다 — 취소·바깥 터치·뒤로가기 모두 그대로 꺼짐
+        // 확인 전 기존 동의 유지
         renderingLiveVideoConsent = true
         switchLiveVideoConsent.isChecked = false
         renderingLiveVideoConsent = false
@@ -349,12 +376,6 @@ class CameraModeActivity : AppCompatActivity() {
     private fun setupClickListeners() {
         switchLiveVideoConsent.setOnCheckedChangeListener { _, checked ->
             if (!renderingLiveVideoConsent) onLiveVideoConsentToggled(checked)
-        }
-        // 조회 실패 시 안내 문구를 눌러 다시 불러온다
-        tvLiveVideoConsentStatus.setOnClickListener {
-            if (viewModel.liveVideoConsent.value?.loadFailed == true) {
-                viewModel.loadLiveVideoConsent(TokenManager.getUserId(this))
-            }
         }
         btnToggleRecording.setOnClickListener {
             when (currentState) {
