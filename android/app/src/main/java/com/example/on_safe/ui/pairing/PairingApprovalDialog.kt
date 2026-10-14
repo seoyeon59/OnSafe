@@ -164,7 +164,7 @@ object PairingApprovalDialog {
         cbLiveVideo.setOnCheckedChangeListener { _, _ -> renderCarriedNotice() }
 
         // 현재 동의 조회 — 승인 창은 30분까지 열려 있을 수 있어 창 수명(화면 lifecycle)에 묶는다
-        activity.lifecycleScope.launch {
+        val consentLoadJob = activity.lifecycleScope.launch {
             val enabled = try {
                 val response = ApiClient.api.getLiveVideoSettings(TokenManager.getUserId(activity))
                 if (response.isOk) response.body()?.data?.enabled else null
@@ -181,6 +181,9 @@ object PairingApprovalDialog {
         }
 
         fun respond(approve: Boolean) {
+            // 승인 중 늦은 조회 응답의 선택값 덮어쓰기 차단
+            consentLoadJob.cancel()
+            consentLoading = false
             val userId = TokenManager.getUserId(activity)
             // 누른 순간의 선택값으로 고정
             val liveVideoEnabled = cbLiveVideo.isChecked
@@ -240,6 +243,7 @@ object PairingApprovalDialog {
         activity.lifecycle.addObserver(destroyObserver)
         val entry = Shown(activity, request, dialog)
         dialog.setOnDismissListener {
+            consentLoadJob.cancel()
             activity.lifecycle.removeObserver(destroyObserver)
             if (shown === entry) shown = null
         }

@@ -85,6 +85,8 @@ class CameraModeViewModel : ViewModel() {
     private var liveRequestJob: Job? = null
     // 송출 중단 시 발급 중인 토큰 요청도 취소
     private var liveTokenJob: Job? = null
+    private var consentLoadJob: Job? = null
+    private var consentSaveJob: Job? = null
 
     // Ready를 아무도 넘겨받지 않으면 세션 만료 시각에 비운다 — 송출 중 표시가 남아 다음 요청을 막지 않게
     private var liveReadyExpiryJob: Job? = null
@@ -330,8 +332,8 @@ class CameraModeViewModel : ViewModel() {
         LiveRequestInbox.isPublishing = true
         when (val result = LivePublishTokenSource.fetch(request)) {
             is PublishTokenResult.Success -> {
-                if (!cameraStreaming.value || request.isExpired() ||
-                    !isHeartbeatFresh(lastHeartbeatOkAt.value)
+                if (!cameraStreaming.value || _liveVideoConsent.value?.enabled == false ||
+                    request.isExpired() || !isHeartbeatFresh(lastHeartbeatOkAt.value)
                 ) {
                     resetLivePublish()
                     return
@@ -351,9 +353,10 @@ class CameraModeViewModel : ViewModel() {
 
     /** 실시간 영상 동의 조회 — 카메라 모드 진입 시. 실패하면 토글을 잠그고 다시 누르면 재조회 */
     fun loadLiveVideoConsent(userId: String) {
-        if (userId.isBlank()) return
+        if (userId.isBlank() || consentSaveJob?.isActive == true) return
+        consentLoadJob?.cancel()
         _liveVideoConsent.value = LiveVideoConsentState(enabled = null, busy = true)
-        viewModelScope.launch {
+        consentLoadJob = viewModelScope.launch {
             val enabled = try {
                 val response = ApiClient.api.getLiveVideoSettings(userId)
                 val body = response.body()
@@ -367,6 +370,7 @@ class CameraModeViewModel : ViewModel() {
             _liveVideoConsent.value = LiveVideoConsentState(
                 enabled = enabled, busy = false, loadFailed = enabled == null
             )
+            if (enabled == false) stopLivePublishForWithdrawal()
         }
     }
 
@@ -379,9 +383,10 @@ class CameraModeViewModel : ViewModel() {
     fun setLiveVideoConsent(userId: String, enabled: Boolean) {
         val before = _liveVideoConsent.value ?: return
         if (userId.isBlank() || before.busy || before.enabled == null) return
+        consentLoadJob?.cancel()
+        _liveVideoConsent.value = before.copy(enabled = enabled, busy = true)
         if (!enabled) stopLivePublishForWithdrawal()
-        _liveVideoConsent.value = before.copy(busy = true)
-        viewModelScope.launch {
+        consentSaveJob = viewModelScope.launch {
             val saved = try {
                 val response = ApiClient.api.updateLiveVideoSettings(userId, LiveVideoSettingsRequest(enabled))
                 val body = response.body()
@@ -417,7 +422,7 @@ class CameraModeViewModel : ViewModel() {
         // 만료·보호자 종료·해제·동의 철회) 또는 카메라 모드 종료뿐. 보호자 자동 연장은 피보호자에게
         // 알리지 않으므로 expires_at이 지나도 방이 살아 있으면 계속 송출해야 한다.
         override fun onConnected(room: Room) {
-            if (!cameraStreaming.value) {
+            if (!cameraStreaming.value || _liveVideoConsent.value?.enabled == false) {
                 leaveLiveRoom()
                 return
             }
