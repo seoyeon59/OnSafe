@@ -9,6 +9,7 @@ import com.example.on_safe.data.repository.RealAccidentHistoryRepository
 import com.example.on_safe.data.repository.WardSource
 import com.example.on_safe.network.ApiClient
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 // 목록 + 정렬 상태 + 조회 실패 여부 — 실패와 "진짜 빈 목록"의 구분용
@@ -41,6 +42,7 @@ class AccidentHistoryViewModel : ViewModel() {
     // 사고 이력·영상·삭제의 조회 대상 — 로그인한 보호자 본인이 아니라 연결된 피보호자.
     // 목록 조회 때 확정해 같은 대상의 영상·삭제에 그대로 쓴다(목록과 대상이 어긋나지 않게).
     private var wardUserId: String? = null
+    private var loadJob: Job? = null
 
     private val _uiState = MutableLiveData(AccidentHistoryUiState())
     val uiState: LiveData<AccidentHistoryUiState> = _uiState
@@ -54,17 +56,24 @@ class AccidentHistoryViewModel : ViewModel() {
     fun loadHistory(guardianUserId: String) {
         if (guardianUserId.isBlank()) return
 
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             try {
                 // 화면 진입마다 재확인 — 다른 화면에서 연결·해제됐을 수 있다
                 val ward = WardSource.fetchPairedWardUserId(guardianUserId)
-                wardUserId = ward
+                if (ward != wardUserId) {
+                    wardUserId = null
+                    rawEntries = emptyList()
+                    setState { copy(entries = rawEntries) }
+                }
                 if (ward == null) {
                     rawEntries = emptyList()
                     setState { copy(entries = rawEntries, lastLoadFailed = false, notPaired = true) }
                     return@launch
                 }
-                rawEntries = repository.getHistoryEntries(ward)
+                val entries = repository.getHistoryEntries(ward)
+                wardUserId = ward
+                rawEntries = entries
                 setState { copy(entries = rawEntries, lastLoadFailed = false, notPaired = false) }
             } catch (e: CancellationException) {
                 throw e   // 화면 이탈에 의한 취소 — 조회 실패 처리 대상 아님
@@ -88,6 +97,7 @@ class AccidentHistoryViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val response = ApiClient.api.getFallLogVideo(ward, entry.id)
+                if (ward != wardUserId) return@launch
                 val body = response.body()
                 val signedUrl = body?.data?.signedUrl
                 if (response.isSuccessful && body?.success == true && signedUrl != null) {
@@ -111,6 +121,7 @@ class AccidentHistoryViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val response = ApiClient.api.deleteFallLog(ward, entry.id)
+                if (ward != wardUserId) return@launch
                 val body = response.body()
                 if (response.isSuccessful && body?.success == true) {
                     // 재조회 없이 로컬 목록에서만 제거 — 목록 깜빡임 방지
