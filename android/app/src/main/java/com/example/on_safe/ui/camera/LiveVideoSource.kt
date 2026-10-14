@@ -26,8 +26,6 @@ class LiveVideoSource {
     private var track: LocalVideoTrack? = null
     private var room: Room? = null
 
-    val isPublishing: Boolean get() = synchronized(lock) { track != null }
-
     /** 접속된 방에 영상 트랙을 만들어 송출한다. 실패하면 false */
     suspend fun publish(room: Room): Boolean {
         val newCapturer = BitmapFrameCapturer()

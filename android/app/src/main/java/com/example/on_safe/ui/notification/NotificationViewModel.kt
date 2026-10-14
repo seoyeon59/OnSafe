@@ -64,7 +64,18 @@ class NotificationViewModel : ViewModel() {
             setState { copy(items = items.map { if (it.id == item.id) it.copy(isUnread = false) else it }) }
             markRead(userId, item.id)
         }
-        item.logId?.let { logId -> launchQuietly { repository.confirmFall(userId, logId) } }
+        val logId = item.logId ?: return
+        viewModelScope.launch {
+            try {
+                repository.confirmFall(userId, logId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IllegalStateException) {
+                _toastEvent.value = NotificationToastEvent(e.message ?: "사고를 확인 처리하지 못했습니다.")
+            } catch (_: Exception) {
+                _toastEvent.value = NotificationToastEvent(NETWORK_ERROR_MSG)
+            }
+        }
     }
 
     fun hasUnreadItems(): Boolean = _uiState.value?.items?.any { it.isUnread } == true

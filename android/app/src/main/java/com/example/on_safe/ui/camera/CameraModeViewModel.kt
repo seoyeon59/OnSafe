@@ -83,6 +83,8 @@ class CameraModeViewModel : ViewModel() {
 
     // live_request 수신함 감시 — 카메라 모드 켜져 있는 동안만
     private var liveRequestJob: Job? = null
+    // 송출 중단 시 발급 중인 토큰 요청도 취소
+    private var liveTokenJob: Job? = null
 
     // Ready를 아무도 넘겨받지 않으면 세션 만료 시각에 비운다 — 송출 중 표시가 남아 다음 요청을 막지 않게
     private var liveReadyExpiryJob: Job? = null
@@ -110,6 +112,7 @@ class CameraModeViewModel : ViewModel() {
     /** 카메라 모드 촬영 상태 — Activity가 상태 전환마다 알린다 */
     fun setCameraStreaming(streaming: Boolean) {
         cameraStreaming.value = streaming
+        if (!streaming) leaveLiveRoom()
     }
 
     /** 분석 스레드에서 호출(PoseLandmarkerHelper.frameSink) — 송출 중일 때만 프레임을 넘긴다 */
@@ -313,7 +316,7 @@ class CameraModeViewModel : ViewModel() {
                     return@collect
                 }
                 val request = LiveRequestInbox.take() ?: return@collect
-                fetchPublishToken(request)
+                liveTokenJob = viewModelScope.launch { fetchPublishToken(request) }
             }
         }
     }
@@ -327,6 +330,12 @@ class CameraModeViewModel : ViewModel() {
         LiveRequestInbox.isPublishing = true
         when (val result = LivePublishTokenSource.fetch(request)) {
             is PublishTokenResult.Success -> {
+                if (!cameraStreaming.value || request.isExpired() ||
+                    !isHeartbeatFresh(lastHeartbeatOkAt.value)
+                ) {
+                    resetLivePublish()
+                    return
+                }
                 liveExpiresAtMillis = result.credentials.expiresAtMillis
                 _livePublishState.value = LivePublishState.Ready(result.credentials)
                 // 접속이 끝나지 않은 채 세션이 만료되는 경우 대비 — 접속되면 해제한다
@@ -408,6 +417,10 @@ class CameraModeViewModel : ViewModel() {
         // 만료·보호자 종료·해제·동의 철회) 또는 카메라 모드 종료뿐. 보호자 자동 연장은 피보호자에게
         // 알리지 않으므로 expires_at이 지나도 방이 살아 있으면 계속 송출해야 한다.
         override fun onConnected(room: Room) {
+            if (!cameraStreaming.value) {
+                leaveLiveRoom()
+                return
+            }
             liveReadyExpiryJob?.cancel()
             liveReadyExpiryJob = null
             liveRoom = room
@@ -440,6 +453,8 @@ class CameraModeViewModel : ViewModel() {
 
     // 우리 쪽에서 송출 종료 — 영상 트랙을 먼저 내리고(reset) 방을 해제한다
     private fun leaveLiveRoom() {
+        liveTokenJob?.cancel()
+        liveTokenJob = null
         resetLivePublish()
         liveRoomPublisher?.disconnect()
     }
