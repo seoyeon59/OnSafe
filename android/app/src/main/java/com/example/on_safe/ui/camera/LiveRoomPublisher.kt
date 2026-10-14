@@ -9,7 +9,6 @@ import io.livekit.android.ConnectOptions
 import io.livekit.android.LiveKit
 import io.livekit.android.LiveKitOverrides
 import io.livekit.android.audio.NoAudioHandler
-import io.livekit.android.events.DisconnectReason
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.events.collect
 import io.livekit.android.room.Room
@@ -50,8 +49,6 @@ class LiveRoomPublisher(
 
     // 우리가 끊는 중인지 — 직접 끊은 Disconnected 이벤트를 서버 종료로 오인하지 않게
     private var closingByClient = false
-
-    val connectedRoom: Room? get() = room?.takeIf { it.state == Room.State.CONNECTED }
 
     val isActive: Boolean get() = job?.isActive == true
 
@@ -98,7 +95,7 @@ class LiveRoomPublisher(
     private fun handleEvent(event: RoomEvent) {
         if (event !is RoomEvent.Disconnected || closingByClient) return
         // ROOM_DELETED: 서버가 세션 만료·보호자 종료·해제·동의 철회로 방을 지움. 그 외는 네트워크 단절 등
-        val reason = event.reason ?: DisconnectReason.UNKNOWN_REASON
+        val reason = event.reason
         if (BuildConfig.DEBUG) Log.d(TAG, "LiveKit 연결 끊김 — reason=$reason")
         end(reason.name)
     }
