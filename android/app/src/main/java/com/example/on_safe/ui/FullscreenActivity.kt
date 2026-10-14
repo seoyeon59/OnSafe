@@ -9,6 +9,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.example.on_safe.R
 import com.example.on_safe.data.repository.WardSource
@@ -17,6 +18,7 @@ import com.example.on_safe.ui.live.LiveViewState
 import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.toast
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import livekit.org.webrtc.RendererCommon
 
@@ -28,6 +30,7 @@ class FullscreenActivity : AppCompatActivity() {
 
     // 홈에서 넘겨받은 피보호자 — 없으면(재생성 등) 직접 조회
     private var wardUserId: String? = null
+    private var wardLookupJob: Job? = null
 
     // 뒤로가기로 홈에 돌아갈 때 시청을 넘긴다 — 서버 세션을 닫지 않고 홈의 POST가 연장으로 합류
     private var handingOffToHome = false
@@ -62,17 +65,20 @@ class FullscreenActivity : AppCompatActivity() {
     // 백그라운드 전환·화면 이탈 시 서버 세션 종료(DELETE). 홈으로 넘기는 경우만 유지
     override fun onStop() {
         super.onStop()
-        liveController.stop(endSession = !handingOffToHome)
+        wardLookupJob?.cancel()
+        wardLookupJob = null
+        liveController.stop(endSession = !handingOffToHome && !isChangingConfigurations)
     }
 
     private fun startLive() {
+        wardLookupJob?.cancel()
         val ward = wardUserId
         if (ward != null) {
             liveController.start(ward)
             return
         }
         renderLiveState(LiveViewState.Connecting)
-        lifecycleScope.launch {
+        wardLookupJob = lifecycleScope.launch {
             val resolved = try {
                 WardSource.fetchPairedWardUserId(TokenManager.getUserId(this@FullscreenActivity))
             } catch (e: CancellationException) {
@@ -85,6 +91,7 @@ class FullscreenActivity : AppCompatActivity() {
                 renderLiveState(LiveViewState.Stopped("피보호자를 연결하면 실시간 영상을 볼 수 있습니다."))
                 return@launch
             }
+            if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) return@launch
             wardUserId = resolved
             liveController.start(resolved)
         }

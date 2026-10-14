@@ -87,10 +87,11 @@
             android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize" />
 
-        <!-- 전체화면: 세션 상태가 없어 회전 시 재생성돼도 무방 → configChanges 불필요 -->
+        <!-- 전체화면 회전 시 LIVE 세션·렌더러 유지 -->
         <activity
             android:name="com.example.on_safe.ui.FullscreenActivity"
-            android:screenOrientation="sensorLandscape" />
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize" />
 
         <!-- 알림 내역 -->
         <activity

@@ -71,6 +71,7 @@ class LiveViewController(
     private val appContext = context.applicationContext
 
     private var sessionJob: Job? = null
+    private var videoWaitJob: Job? = null
     private var room: Room? = null
     private var renderer: TextureViewRenderer? = null
     private var attachedTrack: VideoTrack? = null
@@ -164,6 +165,8 @@ class LiveViewController(
             is RoomEvent.TrackSubscribed -> {
                 val track = event.track as? VideoTrack ?: return
                 if (event.participant.identity?.value != elderIdentity) return
+                videoWaitJob?.cancel()
+                videoWaitJob = null
                 attachedTrack?.removeRenderer(target)
                 track.addRenderer(target)
                 attachedTrack = track
@@ -177,6 +180,11 @@ class LiveViewController(
                 videoReceiving.value = false
                 // 송출이 잠시 끊김 — 방이 살아 있으면 재송출을 기다린다(LIVE 배지는 내림)
                 setState(LiveViewState.Connecting)
+                videoWaitJob?.cancel()
+                videoWaitJob = scope.launch {
+                    delay(VIDEO_WAIT_MS)
+                    terminate(LiveViewState.Stopped("피보호자 영상 송출이 중단되었습니다. 카메라 앱에서 촬영 상태를 확인해 주세요."), endSession = true)
+                }
             }
             is RoomEvent.Disconnected -> {
                 if (closingByClient) return
@@ -251,6 +259,8 @@ class LiveViewController(
 
     private fun releaseRoom() {
         closingByClient = true
+        videoWaitJob?.cancel()
+        videoWaitJob = null
         renderer?.let { r ->
             attachedTrack?.removeRenderer(r)
             videoFrame.removeView(r)
