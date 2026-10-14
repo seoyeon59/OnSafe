@@ -86,7 +86,7 @@
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="8dp">
 
-                <com.google.android.material.checkbox.MaterialCheckBox
+                <androidx.appcompat.widget.AppCompatCheckBox
                     android:id="@+id/cbPairingLiveVideo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -96,7 +96,9 @@
                     android:textColor="@color/ink_900"
                     android:textSize="@dimen/text_body"
                     android:textStyle="bold"
-                    app:buttonTint="@color/primary_blue" />
+                    android:button="@drawable/sel_check_square"
+                    app:buttonTint="@null"
+                    android:paddingStart="12dp" />
 
                 <TextView
                     android:layout_width="match_parent"
