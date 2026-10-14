@@ -133,7 +133,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
         adapter.submitList(state.entries, state.sort)
         updateSortChipUi(state.sort)
         updateCountDisplay(state.entries)
-        updateEmptyState(state.lastLoadFailed)
+        updateEmptyState(state.lastLoadFailed, state.notPaired)
         // 정렬이 실제로 바뀔 때만 맨 위로 — 삭제 등 다른 갱신에서 스크롤되면 보던 위치 소실
         if (lastRenderedSort != null && lastRenderedSort != state.sort) {
             rvHistory.smoothScrollToPosition(0)
@@ -175,18 +175,25 @@ class AccidentHistoryActivity : AppCompatActivity() {
         setupBottomNav(NavTab.HISTORY)
     }
 
-    // 빈 목록일 때 조회 실패와 "이력 없음"의 구분 — 미구분 시 실패를 이력 없음으로 오해
-    private fun updateEmptyState(lastLoadFailed: Boolean) {
+    // 빈 목록일 때 조회 실패·피보호자 미연결·"이력 없음"의 구분 — 미구분 시 실패를 이력 없음으로 오해
+    private fun updateEmptyState(lastLoadFailed: Boolean, notPaired: Boolean) {
         val isEmpty = adapter.isEmpty()
         layoutEmptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
         rvHistory.visibility        = if (isEmpty) View.GONE else View.VISIBLE
         if (isEmpty) {
-            if (lastLoadFailed) {
-                tvEmpty.text = "사고 이력을 불러오지 못했습니다."
-                btnRetry.visibility = View.VISIBLE
-            } else {
-                tvEmpty.text = "사고 이력이 없습니다."
-                btnRetry.visibility = View.GONE
+            when {
+                lastLoadFailed -> {
+                    tvEmpty.text = "사고 이력을 불러오지 못했습니다."
+                    btnRetry.visibility = View.VISIBLE
+                }
+                notPaired -> {
+                    tvEmpty.text = "피보호자를 연결하면 사고 이력이 표시됩니다."
+                    btnRetry.visibility = View.GONE
+                }
+                else -> {
+                    tvEmpty.text = "사고 이력이 없습니다."
+                    btnRetry.visibility = View.GONE
+                }
             }
         }
     }
@@ -234,7 +241,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
             toast(videoUnavailableMessage(entry, "재생할 영상이 없습니다."))
             return
         }
-        viewModel.fetchVideoUrl(TokenManager.getUserId(this), entry, forDownload = false)
+        viewModel.fetchVideoUrl(entry, forDownload = false)
     }
 
     private fun handleDownload(entry: HistoryListItem.HistoryEntry) {
@@ -251,7 +258,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
             requestMediaPermission.launch(mediaPermission)
             return
         }
-        viewModel.fetchVideoUrl(TokenManager.getUserId(this), entry, forDownload = true)
+        viewModel.fetchVideoUrl(entry, forDownload = true)
     }
 
     // signed URL(1시간 TTL)을 받아 실제 파일을 갤러리에 저장 — ContentResolver가 필요해 Activity가 담당
@@ -280,7 +287,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
         }
         dialog.findViewById<TextView>(R.id.btnDeleteConfirm).setOnClickListener {
             dialog.dismiss()
-            viewModel.deleteEntry(TokenManager.getUserId(this), entry)
+            viewModel.deleteEntry(entry)
         }
         dialog.show()
     }

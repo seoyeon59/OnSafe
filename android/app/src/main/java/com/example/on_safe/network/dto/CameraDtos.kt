@@ -13,13 +13,6 @@ data class RiskScoreResponse(
     val deviceSeenAt: String? = null
 )
 
-data class RiskStatusResponse(
-    val userId: String,
-    val level: String,
-    val score: Float,
-    val colorCode: String
-)
-
 // POST /api/camera/heartbeat — userId 는 JWT 에서 서버가 취해오므로 body 에 담지 않는다.
 // power_save_mode 는 앱이 PowerManager.isPowerSaveMode() 로 감지한 값.
 data class HeartbeatRequest(
