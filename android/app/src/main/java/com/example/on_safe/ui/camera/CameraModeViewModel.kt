@@ -18,6 +18,7 @@ import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.dto.DeviceRegisterRequest
 import com.example.on_safe.network.dto.HeartbeatRequest
 import io.livekit.android.room.Room
+import com.example.on_safe.network.dto.LiveVideoSettingsRequest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -62,6 +63,15 @@ sealed class LivePublishState {
      */
     data class Publishing(val room: String, val expiresAtMillis: Long) : LivePublishState()
 }
+/**
+ * 실시간 영상 동의(live_video_enabled) 토글 상태.
+ * enabled=null은 아직 모름(조회 중·실패) — 토글을 잠그고 켜짐/꺼짐을 단정하지 않는다.
+ */
+data class LiveVideoConsentState(
+    val enabled: Boolean? = null,
+    val busy: Boolean = true,
+    val loadFailed: Boolean = false
+)
 
 class CameraModeViewModel : ViewModel() {
 
@@ -75,6 +85,8 @@ class CameraModeViewModel : ViewModel() {
     private var liveRequestJob: Job? = null
     // 송출 중단 시 발급 중인 토큰 요청도 취소
     private var liveTokenJob: Job? = null
+    private var consentLoadJob: Job? = null
+    private var consentSaveJob: Job? = null
 
     // Ready를 아무도 넘겨받지 않으면 세션 만료 시각에 비운다 — 송출 중 표시가 남아 다음 요청을 막지 않게
     private var liveReadyExpiryJob: Job? = null
@@ -109,6 +121,12 @@ class CameraModeViewModel : ViewModel() {
     fun pushLiveFrame(bitmap: Bitmap) {
         liveVideoSource.pushFrame(bitmap)
     }
+    private val _liveVideoConsent = MutableLiveData(LiveVideoConsentState())
+    val liveVideoConsent: LiveData<LiveVideoConsentState> = _liveVideoConsent
+
+    // 토글 저장 실패 등 1회성 안내
+    private val _liveVideoConsentMessage = MutableLiveData<String?>()
+    val liveVideoConsentMessage: LiveData<String?> = _liveVideoConsentMessage
 
     // 페어링 코드 자동 재발급 루프 — 중복 실행 방지용 참조
     private var pairingCodeJob: Job? = null
@@ -285,6 +303,12 @@ class CameraModeViewModel : ViewModel() {
             }.collect { (pending, streaming, heartbeatAt) ->
                 if (pending == null) return@collect
                 if (_livePublishState.value != LivePublishState.Idle) return@collect
+                // 이 기기에서 동의가 꺼진 게 확인된 상태 — 서버도 403으로 거절하지만 토큰 요청 전에 버린다
+                if (_liveVideoConsent.value?.enabled == false) {
+                    if (BuildConfig.DEBUG) Log.d("CameraMode", "송출 요청 무시 — 영상 동의 꺼짐")
+                    LiveRequestInbox.clear()
+                    return@collect
+                }
                 if (!streaming) {
                     if (BuildConfig.DEBUG) Log.d("CameraMode", "송출 요청 보류 — 촬영 중 아님")
                     return@collect
@@ -308,8 +332,8 @@ class CameraModeViewModel : ViewModel() {
         LiveRequestInbox.isPublishing = true
         when (val result = LivePublishTokenSource.fetch(request)) {
             is PublishTokenResult.Success -> {
-                if (!cameraStreaming.value || request.isExpired() ||
-                    !isHeartbeatFresh(lastHeartbeatOkAt.value)
+                if (!cameraStreaming.value || _liveVideoConsent.value?.enabled == false ||
+                    request.isExpired() || !isHeartbeatFresh(lastHeartbeatOkAt.value)
                 ) {
                     resetLivePublish()
                     return
@@ -323,6 +347,63 @@ class CameraModeViewModel : ViewModel() {
             else -> {
                 if (BuildConfig.DEBUG) Log.w("CameraMode", "송출 토큰 미발급 — $result")
                 resetLivePublish()
+            }
+        }
+    }
+
+    /** 실시간 영상 동의 조회 — 카메라 모드 진입 시. 실패하면 토글을 잠그고 다시 누르면 재조회 */
+    fun loadLiveVideoConsent(userId: String) {
+        if (userId.isBlank() || consentSaveJob?.isActive == true) return
+        consentLoadJob?.cancel()
+        _liveVideoConsent.value = LiveVideoConsentState(enabled = null, busy = true)
+        consentLoadJob = viewModelScope.launch {
+            val enabled = try {
+                val response = ApiClient.api.getLiveVideoSettings(userId)
+                val body = response.body()
+                if (response.isSuccessful && body?.success == true) body.data?.enabled else null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (BuildConfig.DEBUG) Log.w("CameraMode", "영상 동의 조회 실패", e)
+                null
+            }
+            _liveVideoConsent.value = LiveVideoConsentState(
+                enabled = enabled, busy = false, loadFailed = enabled == null
+            )
+            if (enabled == false) stopLivePublishForWithdrawal()
+        }
+    }
+
+    /**
+     * 실시간 영상 동의 변경. 실패하면 이전 값으로 되돌린다 — 화면과 실제 동의가 어긋나지 않게.
+     *
+     * 끄면(철회) 서버 응답을 기다리지 않고 이 기기의 송출부터 즉시 멈춘다. 서버도 방을 지워 끊지만
+     * (SettingsService → LiveSessionTerminator), 저장이 늦거나 실패해도 영상이 더 나가지 않게 한다.
+     */
+    fun setLiveVideoConsent(userId: String, enabled: Boolean) {
+        val before = _liveVideoConsent.value ?: return
+        if (userId.isBlank() || before.busy || before.enabled == null) return
+        consentLoadJob?.cancel()
+        _liveVideoConsent.value = before.copy(enabled = enabled, busy = true)
+        if (!enabled) stopLivePublishForWithdrawal()
+        consentSaveJob = viewModelScope.launch {
+            val saved = try {
+                val response = ApiClient.api.updateLiveVideoSettings(userId, LiveVideoSettingsRequest(enabled))
+                val body = response.body()
+                if (response.isSuccessful && body?.success == true) body.data?.enabled ?: enabled else null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (BuildConfig.DEBUG) Log.w("CameraMode", "영상 동의 변경 실패", e)
+                null
+            }
+            if (saved == null) {
+                _liveVideoConsent.value = before.copy(busy = false)
+                _liveVideoConsentMessage.value = "실시간 영상 설정을 바꾸지 못했어요. 잠시 후 다시 시도해주세요."
+            } else {
+                _liveVideoConsent.value = LiveVideoConsentState(enabled = saved, busy = false)
+                _liveVideoConsentMessage.value =
+                    if (saved) "보호자의 실시간 영상 보기를 허용했어요." else "실시간 영상 보기를 껐어요."
             }
         }
     }
@@ -341,7 +422,7 @@ class CameraModeViewModel : ViewModel() {
         // 만료·보호자 종료·해제·동의 철회) 또는 카메라 모드 종료뿐. 보호자 자동 연장은 피보호자에게
         // 알리지 않으므로 expires_at이 지나도 방이 살아 있으면 계속 송출해야 한다.
         override fun onConnected(room: Room) {
-            if (!cameraStreaming.value) {
+            if (!cameraStreaming.value || _liveVideoConsent.value?.enabled == false) {
                 leaveLiveRoom()
                 return
             }
@@ -398,6 +479,19 @@ class CameraModeViewModel : ViewModel() {
         // 카메라 모드 종료 — 방에서 나가고, 송출 중 표시가 남아 다음 카메라 모드가 요청을 못 받는 일이 없게 비운다
         leaveLiveRoom()
         liveRoomPublisher = null
+    }
+
+    fun onLiveVideoConsentMessageShown() {
+        _liveVideoConsentMessage.value = null
+    }
+
+    // 동의 철회 — 진행 중 송출(접속 중 포함)을 끊고, 보관 중인 송출 요청도 버린다
+    private fun stopLivePublishForWithdrawal() {
+        LiveRequestInbox.clear()
+        if (_livePublishState.value != LivePublishState.Idle) {
+            if (BuildConfig.DEBUG) Log.d("CameraMode", "영상 동의 철회 — 송출 즉시 중단")
+            leaveLiveRoom()
+        }
     }
 
     // 페어링 해제 — 양방향(피보호자·보호자 어느 쪽에서 호출해도 동작).
