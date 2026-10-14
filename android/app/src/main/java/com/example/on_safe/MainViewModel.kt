@@ -93,8 +93,11 @@ class MainViewModel : ViewModel() {
             return
         }
 
-        // 피보호자가 바뀌면 응답 전까지 이전 대상의 기기 ID가 남지 않게 비운다
-        if (wardUserId != pollingWardUserId) setState { copy(deviceId = null) }
+        // 피보호자 변경 시 이전 점수·기기 정보 초기화
+        if (wardUserId != pollingWardUserId) {
+            setState { copy(deviceId = null, riskScore = null) }
+            _fallAlertEvent.value = null
+        }
         refreshDeviceId(wardUserId)
 
         if (wardUserId != pollingWardUserId) lastRiskLevel = null
