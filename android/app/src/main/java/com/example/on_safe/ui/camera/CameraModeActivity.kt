@@ -384,7 +384,11 @@ class CameraModeActivity : AppCompatActivity() {
         }
         btnToggleRecording.setOnClickListener {
             when (currentState) {
-                CameraState.STANDBY, CameraState.FAILED -> startRecording()
+                CameraState.STANDBY, CameraState.FAILED -> {
+                    // 촬영이 시작됨을 알린다 — 셔터음·진동(res/raw/camera_start, live_watch_alert.xml)
+                    LiveWatchAlert.play(this)
+                    startRecording()
+                }
                 CameraState.STREAMING -> showStopRecordingDialog()
                 CameraState.CONNECTING -> { /* 연결 중 무시 */ }
             }
@@ -535,9 +539,6 @@ class CameraModeActivity : AppCompatActivity() {
                     if (watching && !guardianWatchingView.isVisible) {
                         // 화면보호기로 어두워져 있어도 시청 시작은 알아차리게 잠시 밝힌다
                         screenSaverController.wakeBriefly()
-                        // 화면을 보고 있지 않아도 알 수 있게 셔터음·진동(res/raw/camera_start, live_watch_alert.xml).
-                        // 0cab6e7에서 보류했던 호출을 셔터음·맞춤 진동 적용과 함께 다시 켠다
-                        LiveWatchAlert.play(this@CameraModeActivity)
                         guardianWatchingView.announceForAccessibility("보호자가 실시간 영상을 보고 있습니다")
                     }
                     guardianWatchingView.isVisible = watching

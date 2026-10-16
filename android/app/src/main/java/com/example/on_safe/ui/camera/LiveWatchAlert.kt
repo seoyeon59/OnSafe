@@ -14,12 +14,13 @@ import com.example.on_safe.BuildConfig
 import com.example.on_safe.R
 
 /**
- * 보호자 실시간 시청 시작 알림(소리·진동) — 카메라 모드 "보호자가 보는 중" 배지와 함께 울린다.
+ * 촬영 시작 알림(소리·진동) — 카메라 모드에서 "촬영 시작하기"를 누르면 울린다.
+ * 보호자 실시간 시청 시작 때는 울리지 않는다("보호자가 보는 중" 배지·화면 밝힘만).
  *
  * 리소스만 바꾸면 동작이 바뀐다(코드 수정 불필요) — 설정 안내는 res/values/live_watch_alert.xml 참고.
  * - 소리: res/raw/[SOUND_NAME](카메라 셔터음). 이름으로 찾아 파일이 없어도 빌드가 깨지지 않는다
  * - 진동: 셔터음에 맞춘 구간별 길이·세기(R.array.live_watch_vibration_timings / _amplitudes)
- * - 기기 소리 모드를 따른다: 소리 모드 = 소리+진동, 진동 모드 = 진동만, 무음 = 없음(배지는 항상 표시)
+ * - 기기 소리 모드를 따른다: 소리 모드 = 소리+진동, 진동 모드 = 진동만, 무음 = 없음
  */
 object LiveWatchAlert {
 
@@ -48,7 +49,7 @@ object LiveWatchAlert {
     private fun playSound(context: Context) {
         val resId = context.resources.getIdentifier(SOUND_NAME, "raw", context.packageName)
         if (resId == 0) return
-        // 알림은 부가 기능 — 재생 실패가 송출·촬영에 영향을 주지 않게 예외를 흡수한다
+        // 알림은 부가 기능 — 재생 실패가 촬영에 영향을 주지 않게 예외를 흡수한다
         try {
             val afd = context.resources.openRawResourceFd(resId) ?: return
             val player = MediaPlayer()
@@ -59,7 +60,7 @@ object LiveWatchAlert {
             player.prepare()
             player.start()
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) Log.w(TAG, "시청 시작 효과음 재생 실패", e)
+            if (BuildConfig.DEBUG) Log.w(TAG, "촬영 시작 효과음 재생 실패", e)
         }
     }
 
@@ -91,7 +92,7 @@ object LiveWatchAlert {
                 }
             }
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) Log.w(TAG, "시청 시작 진동 실패", e)
+            if (BuildConfig.DEBUG) Log.w(TAG, "촬영 시작 진동 실패", e)
         }
     }
 
