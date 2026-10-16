@@ -46,7 +46,12 @@ class OnSafeMessagingService : FirebaseMessagingService() {
             return
         }
 
-        PushNotifications.show(applicationContext, event, title, body)
+        // 피보호자 본인 기기로 온 낙상·위험·주의 알림은 띄우지 않는다 — 보호자에게만 알린다
+        val ownFallAlert = PushNotifications.isOwnFallAlert(
+            event, data, TokenManager.getUserId(applicationContext)
+        )
+        // data를 함께 넘겨 낙상 계열은 위험(경보음+진동)·주의(진동만) 채널로 나눈다
+        if (!ownFallAlert) PushNotifications.show(applicationContext, event, title, body, data)
         PushEventBus.publish(PushEvent(event, data))
         // 보호자 연결 요청 — 승인해야 성립하므로 보이는 화면 위에 바로 승인 창
         if (event == PairingApprovalDialog.EVENT) PairingApprovalDialog.offer(data, message.sentTime)
