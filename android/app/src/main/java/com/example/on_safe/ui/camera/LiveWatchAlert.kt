@@ -17,16 +17,16 @@ import com.example.on_safe.R
  * 보호자 실시간 시청 시작 알림(소리·진동) — 카메라 모드 "보호자가 보는 중" 배지와 함께 울린다.
  *
  * 리소스만 바꾸면 동작이 바뀐다(코드 수정 불필요) — 설정 안내는 res/values/live_watch_alert.xml 참고.
- * - 소리: res/raw/[SOUND_NAME] 파일이 있을 때만 재생. 이름으로 찾아 파일이 없어도 빌드가 깨지지 않는다
- * - 진동: R.array.live_watch_vibration_pattern
+ * - 소리: res/raw/[SOUND_NAME](카메라 셔터음). 이름으로 찾아 파일이 없어도 빌드가 깨지지 않는다
+ * - 진동: 셔터음에 맞춘 구간별 길이·세기(R.array.live_watch_vibration_timings / _amplitudes)
  * - 기기 소리 모드를 따른다: 소리 모드 = 소리+진동, 진동 모드 = 진동만, 무음 = 없음(배지는 항상 표시)
  */
 object LiveWatchAlert {
 
     private const val TAG = "LiveWatchAlert"
 
-    // res/raw 파일명(확장자 제외)
-    private const val SOUND_NAME = "live_watch_start"
+    // res/raw 파일명(확장자 제외) — keep.xml의 tools:keep과 같아야 release 축소에서 살아남는다
+    private const val SOUND_NAME = "camera_start"
 
     // 알림 효과음 — 알림 볼륨을 따르고, 오디오 포커스를 잡지 않아 다른 재생을 멈추지 않는다
     private val SOUND_ATTRIBUTES: AudioAttributes = AudioAttributes.Builder()
@@ -64,26 +64,57 @@ object LiveWatchAlert {
     }
 
     private fun vibrate(context: Context) {
-        val pattern = try {
-            context.resources.getIntArray(R.array.live_watch_vibration_pattern).map { it.toLong() }.toLongArray()
+        val (timings, amplitudes) = try {
+            val res = context.resources
+            res.getIntArray(R.array.live_watch_vibration_timings).map { it.toLong() }.toLongArray() to
+                res.getIntArray(R.array.live_watch_vibration_amplitudes).map { it.coerceIn(0, 255) }.toIntArray()
         } catch (_: Exception) {
             return
         }
-        // 대기 값만 있거나 비어 있으면 진동할 구간이 없다
-        if (pattern.size < 2 || pattern.drop(1).all { it <= 0 }) return
+        // 배열 개수가 다르거나 진동할 구간이 없으면 울리지 않는다
+        if (timings.isEmpty() || timings.size != amplitudes.size) return
+        if (timings.indices.none { timings[it] > 0 && amplitudes[it] > 0 }) return
 
         val vibrator = vibrator(context) ?: return
         if (!vibrator.hasVibrator()) return
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(pattern, -1)
+            when {
+                // 세기 조절 가능 — 셔터음의 "톡(약) → 쿵(강) → 잦아듦"을 그대로
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator.hasAmplitudeControl() ->
+                    vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
+                // 세기 조절 불가 — 같은 타이밍의 켜짐·꺼짐으로
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ->
+                    vibrator.vibrate(VibrationEffect.createWaveform(toOnOffPattern(timings, amplitudes), -1))
+                else -> {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(toOnOffPattern(timings, amplitudes), -1)
+                }
             }
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) Log.w(TAG, "시청 시작 진동 실패", e)
         }
+    }
+
+    /**
+     * 구간별 세기 → 켜짐·꺼짐 패턴("대기, 진동, 대기, …"). 세기 0은 꺼짐, 나머지는 켜짐이며
+     * 같은 상태가 이어지면 합친다. 예) [10,30,20,50,50,70]/[0,110,0,255,150,60] → [10,30,20,170]
+     */
+    internal fun toOnOffPattern(timings: LongArray, amplitudes: IntArray): LongArray {
+        val out = mutableListOf<Long>()
+        var on = false   // 패턴은 항상 "대기"부터 시작
+        var acc = 0L
+        for (i in timings.indices) {
+            val segOn = amplitudes[i] > 0
+            if (segOn == on) {
+                acc += timings[i]
+            } else {
+                out.add(acc)
+                acc = timings[i]
+                on = segOn
+            }
+        }
+        out.add(acc)
+        return out.toLongArray()
     }
 
     private fun vibrator(context: Context): Vibrator? =
