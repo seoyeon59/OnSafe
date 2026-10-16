@@ -44,6 +44,7 @@ import com.example.on_safe.network.dto.LandmarkPoint
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.AppScope
 import com.example.on_safe.util.DisplayText
+import com.example.on_safe.util.PairingRole
 import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.toast
@@ -307,6 +308,10 @@ class CameraModeActivity : AppCompatActivity() {
             tvPairingCode.text = state.pairingCode ?: "------"
             // 페어링된 상태에서만 해제 버튼 노출 — 미연결 상태에선 해제할 대상이 없다.
             btnUnpairCamera.visibility = if (state.isPaired) View.VISIBLE else View.GONE
+        }
+        // 서버로 확정된 연결 여부만 기록 — 보호자와 연결된 피보호자 기기면 낙상 알림을 띄우지 않는다
+        viewModel.pairingConfirmed.observe(this) { paired ->
+            if (paired != null) PairingRole.setPairedAsElder(this, TokenManager.getUserId(this), paired)
         }
         viewModel.liveVideoConsent.observe(this, ::renderLiveVideoConsent)
         viewModel.liveVideoConsentMessage.observe(this) { message ->

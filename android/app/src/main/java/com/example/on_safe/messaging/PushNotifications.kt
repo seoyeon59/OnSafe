@@ -17,7 +17,6 @@ import com.example.on_safe.MainActivity
 import com.example.on_safe.R
 import com.example.on_safe.data.repository.FallLogSource
 import com.example.on_safe.ui.notification.NotificationActivity
-import com.example.on_safe.util.TokenManager
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -109,14 +108,21 @@ object PushNotifications {
     enum class FallAlertLevel { DANGER, WARNING }
 
     /**
-     * 피보호자 본인 기기로 온 낙상 계열 알림인지 — data user_id(사고 이력 주인)가 내 userId.
-     * 이런 알림은 표시하지 않는다(보호자에게만 알린다). 서버가 피보호자에게도 보내지만, 카메라 모드 기기에서
-     * 울리면 낙상 녹화에 녹음되고 본인에게는 필요 없는 알림이다.
+     * 피보호자 본인 기기로 온 낙상 계열 알림인지. 이런 알림은 표시하지 않는다(보호자에게만 알린다).
+     * 서버가 피보호자에게도 보내지만, 카메라 모드 기기에서 울리면 낙상 녹화에 녹음되고 본인에게는 필요 없다.
+     * - data user_id(사고 이력 주인 = 카메라를 켠 피보호자)가 있으면 내 userId와 같은지로 판단
+     * - 없으면 이 계정이 보호자와 연결된 피보호자인지([pairedAsElder], 카메라 모드가 기록)로 판단
+     *   — 서버 규칙상 한 계정은 보호자·피보호자 중 하나로만 페어링된다
      * 백그라운드에선 시스템이 직접 표시해 앱이 막을 수 없다 — 서버가 피보호자에게 보내지 않아야 완전히 막힌다.
      */
-    internal fun isOwnFallAlert(event: String?, data: Map<String, String>, myUserId: String): Boolean {
+    internal fun isOwnFallAlert(
+        event: String?,
+        data: Map<String, String>,
+        myUserId: String,
+        pairedAsElder: Boolean
+    ): Boolean {
         if (!isFallEvent(event)) return false
-        val owner = data["user_id"] ?: return false
+        val owner = data["user_id"] ?: return pairedAsElder
         return myUserId.isNotBlank() && owner == myUserId
     }
 
@@ -127,9 +133,8 @@ object PushNotifications {
      *   score가 없으면 놓치지 않도록 위험으로 본다
      * 피보호자 본인 기기 알림은 [isOwnFallAlert]로 표시 전에 걸러진다.
      */
-    internal fun fallAlertLevel(event: String?, data: Map<String, String>, myUserId: String): FallAlertLevel? {
+    internal fun fallAlertLevel(event: String?, data: Map<String, String>): FallAlertLevel? {
         if (!isFallEvent(event)) return null
-        if (isOwnFallAlert(event, data, myUserId)) return null
         if (event == "fall_escalated") return FallAlertLevel.DANGER
         if (data["fall"]?.toBooleanStrictOrNull() == true) return FallAlertLevel.DANGER
         val score = data["score"]?.toFloatOrNull() ?: return FallAlertLevel.DANGER
@@ -152,7 +157,7 @@ object PushNotifications {
         body: String?,
         data: Map<String, String> = emptyMap()
     ) {
-        val level = fallAlertLevel(event, data, TokenManager.getUserId(context))
+        val level = fallAlertLevel(event, data)
         val channelId = when (level) {
             FallAlertLevel.DANGER -> CHANNEL_DANGER
             FallAlertLevel.WARNING -> CHANNEL_WARNING

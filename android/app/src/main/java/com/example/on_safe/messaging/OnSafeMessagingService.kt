@@ -3,6 +3,7 @@ package com.example.on_safe.messaging
 import android.util.Log
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.ui.pairing.PairingApprovalDialog
+import com.example.on_safe.util.PairingRole
 import com.example.on_safe.util.TokenManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -47,8 +48,10 @@ class OnSafeMessagingService : FirebaseMessagingService() {
         }
 
         // 피보호자 본인 기기로 온 낙상·위험·주의 알림은 띄우지 않는다 — 보호자에게만 알린다
+        val myUserId = TokenManager.getUserId(applicationContext)
         val ownFallAlert = PushNotifications.isOwnFallAlert(
-            event, data, TokenManager.getUserId(applicationContext)
+            event, data, myUserId,
+            pairedAsElder = PairingRole.isPairedAsElder(applicationContext, myUserId)
         )
         // data를 함께 넘겨 낙상 계열은 위험(경보음+진동)·주의(진동만) 채널로 나눈다
         if (!ownFallAlert) PushNotifications.show(applicationContext, event, title, body, data)
