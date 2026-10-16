@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    android:clipToOutline="true"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_card"
+    android:orientation="vertical"
+    android:paddingTop="20dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"
+            android:paddingBottom="16dp">
+
+            <FrameLayout
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_circle_primary_tint">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_eye"
+                    app:tint="@color/primary_blue" />
+
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="실시간 영상 보기를 허용할까요?"
+                android:textColor="@color/ink_900"
+                android:textSize="@dimen/text_subtitle"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:text="허용하면 보호자가 요청할 때 이 기기의 카메라 화면을 실시간으로 볼 수 있어요. 보호자가 요청하면 별도 확인 없이 카메라 영상이 전송되며, 전송 중에는 화면에 표시됩니다."
+                android:textColor="@color/ink_500"
+                android:textSize="@dimen/text_caption" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="언제든 이 화면에서 끌 수 있어요."
+                android:textColor="@color/ink_500"
+                android:textSize="@dimen/text_caption" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- 구분선 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/border_subtle" />
+
+    <!-- 버튼 행 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="52dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btnLiveConsentCancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:minHeight="52dp"
+            android:paddingVertical="12dp"
+            android:text="취소"
+            android:textColor="@color/ink_500"
+            android:textSize="@dimen/text_body"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center_vertical"
+            android:background="@color/border_subtle" />
+
+        <TextView
+            android:id="@+id/btnLiveConsentConfirm"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:minHeight="52dp"
+            android:paddingVertical="12dp"
+            android:text="허용"
+            android:textColor="@color/primary_blue"
+            android:textSize="@dimen/text_body"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    촬영 시작 알림 설정 (카메라 모드 "촬영 시작하기", LiveWatchAlert)
+
+    [소리] res/raw/camera_start.wav — 카메라 셔터음(약 0.32초).
+           교체하려면 같은 이름(camera_start, 확장자 ogg·mp3·wav 중 하나)으로 바꿔 넣는다. 없으면 소리만 생략.
+           파일명은 영문 소문자·숫자·밑줄만 가능. 촬영 시작 직후 녹화에 섞일 수 있어 짧게 유지.
+
+    [진동] 셔터음 포락선에 맞춘 구간들. 두 배열은 같은 개수여야 한다.
+           live_watch_vibration_timings     : 각 구간 길이(ms)
+           live_watch_vibration_amplitudes  : 각 구간 세기(0=멈춤, 1~255)
+           셔터음 분석(10ms 단위): 10~20ms 작은 '찰'(최대의 43%) → 60~150ms 큰 '칵'(최대, 80ms 정점)
+           → 서서히 사그라듦(~260ms). 그래서 "톡(약) → 쿵(강) → 잦아듦"으로 맞췄다.
+           세기 조절이 안 되는 기기는 0이 아닌 구간을 같은 타이밍의 켜짐으로 바꿔 울린다.
+           진동을 끄려면 두 배열의 <item>을 모두 지운다.
+-->
+<resources>
+    <integer-array name="live_watch_vibration_timings">
+        <item>10</item>   <!-- 대기: 소리 시작 직후 -->
+        <item>30</item>   <!-- 톡: 작은 '찰' -->
+        <item>20</item>   <!-- 쉼 -->
+        <item>50</item>   <!-- 쿵: 큰 '칵' 정점 -->
+        <item>50</item>   <!-- 감쇠 -->
+        <item>70</item>   <!-- 잔향 -->
+    </integer-array>
+
+    <integer-array name="live_watch_vibration_amplitudes">
+        <item>0</item>
+        <item>110</item>
+        <item>0</item>
+        <item>255</item>
+        <item>150</item>
+        <item>60</item>
+    </integer-array>
+</resources>

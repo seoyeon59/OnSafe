@@ -5,6 +5,7 @@ import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +20,8 @@ import com.example.on_safe.messaging.PushEventBus
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.isOk
 import com.example.on_safe.ui.FullscreenActivity
+import com.example.on_safe.ui.live.LiveViewController
+import com.example.on_safe.ui.live.LiveViewState
 import com.example.on_safe.ui.main.GuardianPairingDialogFragment
 import com.example.on_safe.ui.notification.NotificationActivity
 import com.example.on_safe.util.DisplayText
@@ -33,6 +36,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import livekit.org.webrtc.RendererCommon
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -61,6 +65,22 @@ class MainActivity : AppCompatActivity() {
     // 조회가 날아가 있는 동안 다시 부르면 같은 모달이 두 개 뜰 수 있다
     private var pairingCheckJob: Job? = null
 
+    // 홈 실시간 영상 — 홈은 진입 빈도가 높아 자동 시작하지 않고 '실시간 보기'로만 시작한다
+    // (자동 시작하면 홈을 열 때마다 피보호자 기기에 송출 요청이 간다)
+    private lateinit var liveController: LiveViewController
+
+    // 전체화면으로 시청을 넘기는 중 — onStop에서 서버 세션을 닫지 않는다(전체화면 POST가 연장으로 합류)
+    private var liveHandOffToFullscreen = false
+
+    // 전체화면에서 뒤로 돌아올 때 보던 중이었으면 홈이 이어서 본다
+    private val fullscreenLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val continueLive = result.data?.getBooleanExtra(FullscreenActivity.EXTRA_CONTINUE_LIVE, false) ?: false
+        val ward = pairedWardUserId.takeIf { isPaired }
+        if (continueLive && ward != null) liveController.start(ward)
+    }
+
     // 알림 화면 복귀 시 네트워크 왕복 없는 즉시 반영
     // (뒤이어 onResume의 refreshUnreadBadge가 서버 값으로 재동기화)
     private val notificationLauncher = registerForActivityResult(
@@ -85,6 +105,15 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         applyConnectionState(ConnectionState.CONNECTING)
+
+        liveController = LiveViewController(
+            context = this,
+            scope = lifecycleScope,
+            videoFrame = findViewById<FrameLayout>(R.id.liveVideoFrame),
+            // 홈 카드는 비율이 고정이라 빈 여백 없이 채운다(전체화면은 잘림 없이 표시)
+            scalingType = RendererCommon.ScalingType.SCALE_ASPECT_FILL,
+            onState = ::renderLiveState
+        )
 
         NotificationPermissionBanner.setup(this)
         setupClickListeners()
@@ -230,6 +259,13 @@ class MainActivity : AppCompatActivity() {
         viewModel.stopPolling()
     }
 
+    // 화면을 떠나거나 백그라운드로 가면 시청 종료(DELETE). 전체화면으로 넘길 때만 세션 유지
+    override fun onStop() {
+        super.onStop()
+        liveController.stop(endSession = !liveHandOffToFullscreen)
+        liveHandOffToFullscreen = false
+    }
+
     private fun observeViewModel() {
         viewModel.uiState.observe(this) { state ->
             applyConnectionState(state.connectionState)
@@ -281,8 +317,17 @@ class MainActivity : AppCompatActivity() {
             overridePendingTransition(R.anim.detail_enter, R.anim.detail_exit)
         }
         findViewById<View>(R.id.btnFullscreen).setOnClickListener {
-            startActivity(Intent(this, FullscreenActivity::class.java))
+            // 보는 중이면 전체화면이 같은 세션을 이어받는다 — 끊고 다시 열면 피보호자에게 요청이 재전송된다
+            liveHandOffToFullscreen = liveController.isRunning
+            fullscreenLauncher.launch(
+                Intent(this, FullscreenActivity::class.java)
+                    .putExtra(FullscreenActivity.EXTRA_WARD_USER_ID, pairedWardUserId.takeIf { isPaired })
+            )
             overridePendingTransition(R.anim.fullscreen_enter, R.anim.fullscreen_exit)
+        }
+        findViewById<View>(R.id.btnLiveStart).setOnClickListener {
+            val ward = pairedWardUserId.takeIf { isPaired }
+            if (ward == null) openPairingDialog() else liveController.start(ward)
         }
         setupBottomNav(NavTab.HOME)
         findViewById<View>(R.id.btn119).setOnClickListener {
@@ -340,6 +385,8 @@ class MainActivity : AppCompatActivity() {
                     isPaired = false
                     pairedWardUserId = null
                     pairedWardName = null
+                    // 서버가 해제와 함께 방을 지우지만, 끊김 이벤트를 기다리지 않고 바로 정리한다
+                    liveController.stop(endSession = false)
                     renderPairingButton()
                     restartPolling()
                     android.widget.Toast.makeText(this@MainActivity, "피보호자 연결이 해제되었어요.", android.widget.Toast.LENGTH_SHORT).show()
@@ -363,6 +410,44 @@ class MainActivity : AppCompatActivity() {
             setImageResource(if (isPaired) R.drawable.ic_link_off else R.drawable.ic_link)
             contentDescription = if (isPaired) "피보호자 연결 해제" else "피보호자 연결"
         }
+        // 실시간 영상 안내 문구도 연결 여부에 따라 달라진다
+        if (::liveController.isInitialized) renderLiveState(liveController.state)
+    }
+
+    // 실시간 영상 영역 — 오버레이(버튼·진행·안내)와 LIVE 배지. 배지는 영상 수신 중일 때만
+    private fun renderLiveState(state: LiveViewState) {
+        val overlay = findViewById<View>(R.id.layoutLiveOverlay)
+        val progress = findViewById<View>(R.id.pbLive)
+        val message = findViewById<TextView>(R.id.tvLiveMessage)
+        val startButton = findViewById<TextView>(R.id.btnLiveStart)
+        findViewById<View>(R.id.layoutHomeLiveBadge).isVisible = state == LiveViewState.Live
+
+        when (state) {
+            LiveViewState.Idle -> {
+                overlay.isVisible = true
+                progress.isVisible = false
+                message.text = if (isPaired) "" else "피보호자를 연결하면 실시간 영상을 볼 수 있습니다."
+                message.isVisible = message.text.isNotEmpty()
+                startButton.text = if (isPaired) "실시간 보기" else "피보호자 연결하기"
+                startButton.isVisible = true
+            }
+            LiveViewState.Connecting -> {
+                overlay.isVisible = true
+                progress.isVisible = true
+                message.text = "피보호자 카메라 영상을 요청하는 중…"
+                message.isVisible = true
+                startButton.isVisible = false
+            }
+            LiveViewState.Live -> overlay.isVisible = false
+            is LiveViewState.Stopped -> {
+                overlay.isVisible = true
+                progress.isVisible = false
+                message.text = state.message.orEmpty()
+                message.isVisible = message.text.isNotEmpty()
+                startButton.text = if (isPaired) "다시 보기" else "피보호자 연결하기"
+                startButton.isVisible = true
+            }
+        }
     }
 
     private fun applyConnectionState(state: ConnectionState) {
@@ -373,8 +458,7 @@ class MainActivity : AppCompatActivity() {
         dot.backgroundTintList = ColorStateList.valueOf(color)
         tv.text = state.label
         tv.setTextColor(color)
-        // 미연결·대기 중 LIVE 표시는 오인 유발
-        findViewById<View>(R.id.layoutHomeLiveBadge).isVisible = state == ConnectionState.CONNECTED
+        // LIVE 배지는 기기 연결 상태가 아니라 실제 영상 수신 여부로 표시한다(renderLiveState)
     }
 
     // 점수 미수신 사유별 문구 분기 — 사용자가 취할 조치가 달라 상태별로 구분

@@ -246,10 +246,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- 패널 헤더 -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="wrap_content"
+            android:minHeight="52dp"
             android:background="@color/surface_dark_panel"
             android:gravity="center_vertical"
             android:orientation="horizontal"
@@ -292,10 +292,8 @@
                 android:visibility="gone"
                 app:tint="@color/overlay_white_50" />
 
-            <!-- 튜토리얼 버튼 — 아이콘 24dp, 터치 48dp. 연결 버튼과 터치 영역 12dp 겹쳐 아이콘 간격 12dp -->
             <ImageView
                 android:id="@+id/btnTutorial"
-                android:layout_marginStart="-12dp"
                 android:layout_width="@dimen/touch_min"
                 android:layout_height="@dimen/touch_min"
                 android:contentDescription="튜토리얼"
@@ -306,7 +304,6 @@
 
         </LinearLayout>
 
-        <!-- 패널 본문 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -318,163 +315,245 @@
             android:paddingStart="8dp"
             android:paddingTop="8dp">
 
-            <!-- 연결 상태 섹션 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingEnd="8dp"
-                android:paddingStart="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/pretendard_semibold"
-                    android:letterSpacing="0.09"
-                    android:text="연결 상태"
-                    android:textColor="@color/overlay_white_50"
-                    android:textSize="@dimen/text_tab" />
-
-                <!-- 상태 뱃지 — cornerRadius=48 pill 유지 -->
-                <LinearLayout
-                    android:id="@+id/layoutStatusBadge"
-                    android:layout_width="match_parent"
-                    android:layout_height="32dp"
-                    android:layout_marginTop="4dp"
-                    android:background="@drawable/bg_badge_standby"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingEnd="12dp"
-                    android:paddingStart="12dp">
-
-                    <View
-                        android:id="@+id/viewStatusDot"
-                        android:layout_width="4dp"
-                        android:layout_height="4dp"
-                        android:background="@drawable/bg_dot_neutral" />
-
-                    <TextView
-                        android:id="@+id/tvStatusText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:fontFamily="@font/pretendard_semibold"
-                        android:text="대기 중"
-                        android:textColor="@color/status_standby"
-                        android:textSize="@dimen/text_tab" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- 연결 정보 섹션 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="vertical"
-                android:paddingEnd="8dp"
-                android:paddingStart="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/pretendard_semibold"
-                    android:letterSpacing="0.09"
-                    android:text="연결 정보"
-                    android:textColor="@color/overlay_white_50"
-                    android:textSize="@dimen/text_tab" />
-
-                <!-- 연결 보호자 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:orientation="vertical">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="14dp"
-                            android:layout_height="14dp"
-                            android:alpha="0.25"
-                            android:contentDescription="@null"
-                            android:src="@drawable/ic_person"
-                            app:tint="@color/surface_white" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:fontFamily="@font/pretendard_regular"
-                            android:text="연결 보호자"
-                            android:textColor="@color/overlay_white_50"
-                            android:textSize="@dimen/text_tab" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tvGuardianName"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
-                        android:layout_marginTop="2dp"
-                        android:fontFamily="@font/pretendard_semibold"
-                        tools:text="박지영"
-                        android:textColor="@color/overlay_white_75"
-                        android:textSize="@dimen/text_caption" />
-                </LinearLayout>
-
-                <!-- 기기 ID -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:orientation="vertical">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="14dp"
-                            android:layout_height="14dp"
-                            android:alpha="0.25"
-                            android:contentDescription="@null"
-                            android:src="@drawable/ic_devices"
-                            app:tint="@color/surface_white" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:fontFamily="@font/pretendard_regular"
-                            android:text="기기 ID"
-                            android:textColor="@color/overlay_white_50"
-                            android:textSize="@dimen/text_tab" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tvDeviceId"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
-                        android:layout_marginTop="2dp"
-                        android:fontFamily="@font/pretendard_semibold"
-                        tools:text="a1b2c3d4e5f6a7b8"
-                        android:textColor="@color/overlay_white_75"
-                        android:textSize="@dimen/text_caption" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- 스페이서 -->
-            <View
+            <!-- 정보 영역 스크롤 -->
+            <ScrollView
+                android:id="@+id/scrollPanelInfo"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                android:clipToPadding="false"
+                android:paddingBottom="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="8dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/pretendard_semibold"
+                            android:letterSpacing="0.09"
+                            android:text="연결 상태"
+                            android:textColor="@color/overlay_white_50"
+                            android:textSize="@dimen/text_tab" />
+
+                        <LinearLayout
+                            android:id="@+id/layoutStatusBadge"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:background="@drawable/bg_badge_standby"
+                            android:gravity="center_vertical"
+                            android:minHeight="32dp"
+                            android:orientation="horizontal"
+                            android:paddingEnd="12dp"
+                            android:paddingStart="12dp"
+                            android:paddingTop="6dp"
+                            android:paddingBottom="6dp">
+
+                            <View
+                                android:id="@+id/viewStatusDot"
+                                android:layout_width="4dp"
+                                android:layout_height="4dp"
+                                android:background="@drawable/bg_dot_neutral" />
+
+                            <TextView
+                                android:id="@+id/tvStatusText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:fontFamily="@font/pretendard_semibold"
+                                android:text="대기 중"
+                                android:textColor="@color/status_standby"
+                                android:textSize="@dimen/text_tab" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- 연결 정보 섹션 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="vertical"
+                        android:paddingEnd="8dp"
+                        android:paddingStart="8dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/pretendard_semibold"
+                            android:letterSpacing="0.09"
+                            android:text="연결 정보"
+                            android:textColor="@color/overlay_white_50"
+                            android:textSize="@dimen/text_tab" />
+
+                        <!-- 보호자 정보 옆 시청 동의 -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:gravity="center_vertical"
+                            android:minHeight="@dimen/touch_min"
+                            android:orientation="horizontal">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
+
+                                    <ImageView
+                                        android:layout_width="14dp"
+                                        android:layout_height="14dp"
+                                        android:alpha="0.25"
+                                        android:contentDescription="@null"
+                                        android:src="@drawable/ic_person"
+                                        app:tint="@color/surface_white" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="4dp"
+                                        android:fontFamily="@font/pretendard_regular"
+                                        android:text="연결 보호자"
+                                        android:textColor="@color/overlay_white_50"
+                                        android:textSize="@dimen/text_tab" />
+                                </LinearLayout>
+
+                                <TextView
+                                    android:id="@+id/tvGuardianName"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="14dp"
+                                    android:layout_marginTop="2dp"
+                                    android:fontFamily="@font/pretendard_semibold"
+                                    tools:text="박지영"
+                                    android:textColor="@color/overlay_white_75"
+                                    android:textSize="@dimen/text_caption" />
+
+                                <TextView
+                                    android:id="@+id/tvLiveVideoConsentStatus"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp"
+                                    android:background="?attr/selectableItemBackground"
+                                    android:fontFamily="@font/pretendard_regular"
+                                    android:gravity="center_vertical"
+                                    android:text="@string/live_video_consent_loading"
+                                    android:textColor="@color/overlay_white_75"
+                                    android:textSize="@dimen/text_tab" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:id="@+id/layoutLiveVideoConsent"
+                                android:layout_width="wrap_content"
+                                android:layout_height="@dimen/touch_min"
+                                android:layout_marginStart="8dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:visibility="invisible">
+
+                                <View
+                                    android:layout_width="1dp"
+                                    android:layout_height="32dp"
+                                    android:layout_marginEnd="12dp"
+                                    android:background="@color/overlay_white_20" />
+
+                                <FrameLayout
+                                    android:layout_width="64dp"
+                                    android:layout_height="match_parent">
+
+                                    <androidx.appcompat.widget.SwitchCompat
+                                        android:id="@+id/switchLiveVideoConsent"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent"
+                                        android:contentDescription="@string/live_video_consent_label"
+                                        android:enabled="false"
+                                        android:gravity="center"
+                                        android:padding="0dp"
+                                        android:saveEnabled="false"
+                                        android:showText="false"
+                                        app:splitTrack="false"
+                                        app:switchMinWidth="64dp"
+                                        app:thumbTint="@null"
+                                        app:trackTint="@null"
+                                        android:thumb="@drawable/bg_live_consent_thumb"
+                                        app:track="@drawable/bg_live_consent_track" />
+
+                                    <ImageView
+                                        android:id="@+id/ivLiveVideoConsent"
+                                        android:layout_width="@dimen/icon_sm"
+                                        android:layout_height="@dimen/icon_sm"
+                                        android:layout_gravity="start|center_vertical"
+                                        android:layout_marginStart="8dp"
+                                        android:contentDescription="@null"
+                                        android:importantForAccessibility="no"
+                                        android:src="@drawable/ic_eye"
+                                        app:tint="@color/surface_white" />
+                                </FrameLayout>
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- 기기 ID -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageView
+                                    android:layout_width="14dp"
+                                    android:layout_height="14dp"
+                                    android:alpha="0.25"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_devices"
+                                    app:tint="@color/surface_white" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="4dp"
+                                    android:fontFamily="@font/pretendard_regular"
+                                    android:text="기기 ID"
+                                    android:textColor="@color/overlay_white_50"
+                                    android:textSize="@dimen/text_tab" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvDeviceId"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="14dp"
+                                android:layout_marginTop="2dp"
+                                android:fontFamily="@font/pretendard_semibold"
+                                tools:text="a1b2c3d4e5f6a7b8"
+                                android:textColor="@color/overlay_white_75"
+                                android:textSize="@dimen/text_caption" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                </LinearLayout>
+            </ScrollView>
 
             <!-- 버튼 영역 -->
             <LinearLayout
@@ -484,18 +563,19 @@
                 android:paddingEnd="12dp"
                 android:paddingStart="12dp">
 
-                <!-- 촬영 시작/종료 버튼 — pill shape + icon -->
                 <LinearLayout
                     android:clipToOutline="true"
                     android:id="@+id/btnToggleRecording"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="wrap_content"
                     android:background="@drawable/bg_pill"
                     android:backgroundTint="@color/primary_blue"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center"
-                    android:orientation="horizontal">
+                    android:minHeight="@dimen/touch_min"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp">
 
                     <ImageView
                         android:id="@+id/ivToggleIcon"
@@ -511,23 +591,26 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/space_sm"
                         android:fontFamily="@font/pretendard_bold"
+                        android:gravity="center"
+                        android:paddingVertical="8dp"
                         android:text="촬영 시작하기"
                         android:textColor="@color/surface_white"
                         android:textSize="@dimen/text_body" />
                 </LinearLayout>
 
-                <!-- 로그아웃 버튼 — pill outline + icon -->
                 <LinearLayout
                     android:clipToOutline="true"
                     android:id="@+id/btnLogout"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:background="@drawable/bg_pill_outline_white"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center"
-                    android:orientation="horizontal">
+                    android:minHeight="@dimen/touch_min"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp">
 
                     <ImageView
                         android:layout_width="20dp"
@@ -542,6 +625,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:fontFamily="@font/pretendard_semibold"
+                        android:gravity="center"
+                        android:paddingVertical="8dp"
                         android:text="로그아웃"
                         android:textColor="@color/overlay_white_50"
                         android:textSize="@dimen/text_caption" />

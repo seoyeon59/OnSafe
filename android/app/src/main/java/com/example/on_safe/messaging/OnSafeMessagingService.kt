@@ -3,6 +3,8 @@ package com.example.on_safe.messaging
 import android.util.Log
 import com.example.on_safe.BuildConfig
 import com.example.on_safe.ui.pairing.PairingApprovalDialog
+import com.example.on_safe.util.PairingRole
+import com.example.on_safe.util.TokenManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
@@ -12,6 +14,7 @@ import com.google.firebase.messaging.RemoteMessage
  * 서버가 보내는 이벤트(pairing_approved / rejected / displaced / unpaired / 오프라인 등)를 받아
  *  1) 트레이 알림으로 표시하고([PushNotifications]),
  *  2) 포그라운드 화면 갱신용 이벤트를 발행한다([PushEventBus]).
+ * 단, 실시간 영상 송출 요청(live_request)은 알림 없이 [LiveRequestInbox]로만 보낸다.
  *
  * data 전용 메시지는 앱이 백그라운드일 때도 이 콜백으로 들어온다(프로세스가 살아있는 한).
  * 시스템 자동 표시에 기대지 않고 직접 알림을 만들어, 포그라운드/백그라운드 동작을 일관되게 한다.
@@ -33,7 +36,25 @@ class OnSafeMessagingService : FirebaseMessagingService() {
 
         if (BuildConfig.DEBUG) Log.d(TAG, "푸시 수신 event=$event")
 
-        PushNotifications.show(applicationContext, event, title, body)
+        // 실시간 영상 송출 요청 — data 전용. 트레이 알림·화면 갱신 이벤트 없이 카메라 모드 수신함으로만 보낸다
+        if (event == LiveRequestInbox.EVENT) {
+            val result = LiveRequestInbox.receive(
+                data = data,
+                myUserId = TokenManager.getUserId(applicationContext),
+                sentTimeMillis = message.sentTime
+            )
+            if (BuildConfig.DEBUG) Log.d(TAG, "live_request 처리 결과=$result")
+            return
+        }
+
+        // 피보호자 본인 기기로 온 낙상·위험·주의 알림은 띄우지 않는다 — 보호자에게만 알린다
+        val myUserId = TokenManager.getUserId(applicationContext)
+        val ownFallAlert = PushNotifications.isOwnFallAlert(
+            event, data, myUserId,
+            pairedAsElder = PairingRole.isPairedAsElder(applicationContext, myUserId)
+        )
+        // data를 함께 넘겨 낙상 계열은 위험(경보음+진동)·주의(진동만) 채널로 나눈다
+        if (!ownFallAlert) PushNotifications.show(applicationContext, event, title, body, data)
         PushEventBus.publish(PushEvent(event, data))
         // 보호자 연결 요청 — 승인해야 성립하므로 보이는 화면 위에 바로 승인 창
         if (event == PairingApprovalDialog.EVENT) PairingApprovalDialog.offer(data, message.sentTime)

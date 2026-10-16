@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- CheckBox용 사각 체크 (회원가입 약관과 같은 모양, 20dp) -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true">
+        <layer-list>
+            <item android:width="20dp" android:height="20dp" android:drawable="@drawable/bg_check_square_checked" />
+        </layer-list>
+    </item>
+    <item>
+        <layer-list>
+            <item android:width="20dp" android:height="20dp" android:drawable="@drawable/bg_check_square_unchecked" />
+        </layer-list>
+    </item>
+</selector>
