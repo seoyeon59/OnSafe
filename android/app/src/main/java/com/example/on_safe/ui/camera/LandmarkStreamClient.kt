@@ -7,6 +7,7 @@ import com.example.on_safe.network.dto.FrameMessage
 import com.example.on_safe.network.dto.InitMessage
 import com.example.on_safe.network.dto.LandmarkPoint
 import com.example.on_safe.network.dto.StreamServerMessage
+import com.example.on_safe.util.JwtExpiry
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +27,9 @@ import okhttp3.WebSocketListener
  * 엔드포인트는 BuildConfig.AI_WS_URL (BASE_URL과 동일 컨벤션).
  *
  * 촬영 중 연결이 끊기면 스스로 다시 연결한다(서버는 최대 1시간마다 연결을 끊는다).
- * - 재연결할 때마다 init부터 다시 보내고, init_ok 전까지는 프레임을 보내지 않는다
+ * - 연결(재연결 포함) 전에 access 만료를 확인해 만료면 refresh부터 한다 — REST 401 처리와 같은 [ApiClient.refreshTokens]
+ * - 재연결할 때마다 init부터 다시 보내고, init_ok 전까지는 프레임을 보내지 않는다.
+ *   프레임 timestamp는 연결마다 0부터 센다([Listener.onInitOk] reconnected=true) — 서버가 init마다 초기화한다
  * - 종료 코드별 처리는 [StreamClosePolicy]: 4001 refresh 후 재연결 / 4003 로그인(재연결 안 함) / 그 밖은 [ReconnectBackoff]
  * - 첫 연결이 성립하기 전(init_ok 전) 실패는 자동 재시도하지 않고 [Listener.onConnectFailed] — 사용자가 다시 시작한다.
  *   단 4001은 refresh 후 한 번 더 시도한다(앱을 오래 켜 둔 뒤 촬영을 시작하면 access가 만료돼 있다)
@@ -37,10 +40,11 @@ class LandmarkStreamClient(
     private val listener: Listener,
     private val scope: CoroutineScope,
     private val accessToken: () -> String?,
-    // 만료된 access로 refresh — 인증기와 같은 경로(동시 교체 직렬화)
+    // 만료된 access로 refresh — REST 401 인증기와 같은 경로(동시 교체 직렬화)
     private val refreshTokens: suspend (staleAccessToken: String?) -> ApiClient.RefreshOutcome = { stale ->
         withContext(Dispatchers.IO) { ApiClient.refreshTokens(stale) }
-    }
+    },
+    private val isTokenExpired: (String) -> Boolean = { JwtExpiry.isExpired(it) }
 ) {
 
     /** [onResult]만 OkHttp 스레드, 나머지는 메인 스레드에서 호출된다. */
@@ -90,6 +94,21 @@ class LandmarkStreamClient(
     fun connect(userId: String, deviceId: String) {
         this.userId = userId
         this.deviceId = deviceId
+        reconnectJob = scope.launch { openWithFreshToken() }
+    }
+
+    // 연결 전에 access 만료를 먼저 확인한다 — 만료됐거나 곧 만료면 refresh부터(4001 왕복을 줄인다).
+    // refresh가 통신 실패면 그대로 연결해 서버 응답(4001 → refresh 재시도, 그 밖은 백오프)에 맡긴다.
+    private suspend fun openWithFreshToken() {
+        if (closedByApp) return
+        val token = accessToken()
+        if (!token.isNullOrBlank() && isTokenExpired(token)) {
+            Log.d(TAG, "access 만료 — 연결 전에 refresh")
+            if (refreshTokens(token) == ApiClient.RefreshOutcome.INVALID) {
+                listener.onSessionInvalid()
+                return
+            }
+        }
         open()
     }
 
@@ -198,7 +217,7 @@ class LandmarkStreamClient(
         reconnectJob = scope.launch {
             delay(delayMs)
             refreshCount = 0  // 백오프를 한 번 거쳤으면 다음 4001에서 다시 refresh해 본다
-            open()
+            openWithFreshToken()
         }
     }
 
