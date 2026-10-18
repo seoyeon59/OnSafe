@@ -42,6 +42,7 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
 
     private var poseLandmarker: PoseLandmarker? = null
     private val frameCounter = AtomicInteger(0)
+    @Volatile
     private var startElapsedMs = 0L
 
     // 분석 프레임을 함께 받을 곳(실시간 영상 송출) — 분석 스레드에서 회전된 Bitmap을 넘긴다
@@ -131,6 +132,12 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
 
         val timestampSec = (SystemClock.elapsedRealtime() - startElapsedMs) / 1000f
         listener.onLandmarks(frameCounter.getAndIncrement(), timestampSec, landmarks)
+    }
+
+    // WS 재연결마다 호출 — 서버는 init을 받을 때마다 프레임 윈도우를 비우고 연결마다 timestamp를 0부터 받는다
+    fun resetClock() {
+        startElapsedMs = SystemClock.elapsedRealtime()
+        frameCounter.set(0)
     }
 
     fun stop() {
