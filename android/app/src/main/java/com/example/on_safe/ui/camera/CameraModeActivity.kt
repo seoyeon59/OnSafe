@@ -41,6 +41,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.on_safe.R
 import com.example.on_safe.messaging.PushEventBus
 import com.example.on_safe.network.dto.LandmarkPoint
+import com.example.on_safe.ui.pairing.UnpairCheck
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.AppScope
 import com.example.on_safe.util.DisplayText
@@ -48,6 +49,7 @@ import com.example.on_safe.util.PairingRole
 import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.toast
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import com.example.on_safe.util.cardDialog
 
@@ -794,13 +796,32 @@ class CameraModeActivity : AppCompatActivity() {
         )
     }
 
+    // 해제 전 확인 조회 중 — 버튼 연타로 창이 여러 개 뜨지 않게
+    private var unpairCheckJob: Job? = null
+
+    // 확인 창 전에 미확인 위험 알림 건수를 조회해 1건 이상이면 창에 경고를 함께 보여 준다
     private fun showUnpairDialog() {
-        showConfirmDialog(
-            layoutRes = R.layout.dialog_unpair,
-            cancelId = R.id.btnUnpairCancel,
-            confirmId = R.id.btnUnpairConfirm,
-            onConfirm = ::handleUnpair
-        )
+        val userId = TokenManager.getUserId(this)
+        val counterpart = viewModel.uiState.value?.pairedGuardianUserId
+        if (userId.isBlank() || counterpart.isNullOrBlank()) {
+            toast("연결 정보를 확인할 수 없어요.")
+            return
+        }
+        if (unpairCheckJob?.isActive == true) return
+        unpairCheckJob = lifecycleScope.launch {
+            val dangerCount = UnpairCheck.unconfirmedDangerCount(userId, counterpart)
+            showConfirmDialog(
+                layoutRes = R.layout.dialog_unpair,
+                cancelId = R.id.btnUnpairCancel,
+                confirmId = R.id.btnUnpairConfirm,
+                bind = { dialog ->
+                    UnpairCheck.bindWarning(
+                        dialog.findViewById<TextView>(R.id.tvUnpairDangerWarning), dangerCount, byGuardian = false
+                    )
+                },
+                onConfirm = ::handleUnpair
+            )
+        }
     }
 
     private fun handleUnpair() {
@@ -842,9 +863,11 @@ class CameraModeActivity : AppCompatActivity() {
         @LayoutRes layoutRes: Int,
         @IdRes cancelId: Int,
         @IdRes confirmId: Int,
+        bind: (Dialog) -> Unit = {},
         onConfirm: () -> Unit
     ) {
         val dialog = buildBaseDialog(layoutRes)
+        bind(dialog)
         dialog.findViewById<TextView>(cancelId).setOnClickListener { dialog.dismiss() }
         dialog.findViewById<TextView>(confirmId).setOnClickListener {
             dialog.dismiss()

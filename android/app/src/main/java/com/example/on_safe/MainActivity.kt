@@ -24,6 +24,7 @@ import com.example.on_safe.ui.live.LiveViewController
 import com.example.on_safe.ui.live.LiveViewState
 import com.example.on_safe.ui.main.GuardianPairingDialogFragment
 import com.example.on_safe.ui.notification.NotificationActivity
+import com.example.on_safe.ui.pairing.UnpairCheck
 import com.example.on_safe.util.DisplayText
 import com.example.on_safe.util.NavTab
 import com.example.on_safe.util.setupBottomNav
@@ -358,13 +359,27 @@ class MainActivity : AppCompatActivity() {
         }.resourceId
     }
 
+    // 해제 전 확인 조회 중 — 버튼 연타로 창이 여러 개 뜨지 않게
+    private var unpairCheckJob: Job? = null
+
+    // 확인 창 전에 미확인 위험 알림 건수를 조회해 1건 이상이면 창에 경고를 함께 보여 준다
     private fun showUnpairDialog() {
         val counterpart = pairedWardUserId
-        if (counterpart.isNullOrBlank()) {
+        val userId = TokenManager.getUserId(this)
+        if (counterpart.isNullOrBlank() || userId.isBlank()) {
             android.widget.Toast.makeText(this, "연결 정보를 확인할 수 없어요.", android.widget.Toast.LENGTH_SHORT).show()
             return
         }
+        if (unpairCheckJob?.isActive == true) return
+        unpairCheckJob = lifecycleScope.launch {
+            val dangerCount = UnpairCheck.unconfirmedDangerCount(userId, counterpart)
+            showUnpairConfirmDialog(counterpart, dangerCount)
+        }
+    }
+
+    private fun showUnpairConfirmDialog(counterpart: String, dangerCount: Int?) {
         val view = layoutInflater.inflate(R.layout.dialog_unpair, null, false)
+        UnpairCheck.bindWarning(view, dangerCount, byGuardian = true)
         val dialog = cardDialog(this, view)
         view.findViewById<View>(R.id.btnUnpairCancel).setOnClickListener { dialog.dismiss() }
         view.findViewById<View>(R.id.btnUnpairConfirm).setOnClickListener {

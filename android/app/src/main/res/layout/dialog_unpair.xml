@@ -52,6 +52,18 @@
             android:textColor="@color/ink_500"
             android:textSize="@dimen/text_caption" />
 
+        <!-- 미확인 위험 알림 경고 — unpair-check 결과 1건 이상일 때만 표시(UnpairCheck.bindWarning) -->
+        <TextView
+            android:id="@+id/tvUnpairDangerWarning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textColor="@color/status_danger"
+            android:textSize="@dimen/text_caption"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
     </LinearLayout>
 
     <!-- 구분선 -->

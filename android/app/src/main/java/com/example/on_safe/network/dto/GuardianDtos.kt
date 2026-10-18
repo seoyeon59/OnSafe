@@ -43,3 +43,9 @@ data class GuardianResponse(
     val userId: String,
     val name: String
 )
+
+// GET /api/guardian/{userId}/pair/{counterpartUserId}/unpair-check — 해제 전 확인.
+// 피보호자의 미확인 위험 이벤트 건수(최근 48시간·연결 이후, 재알림 대상과 같은 기준)
+data class UnpairCheckResponse(
+    val unconfirmedDangerCount: Int
+)
