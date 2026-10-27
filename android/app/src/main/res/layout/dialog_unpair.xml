@@ -52,7 +52,7 @@
             android:textColor="@color/ink_500"
             android:textSize="@dimen/text_caption" />
 
-        <!-- 미확인 위험 알림 경고 — unpair-check 결과 1건 이상일 때만 표시(UnpairCheck.bindWarning) -->
+        <!-- 미확인 위험 알림 안내 — 1건 이상이면 빨간 경고, 조회 실패면 회색 안내, 0건이면 숨김(UnpairCheck.bindWarning) -->
         <TextView
             android:id="@+id/tvUnpairDangerWarning"
             android:layout_width="match_parent"
