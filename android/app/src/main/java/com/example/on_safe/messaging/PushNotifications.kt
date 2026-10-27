@@ -79,7 +79,7 @@ object PushNotifications {
                 "위험 알림",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "피보호자 낙상·위험 감지 — 경보음과 진동"
+                description = "피보호자 낙상·위험 감지, 경보음과 진동"
                 setSound(alarmSoundUri(context), ALARM_ATTRIBUTES)
                 enableVibration(true)
                 vibrationPattern = vibration
@@ -91,7 +91,7 @@ object PushNotifications {
                 "주의 알림",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "피보호자 주의 수준 움직임 — 진동만"
+                description = "피보호자 주의 수준 움직임, 진동만"
                 setSound(null, null)
                 enableVibration(true)
                 vibrationPattern = vibration
