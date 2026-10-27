@@ -209,7 +209,7 @@
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="16dp"
-        android:paddingEnd="12dp"
+        android:paddingEnd="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -251,6 +251,7 @@
     <FrameLayout
         android:clipToOutline="true"
         android:id="@+id/btnFullscreen"
+        android:foreground="?attr/selectableItemBackground"
         android:layout_width="@dimen/touch_min"
         android:layout_height="@dimen/touch_min"
         android:layout_marginEnd="8dp"
@@ -547,6 +548,7 @@
                 <LinearLayout
                     android:clipToOutline="true"
                     android:id="@+id/btnToggleRecording"
+                    android:foreground="@drawable/ripple_pill_on_color"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_pill"
@@ -582,6 +584,7 @@
                 <LinearLayout
                     android:clipToOutline="true"
                     android:id="@+id/btnLogout"
+                    android:foreground="@drawable/ripple_pill_on_color"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
