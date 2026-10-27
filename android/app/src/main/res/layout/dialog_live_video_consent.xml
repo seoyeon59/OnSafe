@@ -51,16 +51,16 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:gravity="center"
-                android:text="허용하면 보호자가 요청할 때 이 기기의 카메라 화면을 실시간으로 볼 수 있어요. 보호자가 요청하면 별도 확인 없이 카메라 영상이 전송되며, 전송 중에는 화면에 표시됩니다."
+                android:text="보호자가 요청하면\n확인 없이 바로 영상이 전송돼요."
                 android:textColor="@color/ink_500"
                 android:textSize="@dimen/text_caption" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="2dp"
                 android:gravity="center"
-                android:text="언제든 이 화면에서 끌 수 있어요."
+                android:text="전송 중에는 화면에 표시돼요."
                 android:textColor="@color/ink_500"
                 android:textSize="@dimen/text_caption" />
 
