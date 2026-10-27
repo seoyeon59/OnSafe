@@ -172,7 +172,9 @@ class LandmarkStreamClient(
         everConnected = true
         backoff.reset()
         refreshCount = 0
-        // 프레임 전송을 열기 전에 알린다 — 재연결이면 리스너가 프레임 시계를 0부터 다시 세게 한다
+        // 프레임 전송을 열기 전에 알린다 — 재연결이면 리스너가 프레임 시계를 0부터 다시 세게 한다.
+        // 순서가 중요하다: 리셋(PoseLandmarkerHelper.resetClock, 전달 중인 프레임과 락으로 직렬화) → 전송 열기.
+        // 리셋 전 시계로 계산된 프레임은 readySocket이 아직 null이라 버려진다
         listener.onInitOk(reconnected)
         readySocket = webSocket
     }
