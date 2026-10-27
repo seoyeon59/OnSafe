@@ -17,14 +17,14 @@ import com.example.on_safe.R
  * 촬영 시작 알림(소리·진동) — 카메라 모드에서 "촬영 시작하기"를 누르면 울린다.
  * 보호자 실시간 시청 시작 때는 울리지 않는다("보호자가 보는 중" 배지·화면 밝힘만).
  *
- * 리소스만 바꾸면 동작이 바뀐다(코드 수정 불필요) — 설정 안내는 res/values/live_watch_alert.xml 참고.
+ * 리소스만 바꾸면 동작이 바뀐다(코드 수정 불필요) — 설정 안내는 res/values/camera_start_alert.xml 참고.
  * - 소리: res/raw/[SOUND_NAME](카메라 셔터음). 이름으로 찾아 파일이 없어도 빌드가 깨지지 않는다
- * - 진동: 셔터음에 맞춘 구간별 길이·세기(R.array.live_watch_vibration_timings / _amplitudes)
+ * - 진동: 셔터음에 맞춘 구간별 길이·세기(R.array.camera_start_vibration_timings / _amplitudes)
  * - 기기 소리 모드를 따른다: 소리 모드 = 소리+진동, 진동 모드 = 진동만, 무음 = 없음
  */
-object LiveWatchAlert {
+object CameraStartAlert {
 
-    private const val TAG = "LiveWatchAlert"
+    private const val TAG = "CameraStartAlert"
 
     // res/raw 파일명(확장자 제외) — keep.xml의 tools:keep과 같아야 release 축소에서 살아남는다
     private const val SOUND_NAME = "camera_start"
@@ -67,8 +67,8 @@ object LiveWatchAlert {
     private fun vibrate(context: Context) {
         val (timings, amplitudes) = try {
             val res = context.resources
-            res.getIntArray(R.array.live_watch_vibration_timings).map { it.toLong() }.toLongArray() to
-                res.getIntArray(R.array.live_watch_vibration_amplitudes).map { it.coerceIn(0, 255) }.toIntArray()
+            res.getIntArray(R.array.camera_start_vibration_timings).map { it.toLong() }.toLongArray() to
+                res.getIntArray(R.array.camera_start_vibration_amplitudes).map { it.coerceIn(0, 255) }.toIntArray()
         } catch (_: Exception) {
             return
         }

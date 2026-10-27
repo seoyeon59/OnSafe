@@ -75,11 +75,6 @@ data class LiveVideoConsentState(
 
 class CameraModeViewModel : ViewModel() {
 
-    // 서버로 확정된 보호자 연결 여부(my-guardian 조회·해제 성공) — 조회 전 기본값(false)과 구분하려고
-    // uiState.isPaired와 따로 둔다. Activity가 받아 PairingRole에 기록한다(낙상 알림의 피보호자 판별용)
-    private val _pairingConfirmed = MutableLiveData<Boolean?>(null)
-    val pairingConfirmed: LiveData<Boolean?> = _pairingConfirmed
-
     private val _uiState = MutableLiveData(CameraModeUiState())
     val uiState: LiveData<CameraModeUiState> = _uiState
 
@@ -207,12 +202,10 @@ class CameraModeViewModel : ViewModel() {
                             pairingCode = null,
                         )
                     }
-                    _pairingConfirmed.value = true
                     true
                 } else {
                     // 재판정 경로 — 다른 쪽에서 해제됐으면 연결 표시를 걷는다
                     setState { copy(isPaired = false, pairedGuardianUserId = null, pairedGuardianName = null) }
-                    _pairingConfirmed.value = false
                     false
                 }
             } else false
@@ -514,7 +507,6 @@ class CameraModeViewModel : ViewModel() {
                 if (response.isSuccessful && response.body()?.success == true) {
                     // 해제 후엔 다시 미연결 상태 — 코드 오버레이 다시 나타남.
                     setState { copy(isPaired = false, pairedGuardianUserId = null, pairedGuardianName = null) }
-                    _pairingConfirmed.value = false
                     // 자동 재발급 루프 재시작 유도용으로 기존 job 취소
                     pairingCodeJob?.cancel()
                     pairingCodeJob = null
