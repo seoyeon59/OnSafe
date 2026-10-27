@@ -34,8 +34,15 @@ object PushNotifications {
     const val CHANNEL_PAIRING = "onsafe_pairing"    // 보호자 연결(승인·거부·해제) 상태 변화
 
     // 보호자가 받는 피보호자 위험·주의 알림 — 소리·진동이 채널에 고정되므로 별도 채널.
-    // 소리·진동(res/values/fall_alert.xml)을 바꾸면 _v 번호를 올려야 설치된 기기에 반영된다.
-    // 서버가 백그라운드 알림에도 이 ID를 지정해야 같은 소리·진동이 난다(현재 서버는 onsafe_alerts로 보냄).
+    // 서버가 백그라운드 알림에도 이 ID를 지정해야 같은 소리·진동이 난다(서버 상수와 반드시 같아야 함).
+    //
+    // ⚠️ 채널 설정(소리·진동, res/values/fall_alert.xml)은 가능하면 바꾸지 않는다. 설치된 기기의 채널은
+    //    처음 만들 때 값으로 고정돼, 바꾸려면 _v 번호를 올려야 하고 그때는 아래가 모두 필요하다.
+    //    1) 옛 채널 삭제 — createChannels에서 deleteNotificationChannel("onsafe_danger_v1") 등을 함께 호출.
+    //       안 지우면 시스템 알림 설정에 "위험 알림"이 두 개 남는다(사용자가 v1에서 바꾼 설정은 v2로 이어지지 않음).
+    //    2) 서버와 동시 배포 + 강제 업데이트 — 백그라운드 알림은 서버가 보낸 channel_id로 시스템이 표시하는데,
+    //       그 채널이 기기에 없으면 FCM 기본 채널로 떨어져 경보음·진동이 나지 않는다. 서버는 앱 버전을 모르므로
+    //       번호를 올리는 순간 구버전(v1만 있음)이나 신버전(v2만 있음) 중 한쪽은 기본 알림이 된다.
     const val CHANNEL_DANGER = "onsafe_danger_v1"   // 위험(낙상·위험 수준): 경보음 + 진동
     const val CHANNEL_WARNING = "onsafe_warning_v1" // 주의: 진동만
 
@@ -98,8 +105,10 @@ object PushNotifications {
         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
         .build()
 
+    // 리소스 이름 기반 URI(…/raw/alarm) — 채널은 생성 시 URI를 그대로 저장한다. 숫자 ID(R.raw.alarm)는
+    // res/raw 파일이 늘거나 줄면 빌드마다 바뀔 수 있어, 설치된 기기의 위험 알림이 다른 소리로 울리거나 무음이 된다.
     private fun alarmSoundUri(context: Context): Uri =
-        Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/${R.raw.alarm}")
+        Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/raw/alarm")
 
     private fun fallAlertVibration(context: Context): LongArray =
         context.resources.getIntArray(R.array.fall_alert_vibration_pattern).map { it.toLong() }.toLongArray()
