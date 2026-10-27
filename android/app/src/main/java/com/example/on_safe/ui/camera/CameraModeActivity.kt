@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
-import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
@@ -77,7 +76,6 @@ class CameraModeActivity : AppCompatActivity() {
 
     // 서버 상태 렌더링 중 사용자 변경 차단
     private lateinit var switchLiveVideoConsent: SwitchCompat
-    private lateinit var ivLiveVideoConsent: ImageView
     private lateinit var layoutLiveVideoConsent: LinearLayout
     private lateinit var tvLiveVideoConsentStatus: TextView
     private var renderingLiveVideoConsent = false
@@ -288,7 +286,6 @@ class CameraModeActivity : AppCompatActivity() {
         tvPairingCode           = findViewById(R.id.tvPairingCode)
         pairingCodeOverlay      = findViewById(R.id.pairingCodeOverlay)
         switchLiveVideoConsent  = findViewById(R.id.switchLiveVideoConsent)
-        ivLiveVideoConsent      = findViewById(R.id.ivLiveVideoConsent)
         layoutLiveVideoConsent  = findViewById(R.id.layoutLiveVideoConsent)
         tvLiveVideoConsentStatus = findViewById(R.id.tvLiveVideoConsentStatus)
 
@@ -318,25 +315,24 @@ class CameraModeActivity : AppCompatActivity() {
     }
 
     private fun renderLiveVideoConsent(state: LiveVideoConsentState) {
+        val on = state.enabled == true
         renderingLiveVideoConsent = true
-        switchLiveVideoConsent.isChecked = state.enabled == true
+        switchLiveVideoConsent.isChecked = on
         renderingLiveVideoConsent = false
         val known = state.enabled != null && !state.loadFailed
         switchLiveVideoConsent.isEnabled = known && !state.busy
         switchLiveVideoConsent.isVisible = known
-        layoutLiveVideoConsent.isActivated = state.enabled == true
+        layoutLiveVideoConsent.isActivated = on
         layoutLiveVideoConsent.alpha = if (state.busy) 0.5f else 1f
-        ivLiveVideoConsent.setImageResource(if (state.enabled == true) R.drawable.ic_eye else R.drawable.ic_eye_off)
-        ivLiveVideoConsent.imageTintList = ColorStateList.valueOf(ContextCompat.getColor(
-            this, if (state.enabled == true) R.color.primary_blue else R.color.overlay_white_50
-        ))
         tvLiveVideoConsentStatus.setText(when {
             state.loadFailed -> R.string.live_video_consent_retry
             state.enabled == null -> R.string.live_video_consent_loading
             else -> R.string.live_video_consent_pill
         })
-        val stateRes = if (state.enabled == true) R.string.live_video_consent_allowed else R.string.live_video_consent_blocked
-        ViewCompat.setStateDescription(switchLiveVideoConsent, getString(stateRes))
+        // 조회 전·실패 시 상태 안내 없음 (문구로 대체)
+        ViewCompat.setStateDescription(layoutLiveVideoConsent, if (!known) null else getString(
+            if (on) R.string.live_video_consent_allowed else R.string.live_video_consent_blocked
+        ))
     }
 
     // 허용 전 재확인, 철회 즉시 저장
@@ -363,7 +359,7 @@ class CameraModeActivity : AppCompatActivity() {
         switchLiveVideoConsent.setOnCheckedChangeListener { _, checked ->
             if (!renderingLiveVideoConsent) onLiveVideoConsentToggled(checked)
         }
-        // pill 전체 터치: 조회 실패 시 재시도, 그 외 토글
+        // 스위치 대신 pill 전체가 터치 대상: 조회 실패 시 재시도, 그 외 토글
         layoutLiveVideoConsent.setOnClickListener {
             val state = viewModel.liveVideoConsent.value ?: return@setOnClickListener
             when {

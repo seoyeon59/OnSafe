@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">늘봄</string>
 
-    <string name="live_video_consent_label">보호자 실시간 영상 보기 허용</string>
     <string name="live_video_consent_loading">설정 확인 중…</string>
     <string name="live_video_consent_pill">보호자 보기 허용</string>
     <string name="live_video_consent_retry">확인 실패 · 다시 시도</string>

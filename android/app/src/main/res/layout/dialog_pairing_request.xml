@@ -104,7 +104,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:paddingStart="32dp"
-                    android:text="보호자가 요청하면 확인 없이 카메라 화면이 전송돼요. 전송 중엔 화면에 표시돼요."
+                    android:text="보호자가 요청하면 확인 없이 바로 영상이 전송돼요. 전송 중에는 화면에 표시돼요."
                     android:textColor="@color/ink_500"
                     android:textSize="@dimen/text_caption" />
 

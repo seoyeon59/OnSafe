@@ -214,19 +214,20 @@
         app:layout_constraintStart_toStartOf="parent">
 
         <ImageView
-            android:id="@+id/ivLiveVideoConsent"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:contentDescription="@null"
+            android:duplicateParentState="true"
             android:importantForAccessibility="no"
-            android:src="@drawable/ic_eye_off"
-            app:tint="@color/overlay_white_50" />
+            android:src="@drawable/ic_eye_toggle"
+            app:tint="@color/tint_live_consent_icon" />
 
         <TextView
             android:id="@+id/tvLiveVideoConsentStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
+            android:ellipsize="end"
             android:fontFamily="@font/pretendard_semibold"
             android:maxLines="1"
             android:text="@string/live_video_consent_loading"
@@ -238,8 +239,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:contentDescription="@string/live_video_consent_label"
+            android:clickable="false"
             android:enabled="false"
+            android:focusable="false"
+            android:importantForAccessibility="no"
             android:saveEnabled="false"
             android:showText="false"
             android:visibility="gone"
