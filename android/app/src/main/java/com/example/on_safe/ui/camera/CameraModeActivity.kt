@@ -43,7 +43,6 @@ import com.example.on_safe.network.dto.LandmarkPoint
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.AppScope
 import com.example.on_safe.util.DisplayText
-import com.example.on_safe.util.PairingRole
 import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.toast
@@ -306,10 +305,6 @@ class CameraModeActivity : AppCompatActivity() {
             // 페어링된 상태에서만 해제 버튼 노출 — 미연결 상태에선 해제할 대상이 없다.
             btnUnpairCamera.visibility = if (state.isPaired) View.VISIBLE else View.GONE
         }
-        // 서버로 확정된 연결 여부만 기록 — 보호자와 연결된 피보호자 기기면 낙상 알림을 띄우지 않는다
-        viewModel.pairingConfirmed.observe(this) { paired ->
-            if (paired != null) PairingRole.setPairedAsElder(this, TokenManager.getUserId(this), paired)
-        }
         viewModel.liveVideoConsent.observe(this, ::renderLiveVideoConsent)
         viewModel.liveVideoConsentMessage.observe(this) { message ->
             if (message != null) {
@@ -374,11 +369,7 @@ class CameraModeActivity : AppCompatActivity() {
         }
         btnToggleRecording.setOnClickListener {
             when (currentState) {
-                CameraState.STANDBY, CameraState.FAILED -> {
-                    // 촬영이 시작됨을 알린다 — 셔터음·진동(res/raw/camera_start, live_watch_alert.xml)
-                    LiveWatchAlert.play(this)
-                    startRecording()
-                }
+                CameraState.STANDBY, CameraState.FAILED -> startRecording()
                 CameraState.STREAMING -> showStopRecordingDialog()
                 CameraState.CONNECTING -> { /* 연결 중 무시 */ }
             }
@@ -469,6 +460,8 @@ class CameraModeActivity : AppCompatActivity() {
                     bindStreamingUseCases(helper, bufferManager)
                     bufferManager.start()
                     setState(CameraState.STREAMING)
+                    // 촬영 시작 확정 시 셔터음·진동 (res/raw/camera_start, camera_start_alert.xml)
+                    CameraStartAlert.play(this@CameraModeActivity)
                 }
             }
 
