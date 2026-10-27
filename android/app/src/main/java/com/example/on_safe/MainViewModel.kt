@@ -19,7 +19,7 @@ enum class ConnectionState(val label: String, val colorRes: Int) {
     CONNECTED("기기 연결됨", R.color.status_normal),
     CONNECTING("연결 확인 중...", R.color.status_warning),
     FAILED("기기 연결 실패", R.color.status_danger),
-    STANDBY("대기 중 — 카메라 기기 연결 필요", R.color.status_standby),
+    STANDBY("대기 중 · 카메라 기기 연결 필요", R.color.status_standby),
 
     // 프레임은 도착하나 추론이 실패 중 — 감지 기능 정지 상태라 danger 취급
     INFERENCE_ERROR("낙상 감지 일시 중단", R.color.status_danger),

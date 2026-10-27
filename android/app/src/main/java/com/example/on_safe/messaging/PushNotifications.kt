@@ -111,7 +111,7 @@ object PushNotifications {
         "pairing_displaced" -> "보호자 연결 해제됨"
         "pairing_unpaired" -> "보호자 연결 해제됨"
         "fall_detected" -> "낙상 감지"
-        "fall_escalated" -> "낙상 재알림 — 확인 필요"
+        "fall_escalated" -> "낙상 재알림 · 확인 필요"
         else -> "늘봄 알림"
     }
 
