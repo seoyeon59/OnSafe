@@ -1,7 +1,9 @@
 package com.example.on_safe.ui.pairing
 
+import android.graphics.Typeface
 import android.view.View
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import com.example.on_safe.R
 import com.example.on_safe.network.ApiClient
@@ -16,7 +18,7 @@ import kotlinx.coroutines.CancellationException
 object UnpairCheck {
 
     /**
-     * 미확인 위험 알림 건수. 조회 실패면 null — 해제를 막지 않도록 경고 없이 기존 확인 창을 띄운다.
+     * 미확인 위험 알림 건수. 조회 실패면 null — 해제는 막지 않고 창에 중립 안내만 붙인다([bindWarning]).
      */
     suspend fun unconfirmedDangerCount(userId: String, counterpartUserId: String): Int? = try {
         val response = ApiClient.api.getUnpairCheck(userId, counterpartUserId)
@@ -28,7 +30,10 @@ object UnpairCheck {
     }
 
     /**
-     * 해제 창(dialog_unpair.xml)에 경고 표시 — 1건 이상일 때만 보인다.
+     * 해제 창(dialog_unpair.xml)의 안내 줄.
+     * - 1건 이상: 빨간 경고
+     * - 0건: 표시 없음
+     * - 조회 실패(null): 회색 중립 안내 — 0건과 구분해, 미확인 위험이 남았을 수 있음을 알린다(해제는 막지 않음)
      * @param byGuardian 보호자가 해제하는 창이면 true(문구의 주어가 "나"), 피보호자면 false("보호자")
      */
     fun bindWarning(root: View, count: Int?, byGuardian: Boolean) {
@@ -37,14 +42,25 @@ object UnpairCheck {
     }
 
     fun bindWarning(warning: TextView, count: Int?, byGuardian: Boolean) {
-        val visible = count != null && count > 0
-        warning.isVisible = visible
-        if (!visible) return
-        val consequence = if (byGuardian) {
-            "해제하면 더 이상 위험 알림을 받을 수 없습니다."
-        } else {
-            "해제하면 보호자에게 더 이상 알림이 가지 않습니다."
+        when {
+            count == null -> {
+                warning.isVisible = true
+                warning.setTextColor(ContextCompat.getColor(warning.context, R.color.ink_500))
+                warning.setTypeface(null, Typeface.NORMAL)
+                warning.text = "미확인 위험 알림 여부를 확인하지 못했습니다."
+            }
+            count > 0 -> {
+                warning.isVisible = true
+                warning.setTextColor(ContextCompat.getColor(warning.context, R.color.status_danger))
+                warning.setTypeface(null, Typeface.BOLD)
+                val consequence = if (byGuardian) {
+                    "해제하면 더 이상 위험 알림을 받을 수 없습니다."
+                } else {
+                    "해제하면 보호자에게 더 이상 알림이 가지 않습니다."
+                }
+                warning.text = "확인되지 않은 위험 알림이 ${count}건 있습니다.\n$consequence"
+            }
+            else -> warning.isVisible = false
         }
-        warning.text = "확인되지 않은 위험 알림이 ${count}건 있습니다.\n$consequence"
     }
 }
