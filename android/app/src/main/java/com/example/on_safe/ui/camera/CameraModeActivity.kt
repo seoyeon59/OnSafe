@@ -47,7 +47,6 @@ import com.example.on_safe.util.DisplayText
 import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.toast
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import com.example.on_safe.util.cardDialog
 
@@ -779,10 +778,7 @@ class CameraModeActivity : AppCompatActivity() {
         )
     }
 
-    // 해제 전 확인 조회 중 — 버튼 연타로 창이 여러 개 뜨지 않게
-    private var unpairCheckJob: Job? = null
-
-    // 확인 창 전에 미확인 위험 알림 건수를 조회해 1건 이상이면 창에 경고를 함께 보여 준다
+    // 해제 확인 창, 미확인 위험 알림 건수는 조회되는 대로 창에 표시
     private fun showUnpairDialog() {
         val userId = TokenManager.getUserId(this)
         val counterpart = viewModel.uiState.value?.pairedGuardianUserId
@@ -790,21 +786,17 @@ class CameraModeActivity : AppCompatActivity() {
             toast("연결 정보를 확인할 수 없어요.")
             return
         }
-        if (unpairCheckJob?.isActive == true) return
-        unpairCheckJob = lifecycleScope.launch {
-            val dangerCount = UnpairCheck.unconfirmedDangerCount(userId, counterpart)
-            showConfirmDialog(
-                layoutRes = R.layout.dialog_unpair,
-                cancelId = R.id.btnUnpairCancel,
-                confirmId = R.id.btnUnpairConfirm,
-                bind = { dialog ->
-                    UnpairCheck.bindWarning(
-                        dialog.findViewById<TextView>(R.id.tvUnpairDangerWarning), dangerCount, byGuardian = false
-                    )
-                },
-                onConfirm = ::handleUnpair
-            )
-        }
+        showConfirmDialog(
+            layoutRes = R.layout.dialog_unpair,
+            cancelId = R.id.btnUnpairCancel,
+            confirmId = R.id.btnUnpairConfirm,
+            bind = { dialog ->
+                UnpairCheck.loadWarning(
+                    lifecycleScope, dialog.findViewById(R.id.tvUnpairDangerWarning), userId, counterpart, byGuardian = false
+                )
+            },
+            onConfirm = ::handleUnpair
+        )
     }
 
     private fun handleUnpair() {
