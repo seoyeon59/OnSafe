@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 보호자 보기 허용 pill 아이콘: 허용(activated) 시 눈, 차단 시 빗금 눈 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_eye" android:state_activated="true" />
+    <item android:drawable="@drawable/ic_eye_off" />
+</selector>
