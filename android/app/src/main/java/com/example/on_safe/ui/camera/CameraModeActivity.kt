@@ -456,6 +456,7 @@ class CameraModeActivity : AppCompatActivity() {
                 if (reconnected) {
                     Log.d(TAG, "WS 재연결됨 — 스트리밍 재개")
                     poseLandmarkerHelper?.resetClock()
+                    setStatusBadge("전송 중", getColor(R.color.status_normal))
                     return
                 }
                 runOnUiThread {
@@ -508,6 +509,8 @@ class CameraModeActivity : AppCompatActivity() {
             // 촬영 중 끊김 — 클라이언트가 백오프로 다시 연결한다. 카메라·녹화는 그대로 둔다
             override fun onReconnecting(attempt: Int, delayMs: Long) {
                 Log.d(TAG, "WS 끊김 — ${delayMs}ms 뒤 재연결 ($attempt 번째)")
+                // 재연결 동안 낙상 감지 중단 표시 (촬영·녹화는 유지)
+                setStatusBadge("재연결 중", getColor(R.color.status_warning))
             }
 
             // 4003(로그아웃·비밀번호 변경·탈퇴로 세션 무효) 또는 refresh 거부 — 로컬 정리 후 로그인 화면(onDestroy가 촬영 정리)
