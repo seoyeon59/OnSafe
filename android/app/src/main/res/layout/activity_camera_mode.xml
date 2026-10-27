@@ -196,10 +196,65 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- 좌하단 보호자 보기 허용 (실시간 영상 동의, 서버 live_video_enabled) -->
+    <LinearLayout
+        android:id="@+id/layoutLiveVideoConsent"
+        android:layout_width="wrap_content"
+        android:layout_height="56dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_live_consent_pill"
+        android:clipToOutline="true"
+        android:foreground="@drawable/ripple_text_pill"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="@null"
+            android:duplicateParentState="true"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_eye_toggle"
+            app:tint="@color/tint_live_consent_icon" />
+
+        <TextView
+            android:id="@+id/tvLiveVideoConsentStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/pretendard_semibold"
+            android:maxLines="1"
+            android:text="@string/live_video_consent_loading"
+            android:textColor="@color/surface_white"
+            android:textSize="@dimen/text_caption" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switchLiveVideoConsent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:clickable="false"
+            android:enabled="false"
+            android:focusable="false"
+            android:importantForAccessibility="no"
+            android:saveEnabled="false"
+            android:showText="false"
+            android:visibility="gone"
+            app:thumbTint="@color/switch_thumb_tint"
+            app:trackTint="@color/switch_track_tint" />
+    </LinearLayout>
+
     <!-- 우하단 전체화면 버튼 -->
     <FrameLayout
         android:clipToOutline="true"
         android:id="@+id/btnFullscreen"
+        android:foreground="?attr/selectableItemBackground"
         android:layout_width="@dimen/touch_min"
         android:layout_height="@dimen/touch_min"
         android:layout_marginEnd="8dp"
@@ -395,117 +450,47 @@
                             android:textColor="@color/overlay_white_50"
                             android:textSize="@dimen/text_tab" />
 
-                        <!-- 보호자 정보 옆 시청 동의 -->
+                        <!-- 연결 보호자 -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:gravity="center_vertical"
-                            android:minHeight="@dimen/touch_min"
-                            android:orientation="horizontal">
+                            android:orientation="vertical">
 
-                                <LinearLayout
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:orientation="vertical">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
 
-                                <LinearLayout
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:gravity="center_vertical"
-                                    android:orientation="horizontal">
-
-                                    <ImageView
-                                        android:layout_width="14dp"
-                                        android:layout_height="14dp"
-                                        android:alpha="0.25"
-                                        android:contentDescription="@null"
-                                        android:src="@drawable/ic_person"
-                                        app:tint="@color/surface_white" />
-
-                                    <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginStart="4dp"
-                                        android:fontFamily="@font/pretendard_regular"
-                                        android:text="연결 보호자"
-                                        android:textColor="@color/overlay_white_50"
-                                        android:textSize="@dimen/text_tab" />
-                                </LinearLayout>
+                                <ImageView
+                                    android:layout_width="14dp"
+                                    android:layout_height="14dp"
+                                    android:alpha="0.25"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_person"
+                                    app:tint="@color/surface_white" />
 
                                 <TextView
-                                    android:id="@+id/tvGuardianName"
-                                    android:layout_width="match_parent"
+                                    android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginStart="14dp"
-                                    android:layout_marginTop="2dp"
-                                    android:fontFamily="@font/pretendard_semibold"
-                                    tools:text="박지영"
-                                    android:textColor="@color/overlay_white_75"
-                                    android:textSize="@dimen/text_caption" />
-
-                                <TextView
-                                    android:id="@+id/tvLiveVideoConsentStatus"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="4dp"
-                                    android:background="?attr/selectableItemBackground"
+                                    android:layout_marginStart="4dp"
                                     android:fontFamily="@font/pretendard_regular"
-                                    android:gravity="center_vertical"
-                                    android:text="@string/live_video_consent_loading"
-                                    android:textColor="@color/overlay_white_75"
+                                    android:text="연결 보호자"
+                                    android:textColor="@color/overlay_white_50"
                                     android:textSize="@dimen/text_tab" />
                             </LinearLayout>
 
-                            <LinearLayout
-                                android:id="@+id/layoutLiveVideoConsent"
-                                android:layout_width="wrap_content"
-                                android:layout_height="@dimen/touch_min"
-                                android:layout_marginStart="8dp"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal"
-                                android:visibility="invisible">
-
-                                <View
-                                    android:layout_width="1dp"
-                                    android:layout_height="32dp"
-                                    android:layout_marginEnd="12dp"
-                                    android:background="@color/overlay_white_20" />
-
-                                <FrameLayout
-                                    android:layout_width="64dp"
-                                    android:layout_height="match_parent">
-
-                                    <androidx.appcompat.widget.SwitchCompat
-                                        android:id="@+id/switchLiveVideoConsent"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="match_parent"
-                                        android:contentDescription="@string/live_video_consent_label"
-                                        android:enabled="false"
-                                        android:gravity="center"
-                                        android:padding="0dp"
-                                        android:saveEnabled="false"
-                                        android:showText="false"
-                                        app:splitTrack="false"
-                                        app:switchMinWidth="64dp"
-                                        app:thumbTint="@null"
-                                        app:trackTint="@null"
-                                        android:thumb="@drawable/bg_live_consent_thumb"
-                                        app:track="@drawable/bg_live_consent_track" />
-
-                                    <ImageView
-                                        android:id="@+id/ivLiveVideoConsent"
-                                        android:layout_width="@dimen/icon_sm"
-                                        android:layout_height="@dimen/icon_sm"
-                                        android:layout_gravity="start|center_vertical"
-                                        android:layout_marginStart="8dp"
-                                        android:contentDescription="@null"
-                                        android:importantForAccessibility="no"
-                                        android:src="@drawable/ic_eye"
-                                        app:tint="@color/surface_white" />
-                                </FrameLayout>
-                            </LinearLayout>
+                            <TextView
+                                android:id="@+id/tvGuardianName"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="14dp"
+                                android:layout_marginTop="2dp"
+                                android:fontFamily="@font/pretendard_semibold"
+                                tools:text="박지영"
+                                android:textColor="@color/overlay_white_75"
+                                android:textSize="@dimen/text_caption" />
                         </LinearLayout>
 
                         <!-- 기기 ID -->
@@ -566,6 +551,7 @@
                 <LinearLayout
                     android:clipToOutline="true"
                     android:id="@+id/btnToggleRecording"
+                    android:foreground="@drawable/ripple_pill_on_color"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_pill"
@@ -601,6 +587,7 @@
                 <LinearLayout
                     android:clipToOutline="true"
                     android:id="@+id/btnLogout"
+                    android:foreground="@drawable/ripple_pill_on_color"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"

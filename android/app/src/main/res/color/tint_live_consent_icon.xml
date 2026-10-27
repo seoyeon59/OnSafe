@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 보호자 보기 허용 pill 아이콘 색: 허용 시 파랑, 차단 시 흐린 흰색 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/primary_blue" android:state_activated="true" />
+    <item android:color="@color/overlay_white_50" />
+</selector>
