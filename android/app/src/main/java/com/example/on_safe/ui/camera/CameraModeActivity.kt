@@ -44,11 +44,9 @@ import com.example.on_safe.ui.pairing.UnpairCheck
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.AppScope
 import com.example.on_safe.util.DisplayText
-import com.example.on_safe.util.PairingRole
 import com.example.on_safe.util.SessionEvents
 import com.example.on_safe.util.TokenManager
 import com.example.on_safe.util.toast
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import com.example.on_safe.util.cardDialog
 
@@ -308,10 +306,6 @@ class CameraModeActivity : AppCompatActivity() {
             // 페어링된 상태에서만 해제 버튼 노출 — 미연결 상태에선 해제할 대상이 없다.
             btnUnpairCamera.visibility = if (state.isPaired) View.VISIBLE else View.GONE
         }
-        // 서버로 확정된 연결 여부만 기록 — 보호자와 연결된 피보호자 기기면 낙상 알림을 띄우지 않는다
-        viewModel.pairingConfirmed.observe(this) { paired ->
-            if (paired != null) PairingRole.setPairedAsElder(this, TokenManager.getUserId(this), paired)
-        }
         viewModel.liveVideoConsent.observe(this, ::renderLiveVideoConsent)
         viewModel.liveVideoConsentMessage.observe(this) { message ->
             if (message != null) {
@@ -376,11 +370,7 @@ class CameraModeActivity : AppCompatActivity() {
         }
         btnToggleRecording.setOnClickListener {
             when (currentState) {
-                CameraState.STANDBY, CameraState.FAILED -> {
-                    // 촬영이 시작됨을 알린다 — 셔터음·진동(res/raw/camera_start, live_watch_alert.xml)
-                    LiveWatchAlert.play(this)
-                    startRecording()
-                }
+                CameraState.STANDBY, CameraState.FAILED -> startRecording()
                 CameraState.STREAMING -> showStopRecordingDialog()
                 CameraState.CONNECTING -> { /* 연결 중 무시 */ }
             }
@@ -482,6 +472,8 @@ class CameraModeActivity : AppCompatActivity() {
                     bindStreamingUseCases(helper, bufferManager)
                     bufferManager.start()
                     setState(CameraState.STREAMING)
+                    // 촬영 시작 확정 시 셔터음·진동 (res/raw/camera_start, camera_start_alert.xml)
+                    CameraStartAlert.play(this@CameraModeActivity)
                 }
             }
 
@@ -788,10 +780,7 @@ class CameraModeActivity : AppCompatActivity() {
         )
     }
 
-    // 해제 전 확인 조회 중 — 버튼 연타로 창이 여러 개 뜨지 않게
-    private var unpairCheckJob: Job? = null
-
-    // 확인 창 전에 미확인 위험 알림 건수를 조회해 1건 이상이면 창에 경고를 함께 보여 준다
+    // 해제 확인 창, 미확인 위험 알림 건수는 조회되는 대로 창에 표시
     private fun showUnpairDialog() {
         val userId = TokenManager.getUserId(this)
         val counterpart = viewModel.uiState.value?.pairedGuardianUserId
@@ -799,21 +788,17 @@ class CameraModeActivity : AppCompatActivity() {
             toast("연결 정보를 확인할 수 없어요.")
             return
         }
-        if (unpairCheckJob?.isActive == true) return
-        unpairCheckJob = lifecycleScope.launch {
-            val dangerCount = UnpairCheck.unconfirmedDangerCount(userId, counterpart)
-            showConfirmDialog(
-                layoutRes = R.layout.dialog_unpair,
-                cancelId = R.id.btnUnpairCancel,
-                confirmId = R.id.btnUnpairConfirm,
-                bind = { dialog ->
-                    UnpairCheck.bindWarning(
-                        dialog.findViewById<TextView>(R.id.tvUnpairDangerWarning), dangerCount, byGuardian = false
-                    )
-                },
-                onConfirm = ::handleUnpair
-            )
-        }
+        showConfirmDialog(
+            layoutRes = R.layout.dialog_unpair,
+            cancelId = R.id.btnUnpairCancel,
+            confirmId = R.id.btnUnpairConfirm,
+            bind = { dialog ->
+                UnpairCheck.loadWarning(
+                    lifecycleScope, dialog.findViewById(R.id.tvUnpairDangerWarning), userId, counterpart, byGuardian = false
+                )
+            },
+            onConfirm = ::handleUnpair
+        )
     }
 
     private fun handleUnpair() {
