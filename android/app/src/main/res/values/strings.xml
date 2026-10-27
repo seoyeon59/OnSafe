@@ -3,7 +3,7 @@
 
     <string name="live_video_consent_label">보호자 실시간 영상 보기 허용</string>
     <string name="live_video_consent_loading">설정 확인 중…</string>
-    <string name="live_video_consent_saving">저장 중…</string>
+    <string name="live_video_consent_pill">보호자 보기 허용</string>
     <string name="live_video_consent_retry">설정 확인 실패 · 다시 시도</string>
     <string name="live_video_consent_allowed">실시간 영상 보기 허용됨</string>
     <string name="live_video_consent_blocked">실시간 영상 보기 차단됨</string>
