@@ -215,8 +215,8 @@
                 android:indeterminateTint="@color/primary_blue"
                 android:visibility="gone" />
 
-            <!-- 디버그 전용 테스트 로그인 — 릴리즈에서는 BuildConfig.DEBUG 분기가 제거되어 gone 유지 -->
-            <!-- 로그인 버튼과 같은 pill 계열이되 외곽선·낮은 높이·본문 크기로 한 단계 아래 위계 -->
+            <!-- 테스트 로그인 (팀 확인 편의상 유지) -->
+            <!-- 회색 점선 pill·작은 글자로 실제 버튼과 구분 -->
             <Button
                 android:id="@+id/btnDebugLogin"
                 android:layout_width="match_parent"
@@ -225,13 +225,12 @@
                 android:layout_height="@dimen/touch_min"
                 android:layout_marginTop="@dimen/space_sm"
                 android:includeFontPadding="false"
-                android:background="@drawable/bg_button_outline_danger"
+                android:background="@drawable/bg_button_debug"
                 app:backgroundTint="@null"
                 android:stateListAnimator="@null"
-                android:text="[DEBUG] 로그인 건너뛰기"
-                android:textColor="@color/status_danger_text"
-                android:textSize="@dimen/text_body"
-                android:textStyle="bold"
+                android:text="개발용 · 로그인 건너뛰기"
+                android:textColor="@color/ink_500"
+                android:textSize="@dimen/text_caption"
                 android:visibility="gone" />
 
             <!-- 아이디 찾기 / 비밀번호 찾기 -->
@@ -241,7 +240,7 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginTop="16dp">
+                android:layout_marginTop="@dimen/space_xs">
 
                 <TextView
                     android:id="@+id/tvFindId"
@@ -272,11 +271,12 @@
 
             </LinearLayout>
 
-            <!-- 회원가입 — 신규 사용자 유일 진입점이라 찾기 링크와 행 분리 -->
+            <!-- 회원가입: 찾기 링크와 행 분리, 터치 영역 12dp 겹침으로 글자 간격 축소 -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
+                android:layout_marginTop="-12dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -307,7 +307,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="24dp"
                 android:text="로그인 시 이용약관 및 개인정보 처리방침에 동의합니다."
                 android:textSize="@dimen/text_caption"
                 android:textColor="@color/ink_500"
