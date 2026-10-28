@@ -4,14 +4,18 @@ import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
 import com.example.on_safe.MainActivity
 import com.example.on_safe.R
+import com.example.on_safe.data.repository.FallLogSource
 import com.example.on_safe.ui.notification.NotificationActivity
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -28,6 +32,19 @@ object PushNotifications {
     // 나중에 조정이 필요하면 새 ID를 발급해야 하므로 ID에 버전 여지를 남긴다.
     const val CHANNEL_ALERTS = "onsafe_alerts"      // 낙상·오프라인 등 즉시 확인이 필요한 안전 알림
     const val CHANNEL_PAIRING = "onsafe_pairing"    // 보호자 연결(승인·거부·해제) 상태 변화
+
+    // 보호자가 받는 피보호자 위험·주의 알림 — 소리·진동이 채널에 고정되므로 별도 채널.
+    // 서버가 백그라운드 알림에도 이 ID를 지정해야 같은 소리·진동이 난다(서버 상수와 반드시 같아야 함).
+    //
+    // ⚠️ 채널 설정(소리·진동, res/values/fall_alert.xml)은 가능하면 바꾸지 않는다. 설치된 기기의 채널은
+    //    처음 만들 때 값으로 고정돼, 바꾸려면 _v 번호를 올려야 하고 그때는 아래가 모두 필요하다.
+    //    1) 옛 채널 삭제 — createChannels에서 deleteNotificationChannel("onsafe_danger_v1") 등을 함께 호출.
+    //       안 지우면 시스템 알림 설정에 "위험 알림"이 두 개 남는다(사용자가 v1에서 바꾼 설정은 v2로 이어지지 않음).
+    //    2) 서버와 동시 배포 + 강제 업데이트 — 백그라운드 알림은 서버가 보낸 channel_id로 시스템이 표시하는데,
+    //       그 채널이 기기에 없으면 FCM 기본 채널로 떨어져 경보음·진동이 나지 않는다. 서버는 앱 버전을 모르므로
+    //       번호를 올리는 순간 구버전(v1만 있음)이나 신버전(v2만 있음) 중 한쪽은 기본 알림이 된다.
+    const val CHANNEL_DANGER = "onsafe_danger_v1"   // 위험(낙상·위험 수준): 경보음 + 진동
+    const val CHANNEL_WARNING = "onsafe_warning_v1" // 주의: 진동만
 
     // 같은 이벤트가 연달아 와도 서로 덮지 않도록 표시마다 고유 ID 부여
     private val notificationId = AtomicInteger(1000)
@@ -55,6 +72,62 @@ object PushNotifications {
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply { description = "보호자 연결 요청 승인·거부·해제 알림" }
         )
+        val vibration = fallAlertVibration(context)
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_DANGER,
+                "위험 알림",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "피보호자 낙상·위험 감지, 경보음과 진동"
+                setSound(alarmSoundUri(context), ALARM_ATTRIBUTES)
+                enableVibration(true)
+                vibrationPattern = vibration
+            }
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_WARNING,
+                "주의 알림",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "피보호자 주의 수준 움직임, 진동만"
+                setSound(null, null)
+                enableVibration(true)
+                vibrationPattern = vibration
+            }
+        )
+    }
+
+    // 알림 효과음 속성 — 알림 볼륨·방해 금지 설정을 따른다
+    private val ALARM_ATTRIBUTES: AudioAttributes = AudioAttributes.Builder()
+        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+        .build()
+
+    // 리소스 이름 기반 URI(…/raw/alarm) — 채널은 생성 시 URI를 그대로 저장한다. 숫자 ID(R.raw.alarm)는
+    // res/raw 파일이 늘거나 줄면 빌드마다 바뀔 수 있어, 설치된 기기의 위험 알림이 다른 소리로 울리거나 무음이 된다.
+    private fun alarmSoundUri(context: Context): Uri =
+        Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/raw/alarm")
+
+    private fun fallAlertVibration(context: Context): LongArray =
+        context.resources.getIntArray(R.array.fall_alert_vibration_pattern).map { it.toLong() }.toLongArray()
+
+    /** 보호자 위험·주의 알림 구분 — 소리·진동이 달라 채널이 갈린다 */
+    enum class FallAlertLevel { DANGER, WARNING }
+
+    /**
+     * 서버 낙상 계열 알림을 위험/주의로 나눈다. 해당 없으면 null(기존 안전 알림 채널).
+     * - fall_escalated(미확인 위험 재알림) → 위험
+     * - fall_detected: fall=true 또는 score > 75 → 위험, 그 외 → 주의(서버는 주의 수준도 같은 이벤트로 보낸다)
+     *   score가 없으면 놓치지 않도록 위험으로 본다
+     */
+    internal fun fallAlertLevel(event: String?, data: Map<String, String>): FallAlertLevel? {
+        if (!isFallEvent(event)) return null
+        if (event == "fall_escalated") return FallAlertLevel.DANGER
+        if (data["fall"]?.toBooleanStrictOrNull() == true) return FallAlertLevel.DANGER
+        val score = data["score"]?.toFloatOrNull() ?: return FallAlertLevel.DANGER
+        return if (score > FallLogSource.DANGER_THRESHOLD) FallAlertLevel.DANGER else FallAlertLevel.WARNING
     }
 
     /**
@@ -66,8 +139,19 @@ object PushNotifications {
      */
     // POST_NOTIFICATIONS 미허용 시 notify는 조용히 무시 — 예외 없음
     @SuppressLint("MissingPermission")
-    fun show(context: Context, event: String?, title: String?, body: String?) {
-        val channelId = channelFor(event)
+    fun show(
+        context: Context,
+        event: String?,
+        title: String?,
+        body: String?,
+        data: Map<String, String> = emptyMap()
+    ) {
+        val level = fallAlertLevel(event, data)
+        val channelId = when (level) {
+            FallAlertLevel.DANGER -> CHANNEL_DANGER
+            FallAlertLevel.WARNING -> CHANNEL_WARNING
+            null -> channelFor(event)
+        }
         val resolvedTitle = title?.takeIf { it.isNotBlank() } ?: defaultTitle(event)
         val resolvedBody = body?.takeIf { it.isNotBlank() } ?: defaultBody(event)
 
@@ -81,6 +165,13 @@ object PushNotifications {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .apply { contentIntent?.let { setContentIntent(it) } }
+            // Android 8 미만은 채널이 없어 알림마다 소리·진동을 직접 지정한다
+            .apply {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O && level != null) {
+                    setVibrate(fallAlertVibration(context))
+                    if (level == FallAlertLevel.DANGER) setSound(alarmSoundUri(context))
+                }
+            }
             .build()
 
         // POST_NOTIFICATIONS(33+) 미허용이면 notify 는 조용히 무시된다 — 크래시 없음.

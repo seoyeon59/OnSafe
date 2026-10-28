@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    보호자 위험·주의 알림 설정 (PushNotifications)
+
+    [소리] res/raw/alarm.ogg — 위험 알림 전용. 두 음 교대 사이렌(약 1.85초).
+           주의 알림은 소리 없이 진동만.
+
+    [진동] 위험·주의 공통. 알림 채널 진동은 세기를 지정할 수 없어 켜짐·꺼짐 패턴으로 사이렌을 표현한다.
+           단위 ms, "대기, 진동, 쉼, 진동, 쉼, …" 순서.
+           경보음 분석(20ms 단위): 높은음 785Hz ↔ 낮은음 656Hz가 약 230ms마다 교대, 4회 왕복, 세기는 내내 최대.
+           → 높은음은 길게(200ms) "위잉", 낮은음은 짧게(100ms) "윙"으로 4회 반복(약 1.7초).
+
+    ⚠️ 알림 채널의 소리·진동은 처음 만들어질 때 고정된다. 가능하면 바꾸지 않는다.
+       바꾸면 PushNotifications의 채널 ID(…_v1)를 올려야 이미 설치된 기기에 반영되고, 그때는
+       옛 채널 삭제와 서버·앱 동시 배포(+ 강제 업데이트)가 함께 필요하다 — PushNotifications.CHANNEL_DANGER 주석 참고.
+       alarm.ogg 파일명도 바꾸지 않는다(채널이 res/raw/alarm 이름으로 소리를 찾는다).
+-->
+<resources>
+    <integer-array name="fall_alert_vibration_pattern">
+        <item>0</item>
+        <!-- 1회 -->
+        <item>200</item> <item>30</item> <item>100</item> <item>130</item>
+        <!-- 2회 -->
+        <item>200</item> <item>30</item> <item>100</item> <item>130</item>
+        <!-- 3회 -->
+        <item>200</item> <item>30</item> <item>100</item> <item>130</item>
+        <!-- 4회 -->
+        <item>200</item> <item>30</item> <item>100</item>
+    </integer-array>
+</resources>

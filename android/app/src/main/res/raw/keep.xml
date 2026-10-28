@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- release 리소스 축소(isShrinkResources)에서 지우지 않을 리소스.
+     camera_start는 CameraStartAlert가 이름(getIdentifier)으로 찾고, alarm은 위험 알림 채널이
+     이름 기반 URI(android.resource://패키지/raw/alarm)로 찾아 둘 다 코드 참조로 잡히지 않는다.
+     이 파일 자체는 빌드 시 APK에서 빠진다. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/camera_start,@raw/alarm" />

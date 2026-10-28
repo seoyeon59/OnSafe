@@ -116,10 +116,14 @@ interface ApiService {
     // 피보호자가 승인 요청을 승인 — 이 시점에 실제 guardian_links 관계가 생성된다.
     // 기존 관계(피보호자의 기존 보호자, 보호자의 기존 피보호자)가 있으면 자동으로 해제되고
     // 옛 파트너에게는 pairing_displaced FCM 이 발송된다.
+    // 본문 live_video_enabled는 승인 창의 "실시간 영상 보기 허용" 선택 값.
+    // 체크박스를 바꾸지 않았으면 생략({})해 서버가 기존 동의를 유지한다 — 재페어링 시 이전 동의를 이어 간다.
+    // (API 스펙 v4.16은 "항상 전송"을 요구 — 백엔드와 정책 합의 필요)
     @POST("api/guardian/{userId}/pairing-requests/{requestId}/approve")
     suspend fun approvePairingRequest(
         @Path("userId") userId: String,
-        @Path("requestId") requestId: String
+        @Path("requestId") requestId: String,
+        @Body request: ApprovePairingRequest
     ): Response<ApiResponse<WardResponse>>
 
     // 피보호자가 승인 요청을 거부 — Redis 요청이 소비되고 보호자에게 pairing_rejected FCM 발송.
@@ -173,6 +177,19 @@ interface ApiService {
         @Body request: MarketingConsentRequest
     ): Response<ApiResponse<MarketingConsentResponse>>
 
+    // 실시간 영상(LIVE) 송출 동의 조회 — 본인만. 승인 창이 현재 동의를 체크박스에 그대로 보여 주는 데 쓴다
+    @GET("api/settings/live-video/{userId}")
+    suspend fun getLiveVideoSettings(
+        @Path("userId") userId: String
+    ): Response<ApiResponse<LiveVideoSettingsResponse>>
+
+    // 실시간 영상(LIVE) 송출 동의 변경 — 본인만(카메라 모드 토글). 끄면(철회) 서버가 진행 중 LIVE도 끊는다
+    @PUT("api/settings/live-video/{userId}")
+    suspend fun updateLiveVideoSettings(
+        @Path("userId") userId: String,
+        @Body request: LiveVideoSettingsRequest
+    ): Response<ApiResponse<LiveVideoSettingsResponse>>
+
     // ===== Consents (필수 약관 재동의) =====
 
     // 자동 로그인 진입용 — 로그인 응답 pending_consents와 같은 목록
@@ -197,6 +214,26 @@ interface ApiService {
     // 서버는 이 호출을 근거로 6분 이상 미수신 시 오프라인 판정 후 보호자에게 통지한다.
     @POST("api/camera/heartbeat")
     suspend fun heartbeat(@Body request: HeartbeatRequest): Response<ApiResponse<Unit>>
+
+    // ===== Live (보호자 실시간 영상) =====
+
+    // 시청 시작·연장 겸용 — 진행 중 세션이 있으면 만료만 지금+5분으로 연장(횟수 제한·열람 기록 제외는 서버 처리)
+    @POST("api/live/{elderUserId}/session")
+    suspend fun startLiveSession(
+        @Path("elderUserId") elderUserId: String
+    ): Response<ApiResponse<LiveSessionResponse>>
+
+    // 시청 종료 — 이미 끝난 세션이어도 성공(멱등). 서버가 LiveKit 방까지 삭제해 송출도 멈춘다
+    @DELETE("api/live/{elderUserId}/session")
+    suspend fun endLiveSession(
+        @Path("elderUserId") elderUserId: String
+    ): Response<ApiResponse<Unit>>
+
+    // 피보호자(카메라 모드) 송출 토큰 — 토큰 사용자 본인 방, 진행 중 세션이 있을 때만.
+    // 세션 없음·만료 404 LIVE_SESSION_NOT_FOUND, 동의 철회 403 LIVE_NOT_ALLOWED. 응답 형식은 시청과 같고
+    // token만 송출 전용(유효시간 = 남은 세션 시간), request_delivered는 null
+    @POST("api/live/me/publish-token")
+    suspend fun issueLivePublishToken(): Response<ApiResponse<LiveSessionResponse>>
 
     // ===== Fall Logs (사고 이력) =====
 
