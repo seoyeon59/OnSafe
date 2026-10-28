@@ -24,6 +24,7 @@ import com.example.on_safe.ui.live.LiveViewController
 import com.example.on_safe.ui.live.LiveViewState
 import com.example.on_safe.ui.main.GuardianPairingDialogFragment
 import com.example.on_safe.ui.notification.NotificationActivity
+import com.example.on_safe.ui.pairing.UnpairCheck
 import com.example.on_safe.util.DisplayText
 import com.example.on_safe.util.NavTab
 import com.example.on_safe.util.setupBottomNav
@@ -168,6 +169,8 @@ class MainActivity : AppCompatActivity() {
                         }
                         push.event in listOf("pairing_approved", "pairing_displaced", "pairing_unpaired") -> {
                             // 페어링 변경 — 홈 진입 판단(getWards) 재실행
+                            // 해제·교체면 알림함에서 그 피보호자 알림이 지워졌으니 빨간 점도 서버 값으로 다시 맞춘다
+                            if (push.endsPairing) viewModel.refreshUnreadBadge(TokenManager.getUserId(this@MainActivity))
                             isPaired = false
                             pairingDeferred = false
                             checkGuardianPairingOnEntry()
@@ -358,13 +361,18 @@ class MainActivity : AppCompatActivity() {
         }.resourceId
     }
 
+    // 해제 확인 창, 미확인 위험 알림 건수는 조회되는 대로 창에 표시
     private fun showUnpairDialog() {
         val counterpart = pairedWardUserId
-        if (counterpart.isNullOrBlank()) {
+        val userId = TokenManager.getUserId(this)
+        if (counterpart.isNullOrBlank() || userId.isBlank()) {
             android.widget.Toast.makeText(this, "연결 정보를 확인할 수 없어요.", android.widget.Toast.LENGTH_SHORT).show()
             return
         }
         val view = layoutInflater.inflate(R.layout.dialog_unpair, null, false)
+        UnpairCheck.loadWarning(
+            lifecycleScope, view.findViewById(R.id.tvUnpairDangerWarning), userId, counterpart, byGuardian = true
+        )
         val dialog = cardDialog(this, view)
         view.findViewById<View>(R.id.btnUnpairCancel).setOnClickListener { dialog.dismiss() }
         view.findViewById<View>(R.id.btnUnpairConfirm).setOnClickListener {
@@ -389,6 +397,8 @@ class MainActivity : AppCompatActivity() {
                     liveController.stop(endSession = false)
                     renderPairingButton()
                     restartPolling()
+                    // 서버가 해제와 함께 알림함에서 그 피보호자 알림을 지운다 — 빨간 점을 서버 값으로 다시 맞춘다
+                    viewModel.refreshUnreadBadge(userId)
                     android.widget.Toast.makeText(this@MainActivity, "피보호자 연결이 해제되었어요.", android.widget.Toast.LENGTH_SHORT).show()
                     // pairingDeferred 는 이번 방문 동안 재확인만 억제하는 값이라 그대로 두면 홈에 계속 남는다.
                     // 명시 해제 후엔 다음 진입 때 페어링 모달이 다시 뜨도록 리셋.

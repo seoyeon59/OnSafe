@@ -40,6 +40,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.on_safe.R
 import com.example.on_safe.messaging.PushEventBus
 import com.example.on_safe.network.dto.LandmarkPoint
+import com.example.on_safe.ui.pairing.UnpairCheck
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.AppScope
 import com.example.on_safe.util.DisplayText
@@ -777,11 +778,23 @@ class CameraModeActivity : AppCompatActivity() {
         )
     }
 
+    // 해제 확인 창, 미확인 위험 알림 건수는 조회되는 대로 창에 표시
     private fun showUnpairDialog() {
+        val userId = TokenManager.getUserId(this)
+        val counterpart = viewModel.uiState.value?.pairedGuardianUserId
+        if (userId.isBlank() || counterpart.isNullOrBlank()) {
+            toast("연결 정보를 확인할 수 없어요.")
+            return
+        }
         showConfirmDialog(
             layoutRes = R.layout.dialog_unpair,
             cancelId = R.id.btnUnpairCancel,
             confirmId = R.id.btnUnpairConfirm,
+            bind = { dialog ->
+                UnpairCheck.loadWarning(
+                    lifecycleScope, dialog.findViewById(R.id.tvUnpairDangerWarning), userId, counterpart, byGuardian = false
+                )
+            },
             onConfirm = ::handleUnpair
         )
     }
@@ -825,9 +838,11 @@ class CameraModeActivity : AppCompatActivity() {
         @LayoutRes layoutRes: Int,
         @IdRes cancelId: Int,
         @IdRes confirmId: Int,
+        bind: (Dialog) -> Unit = {},
         onConfirm: () -> Unit
     ) {
         val dialog = buildBaseDialog(layoutRes)
+        bind(dialog)
         dialog.findViewById<TextView>(cancelId).setOnClickListener { dialog.dismiss() }
         dialog.findViewById<TextView>(confirmId).setOnClickListener {
             dialog.dismiss()
