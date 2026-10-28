@@ -42,7 +42,11 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
 
     private var poseLandmarker: PoseLandmarker? = null
     private val frameCounter = AtomicInteger(0)
+    @Volatile
     private var startElapsedMs = 0L
+
+    // 프레임 시계(startElapsedMs·frameCounter) 리셋과 프레임 전달을 직렬화 — 분석 스레드 ↔ 메인 스레드
+    private val clockLock = Any()
 
     // 분석 프레임을 함께 받을 곳(실시간 영상 송출) — 분석 스레드에서 회전된 Bitmap을 넘긴다
     @Volatile
@@ -129,8 +133,22 @@ class PoseLandmarkerHelper(private val context: Context, private val listener: L
             )
         }
 
-        val timestampSec = (SystemClock.elapsedRealtime() - startElapsedMs) / 1000f
-        listener.onLandmarks(frameCounter.getAndIncrement(), timestampSec, landmarks)
+        // timestamp 계산부터 전달(전송)까지를 [resetClock]과 겹치지 않게 한다 — 겹치면 재연결 직후 첫 프레임이
+        // 리셋 전 시계(예: 3599.9초)로 나가 서버 윈도우에서 시간이 거꾸로 흐른다
+        synchronized(clockLock) {
+            val timestampSec = (SystemClock.elapsedRealtime() - startElapsedMs) / 1000f
+            listener.onLandmarks(frameCounter.getAndIncrement(), timestampSec, landmarks)
+        }
+    }
+
+    // WS 재연결마다 호출 — 서버는 init을 받을 때마다 프레임 윈도우를 비우고 연결마다 timestamp를 0부터 받는다.
+    // 진행 중인 프레임 전달이 끝난 뒤 리셋한다. 그 프레임은 아직 새 소켓이 열리기 전이라 버려진다
+    // (LandmarkStreamClient는 리셋을 부른 뒤에 프레임 전송을 연다).
+    fun resetClock() {
+        synchronized(clockLock) {
+            startElapsedMs = SystemClock.elapsedRealtime()
+            frameCounter.set(0)
+        }
     }
 
     fun stop() {
