@@ -13,5 +13,9 @@ data class NotificationLogResponse(
     // fall_detected / fall_escalated 여부
     val fall: Boolean,
     val isRead: Boolean,
-    val timestamp: String
+    val timestamp: String,
+    // 알림 종류 — 푸시 data의 event와 같은 코드(fall_detected·pairing_unpaired 등). 필드 추가 전 저장분은 null
+    val event: String?,
+    // 이 알림의 대상 피보호자 — 연결이 바뀐 뒤 이전 피보호자 알림 구분용. 필드 추가 전 저장분은 null
+    val elderUserId: String?
 )

@@ -54,7 +54,7 @@ sealed class LiveViewState {
  *
  * 흐름: `POST /api/live/{elder}/session` → (request_delivered=false면 즉시 안내·DELETE)
  *   → LiveKit 방 접속 → 참가자 `elder-{id}`의 영상 트랙을 약 30초 대기(없으면 안내·DELETE)
- *   → 시청 중 약 4분마다 같은 POST로 자동 연장(응답 expires_at으로 다음 연장 시점 조정)
+ *   → 시청 중 약 4분마다 같은 POST로 자동 연장(응답 expires_at_epoch로 다음 연장 시점 조정)
  *   → 화면 이탈·백그라운드 시 [stop]에서 DELETE. 서버가 방을 지우면(만료·해제·동의 철회) SDK 끊김 이벤트로 정리.
  *
  * 화면(Activity)의 onStart/onStop에 맞춰 [start]/[stop]을 부른다 — 포그라운드에서만 시청·연장한다.
@@ -124,7 +124,7 @@ class LiveViewController(
             terminate(LiveViewState.Stopped("피보호자 기기에 요청을 보내지 못했습니다."), endSession = true)
             return@coroutineScope
         }
-        var deadline = deadlineMillis(first.expiresAt)
+        var deadline = deadlineMillis(first)
 
         val newRoom = LiveKit.create(appContext).also { room = it }
         val newRenderer = TextureViewRenderer(videoFrame.context).also { r ->
@@ -155,7 +155,7 @@ class LiveViewController(
         while (this.isActive) {
             delay(nextRenewDelay(deadline))
             val renewed = requestSession(elderUserId, isRenewal = true, deadline = deadline)
-            if (renewed != null) deadline = deadlineMillis(renewed.expiresAt)
+            if (renewed != null) deadline = deadlineMillis(renewed)
             else if (!isRunning) return@coroutineScope   // 연장 실패로 종료됨
         }
     }
@@ -301,14 +301,14 @@ class LiveViewController(
     }
 
     /**
-     * expires_at → 기기 시각(ms). 서버 LocalDateTime(서버 시간대)이라 기기 시간대가 다르면 크게 어긋날 수 있어,
-     * 세션 길이(5분) 범위를 벗어나면 "지금+5분"으로 본다.
+     * 응답 만료 시각 → 기기 시각(ms). expires_at_epoch(시간대 무관)를 먼저 쓰고, 없으면(구서버) expires_at을
+     * 기기 시간대로 해석한다. 기기 시계 오차·시간대 차이로 세션 길이(5분) 범위를 벗어나면 "지금+5분"으로 본다.
      */
-    private fun deadlineMillis(expiresAt: String?): Long {
+    private fun deadlineMillis(session: LiveSessionResponse): Long {
         val now = System.currentTimeMillis()
         val fallback = now + SESSION_DURATION_MS
-        val parsed = try {
-            expiresAt?.let { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.KOREA).parse(it)?.time }
+        val parsed = session.expiresAtEpoch?.let { it * 1000 } ?: try {
+            session.expiresAt?.let { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.KOREA).parse(it)?.time }
         } catch (_: Exception) {
             null
         } ?: return fallback
