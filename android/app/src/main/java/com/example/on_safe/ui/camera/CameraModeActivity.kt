@@ -669,6 +669,7 @@ class CameraModeActivity : AppCompatActivity() {
         currentState = state
         // 분석 프레임은 촬영 중에만 나온다 — 실시간 영상 송출 시작 허용 조건
         viewModel.setCameraStreaming(state == CameraState.STREAMING)
+        screenSaverController.setEnabled(state == CameraState.STREAMING)
         when (state) {
             CameraState.STANDBY -> {
                 stopRecordingTimer()
