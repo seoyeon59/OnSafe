@@ -35,6 +35,7 @@
         </FrameLayout>
 
         <TextView
+            android:id="@+id/tvDeleteTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -44,9 +45,11 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/tvDeleteMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            android:gravity="center"
             android:text="삭제된 이력은 복구할 수 없습니다."
             android:textColor="@color/ink_500"
             android:textSize="@dimen/text_caption" />

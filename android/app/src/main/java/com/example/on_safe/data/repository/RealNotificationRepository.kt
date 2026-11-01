@@ -1,5 +1,6 @@
 package com.example.on_safe.data.repository
 
+import com.example.on_safe.messaging.PushNotifications
 import com.example.on_safe.network.ApiClient
 import com.example.on_safe.network.errorMessage
 import com.example.on_safe.network.isOk
@@ -59,8 +60,22 @@ class RealNotificationRepository : NotificationRepository {
         )
     }
 
-    // 점수 없음 = 페어링·오프라인 등 시스템 알림
-    private fun classify(r: NotificationLogResponse): NotificationType = when {
+    private fun classify(r: NotificationLogResponse): NotificationType {
+        // event가 있으면 푸시 채널과 같은 기준으로 나눈다 — 재알림·점수 없는 낙상도 위험, 낙상 외 이벤트는 시스템
+        val event = r.event ?: return classifyByScore(r)
+        val data = buildMap {
+            put("fall", r.fall.toString())
+            r.score?.let { put("score", it.toString()) }
+        }
+        return when (PushNotifications.fallAlertLevel(event, data)) {
+            PushNotifications.FallAlertLevel.DANGER -> NotificationType.FALL
+            PushNotifications.FallAlertLevel.WARNING -> NotificationType.WARNING
+            null -> NotificationType.SYSTEM
+        }
+    }
+
+    // event 필드 추가 전 저장분 — 점수 없음 = 페어링·오프라인 등 시스템 알림
+    private fun classifyByScore(r: NotificationLogResponse): NotificationType = when {
         r.fall -> NotificationType.FALL
         r.score != null && r.score > FallLogSource.DANGER_THRESHOLD -> NotificationType.FALL
         r.score != null -> NotificationType.WARNING
