@@ -136,7 +136,11 @@ class AccidentHistoryActivity : AppCompatActivity() {
         updateEmptyState(state.lastLoadFailed, state.notPaired)
         // 정렬이 실제로 바뀔 때만 맨 위로 — 삭제 등 다른 갱신에서 스크롤되면 보던 위치 소실
         if (lastRenderedSort != null && lastRenderedSort != state.sort) {
-            rvHistory.smoothScrollToPosition(0)
+            rvHistory.scrollToPosition(0)
+            // 정렬 전환 표시용 짧은 페이드
+            rvHistory.alpha = 0f
+            rvHistory.translationY = resources.getDimension(R.dimen.space_sm)
+            rvHistory.animate().alpha(1f).translationY(0f).setDuration(200).withLayer().start()
         }
         lastRenderedSort = state.sort
     }
@@ -191,7 +195,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
                     btnRetry.visibility = View.GONE
                 }
                 else -> {
-                    tvEmpty.text = "사고 이력이 없습니다."
+                    tvEmpty.text = "최근 30일간 기록된 사고 이력이 없습니다."
                     btnRetry.visibility = View.GONE
                 }
             }

@@ -465,9 +465,9 @@ class MainActivity : AppCompatActivity() {
     private fun riskUnknownMessage(state: ConnectionState): String = when (state) {
         ConnectionState.STANDBY -> "카메라 기기가 연결되면 표시됩니다."
         ConnectionState.FAILED -> "위험 지수를 불러오지 못했습니다."
-        ConnectionState.INFERENCE_ERROR -> "낙상 감지 일시 중단 — 카메라 상태를 확인해주세요."
-        ConnectionState.SLOW -> "낙상 감지 처리 지연 중 — 잠시 후 다시 확인해주세요."
-        ConnectionState.RECONNECTING -> "연결 재확인 중 — 잠시만 기다려주세요."
+        ConnectionState.INFERENCE_ERROR -> "낙상 감지 일시 중단. 카메라 상태를 확인해주세요."
+        ConnectionState.SLOW -> "낙상 감지 처리 지연 중. 잠시 후 다시 확인해주세요."
+        ConnectionState.RECONNECTING -> "연결 재확인 중. 잠시만 기다려주세요."
         ConnectionState.NOT_PAIRED -> "피보호자를 연결하면 위험 지수가 표시됩니다.\n눌러서 연결하기"
         else -> "위험 지수를 확인하는 중입니다."
     }
