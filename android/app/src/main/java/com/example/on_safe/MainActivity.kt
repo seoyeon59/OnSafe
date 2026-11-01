@@ -73,6 +73,9 @@ class MainActivity : AppCompatActivity() {
     // 전체화면으로 시청을 넘기는 중 — onStop에서 서버 세션을 닫지 않는다(전체화면 POST가 연장으로 합류)
     private var liveHandOffToFullscreen = false
 
+    // onResume~onPause 사이 — 폴링 시작 가능 여부(restartPolling)
+    private var isHomeResumed = false
+
     // 전체화면에서 뒤로 돌아올 때 보던 중이었으면 홈이 이어서 본다
     private val fullscreenLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -239,6 +242,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        isHomeResumed = true
         NotificationPermissionBanner.refresh(this)
         refreshPairingAndPolling()
     }
@@ -252,13 +256,16 @@ class MainActivity : AppCompatActivity() {
 
     // 위험 점수는 연결된 피보호자 기준 — 미연결이면 null로 넘겨 폴링하지 않는다.
     // 조회 응답이 onPause 뒤에 도착하면 백그라운드 폴링이 되므로 건너뛴다(다음 onResume에서 시작).
+    // lifecycle.currentState는 onResume 안에서 아직 STARTED라 쓰지 않는다 — 연결된 채로 홈에
+    // 돌아오면(전체화면·알림 화면 등) onResume의 호출이 막혀 폴링이 다시 시작되지 않았다.
     private fun restartPolling() {
-        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
+        if (!isHomeResumed) return
         viewModel.startPolling(TokenManager.getUserId(this), pairedWardUserId.takeIf { isPaired })
     }
 
     override fun onPause() {
         super.onPause()
+        isHomeResumed = false
         viewModel.stopPolling()
     }
 
