@@ -7,12 +7,15 @@
     android:layout_height="match_parent"
     android:background="@color/surface_dark">
 
-    <!-- 좌측: 카메라 프리뷰 -->
+    <!-- 좌측: 카메라 프리뷰.
+         compatible(TextureView) — 촬영 시작 시 CameraX가 프리뷰·녹화를 한 스트림으로 묶으며(StreamSharing)
+         Surface를 연달아 두 번 요청하는데, 기본 SurfaceView 구현은 앞 요청을 취소해 프리뷰가 검게 남았다 -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:background="@color/surface_dark"
+        app:implementationMode="compatible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/sidePanel"
         app:layout_constraintStart_toStartOf="parent"
