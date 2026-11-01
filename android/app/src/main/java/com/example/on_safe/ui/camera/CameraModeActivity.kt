@@ -40,6 +40,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.on_safe.R
 import com.example.on_safe.messaging.PushEventBus
 import com.example.on_safe.network.dto.LandmarkPoint
+import com.example.on_safe.ui.pairing.UnpairCheck
 import com.example.on_safe.ui.tutorial.TutorialActivity
 import com.example.on_safe.util.AppScope
 import com.example.on_safe.util.DisplayText
@@ -437,15 +438,27 @@ class CameraModeActivity : AppCompatActivity() {
             return
         }
 
-        landmarkStreamClient = LandmarkStreamClient(createStreamListener())
-        landmarkStreamClient?.connect(userId, deviceId, accessToken)
+        // 재연결 때는 refresh로 바뀐 토큰을 써야 하므로 값이 아니라 조회 함수를 넘긴다
+        landmarkStreamClient = LandmarkStreamClient(
+            listener = createStreamListener(),
+            scope = lifecycleScope,
+            accessToken = { TokenManager.getAccessToken(applicationContext) }
+        )
+        landmarkStreamClient?.connect(userId, deviceId)
     }
 
     // WS 연결 생명주기 콜백 — startRecording()에서 분리해 "무엇을 트리거하는지"와
     // "연결이 시작/진행/종료될 때 무엇을 하는지"를 나눴다 (내용은 원본과 동일, 위치만 이동)
     private fun createStreamListener(): LandmarkStreamClient.Listener =
         object : LandmarkStreamClient.Listener {
-            override fun onInitOk() {
+            override fun onInitOk(reconnected: Boolean) {
+                // 재연결 — 카메라·포즈 분석·녹화는 끊김 동안에도 계속 돌았으니 그대로 두고 프레임 시계만 새로 센다
+                if (reconnected) {
+                    Log.d(TAG, "WS 재연결됨 — 스트리밍 재개")
+                    poseLandmarkerHelper?.resetClock()
+                    setStatusBadge("전송 중", getColor(R.color.status_normal))
+                    return
+                }
                 runOnUiThread {
                     poseLandmarkerHelper = PoseLandmarkerHelper(
                         this@CameraModeActivity,
@@ -484,32 +497,25 @@ class CameraModeActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onFailure(t: Throwable) {
-                runOnUiThread {
-                    Log.w(TAG, "WS 연결 실패", t)
-                    this@CameraModeActivity.toast("서버 연결에 실패했습니다.")
-                    setState(CameraState.FAILED)
-                }
+            // 촬영 시작 시 첫 연결 실패 — 사용자가 다시 시작한다
+            override fun onConnectFailed(serverError: Boolean) {
+                this@CameraModeActivity.toast(
+                    if (serverError) "서버가 일시적으로 불안정합니다. 잠시 후 다시 시도해주세요."
+                    else "서버 연결에 실패했습니다."
+                )
+                setState(CameraState.FAILED)
             }
 
-            // 끊긴 소켓에 프레임을 계속 보내 "감지 멈춤 + 화면은 촬영 중"이 되는 것 방지
-            override fun onClosed(code: Int) {
-                runOnUiThread {
-                    Log.d(TAG, "WS 연결 종료 (code=$code)")
-                    when (code) {
-                        1000 -> Unit   // 앱이 스스로 닫음
-                        // 로그아웃·비밀번호 변경·탈퇴로 세션 무효 — 로컬 정리 후 로그인 화면(onDestroy가 촬영 정리)
-                        1008 -> SessionEvents.expire(this@CameraModeActivity)
-                        1011 -> {
-                            this@CameraModeActivity.toast("서버가 일시적으로 불안정합니다. 잠시 후 다시 시도해주세요.")
-                            setState(CameraState.FAILED)
-                        }
-                        else -> if (currentState == CameraState.STREAMING) {
-                            this@CameraModeActivity.toast("서버 연결이 끊어졌습니다.")
-                            setState(CameraState.FAILED)
-                        }
-                    }
-                }
+            // 촬영 중 끊김 — 클라이언트가 백오프로 다시 연결한다. 카메라·녹화는 그대로 둔다
+            override fun onReconnecting(attempt: Int, delayMs: Long) {
+                Log.d(TAG, "WS 끊김 — ${delayMs}ms 뒤 재연결 ($attempt 번째)")
+                // 재연결 동안 낙상 감지 중단 표시 (촬영·녹화는 유지)
+                setStatusBadge("재연결 중", getColor(R.color.status_warning))
+            }
+
+            // 4003(로그아웃·비밀번호 변경·탈퇴로 세션 무효) 또는 refresh 거부 — 로컬 정리 후 로그인 화면(onDestroy가 촬영 정리)
+            override fun onSessionInvalid() {
+                SessionEvents.expire(this@CameraModeActivity)
             }
         }
 
@@ -777,11 +783,23 @@ class CameraModeActivity : AppCompatActivity() {
         )
     }
 
+    // 해제 확인 창, 미확인 위험 알림 건수는 조회되는 대로 창에 표시
     private fun showUnpairDialog() {
+        val userId = TokenManager.getUserId(this)
+        val counterpart = viewModel.uiState.value?.pairedGuardianUserId
+        if (userId.isBlank() || counterpart.isNullOrBlank()) {
+            toast("연결 정보를 확인할 수 없어요.")
+            return
+        }
         showConfirmDialog(
             layoutRes = R.layout.dialog_unpair,
             cancelId = R.id.btnUnpairCancel,
             confirmId = R.id.btnUnpairConfirm,
+            bind = { dialog ->
+                UnpairCheck.loadWarning(
+                    lifecycleScope, dialog.findViewById(R.id.tvUnpairDangerWarning), userId, counterpart, byGuardian = false
+                )
+            },
             onConfirm = ::handleUnpair
         )
     }
@@ -825,9 +843,11 @@ class CameraModeActivity : AppCompatActivity() {
         @LayoutRes layoutRes: Int,
         @IdRes cancelId: Int,
         @IdRes confirmId: Int,
+        bind: (Dialog) -> Unit = {},
         onConfirm: () -> Unit
     ) {
         val dialog = buildBaseDialog(layoutRes)
+        bind(dialog)
         dialog.findViewById<TextView>(cancelId).setOnClickListener { dialog.dismiss() }
         dialog.findViewById<TextView>(confirmId).setOnClickListener {
             dialog.dismiss()

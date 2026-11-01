@@ -146,6 +146,14 @@ interface ApiService {
         @Path("userId") userId: String
     ): Response<ApiResponse<GuardianResponse?>>
 
+    // 해제 확인 창을 띄우기 전 호출 — 미확인 위험 이벤트가 남아 있으면 창에 경고를 함께 보여 준다.
+    // 재알림은 발송 시점의 보호자에게 가므로, 해제하면 이후 재알림이 보호자에게 가지 않는다. 양쪽 모두 호출 가능.
+    @GET("api/guardian/{userId}/pair/{counterpartUserId}/unpair-check")
+    suspend fun getUnpairCheck(
+        @Path("userId") userId: String,
+        @Path("counterpartUserId") counterpartUserId: String
+    ): Response<ApiResponse<UnpairCheckResponse>>
+
     // 보호자·피보호자 어느 쪽에서 호출해도 관계가 해제됨. 상대방에게 pairing_unpaired FCM 발송.
     @DELETE("api/guardian/{userId}/pair/{counterpartUserId}")
     suspend fun unpair(

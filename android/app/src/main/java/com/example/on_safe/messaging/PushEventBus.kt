@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 /** 서버가 실어 보낸 event 코드 + 부가 data. UI 재조회 트리거에 쓴다. */
 data class PushEvent(val event: String?, val data: Map<String, String>) {
     val isFall: Boolean get() = isFallEvent(event)
+
+    // 연결 해제·교체 — 서버가 보호자 알림함에서 그 피보호자 알림을 지운 뒤 보낸다(목록 새로고침 필요)
+    val endsPairing: Boolean get() = event == "pairing_unpaired" || event == "pairing_displaced"
 }
 
 // 낙상 계열(fall_detected / fall_escalated) 판정 단일 기준

@@ -73,7 +73,8 @@ class NotificationActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 PushEventBus.events.collect { push ->
-                    if (push.isFall) viewModel.load(userId)
+                    // 해제·교체 시 서버가 그 피보호자 알림을 지우므로, 보고 있던 목록도 새로 불러온다
+                    if (push.isFall || push.endsPairing) viewModel.load(userId)
                 }
             }
         }
