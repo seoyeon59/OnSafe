@@ -9,6 +9,7 @@ import io.livekit.android.room.participant.VideoTrackPublishOptions
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.VideoEncoding
 import io.livekit.android.room.track.video.BitmapFrameCapturer
+import kotlin.concurrent.thread
 
 /**
  * 카메라 모드 분석 프레임을 LiveKit 영상 트랙으로 송출하는 커스텀 영상 소스.
@@ -77,7 +78,12 @@ class LiveVideoSource {
         }
     }
 
-    /** 송출 중단 — 방이 이미 끊겼어도 안전하게 정리 */
+    /**
+     * 송출 중단 — 방이 이미 끊겼어도 안전하게 정리.
+     * 프레임 전달은 여기서 바로 끊고, 트랙 정리는 별도 스레드에서 한다. 서버가 방을 지우면 SDK가
+     * 캡처 스레드를 먼저 정리해, 그 뒤 stopCapture가 응답 없는 스레드를 끝없이 기다린다 —
+     * 메인 스레드에서 부르면 카메라 모드가 ANR로 죽어 녹화·분석까지 멈춘다.
+     */
     fun stop() {
         val (oldTrack, oldRoom) = synchronized(lock) {
             val pair = track to room
@@ -87,10 +93,12 @@ class LiveVideoSource {
             pair
         }
         oldTrack ?: return
-        // 각 단계 실패가 다음 정리를 막지 않고, 메인 스레드 예외로 앱(녹화·분석)을 죽이지 않게 개별 보호
-        runCatching { oldRoom?.localParticipant?.unpublishTrack(oldTrack) }   // 방 삭제로 이미 끊긴 경우 등
-        runCatching { oldTrack.stopCapture() }
-        runCatching { oldTrack.dispose() }
+        thread(name = "LiveVideoSource-stop", isDaemon = true) {
+            // 각 단계 실패가 다음 정리를 막지 않게 개별 보호
+            runCatching { oldRoom?.localParticipant?.unpublishTrack(oldTrack) }   // 방 삭제로 이미 끊긴 경우 등
+            runCatching { oldTrack.stopCapture() }
+            runCatching { oldTrack.dispose() }
+        }
     }
 
     private companion object {
