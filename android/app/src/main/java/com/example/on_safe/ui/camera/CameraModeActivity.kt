@@ -490,15 +490,18 @@ class CameraModeActivity : AppCompatActivity() {
 
             override fun onResult(fallScore: Float, fall: Boolean, level: String, logId: String?) {
                 Log.d(TAG, "낙상 추론 결과: score=$fallScore fall=$fall level=$level logId=$logId")
+                // 클립을 만드는 중이면 최고점 시각을 기록 — 보호자 앱 썸네일 위치
+                rollingVideoBufferManager?.reportScore(fallScore)
 
                 if (level == "위험" && logId != null && logId != lastHandledDangerLogId) {
                     lastHandledDangerLogId = logId
                     val ownerUserId = TokenManager.getUserId(this@CameraModeActivity)
                     rollingVideoBufferManager?.captureDangerClip(
                         logId = logId,
-                        onReady = { clipFile ->
+                        score = fallScore,
+                        onReady = { clipFile, peakOffsetMs ->
                             // 낙상 영상은 사고 증거 — 화면이 닫혀도 업로드를 끝내야 함
-                            AppScope.launch { fallVideoUploader.upload(ownerUserId, logId, clipFile) }
+                            AppScope.launch { fallVideoUploader.upload(ownerUserId, logId, clipFile, peakOffsetMs) }
                         },
                         onError = { e ->
                             Log.w(TAG, "위험 이벤트 클립 합성 실패 (logId=$logId)", e)

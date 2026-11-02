@@ -32,6 +32,8 @@ class RollingVideoBufferManager(private val context: Context) {
         // 사고 후 분량을 찍는 동안 사고 전 세그먼트가 밀려 지워지지 않게 둘의 합만큼 보관(약 4분).
         // 예전 12개(3분)는 합(16)보다 작아, 촬영 1분 이후의 사고는 합성 시 앞 세그먼트가 없어 클립이 실패했다
         private const val RING_BUFFER_CAPACITY = PRE_EVENT_SEGMENTS + POST_EVENT_SEGMENTS
+        // 점수는 30프레임(~1초) 윈도우를 2초 구간으로 평활화한 값이라 실제 움직임보다 늦게 최고점에 닿는다 — 그만큼 앞당긴다
+        private const val SCORE_LAG_MS = 1_000L
         private const val TARGET_BITRATE = 1_500_000
         // 할 일이 없으면 이 시간 뒤 스레드가 스스로 끝난다 — 직접 shutdown하지 않는다(아래 executor 참고)
         private const val EXECUTOR_IDLE_TIMEOUT_SEC = 30L
@@ -75,8 +77,12 @@ class RollingVideoBufferManager(private val context: Context) {
     private var capturingLogId: String? = null
     private val postSegments = mutableListOf<File>()
     private var preSegmentsSnapshot: List<File> = emptyList()
-    private var onClipReady: ((File) -> Unit)? = null
+    private var onClipReady: ((File, Long?) -> Unit)? = null
     private var onClipError: ((Throwable) -> Unit)? = null
+
+    // 클립을 만드는 동안 위험 점수가 가장 높았던 값·시각(벽시계 ms) — 보호자 앱 썸네일 위치
+    private var peakScore = 0f
+    private var peakAtMs = 0L
 
     // 사고 후 분량을 다 찍기 전에 촬영이 끝남 — 마지막 세그먼트의 Finalize(성공·실패 모두)에서
     // 지금까지 찍힌 분량으로 클립을 마무리한다. 사고 순간이 그 세그먼트에 있을 수 있어 기다린다
@@ -179,8 +185,16 @@ class RollingVideoBufferManager(private val context: Context) {
         }
     }
 
-    /** 위험 이벤트 시 호출 — 진행 중인 스플라이스가 있으면 무시 */
-    fun captureDangerClip(logId: String, onReady: (File) -> Unit, onError: (Throwable) -> Unit) {
+    /**
+     * 위험 이벤트 시 호출 — 진행 중인 스플라이스가 있으면 무시.
+     * [onReady]의 두 번째 값은 클립 시작부터 위험 점수가 가장 높았던 시점(ms) — 계산할 수 없으면 null
+     */
+    fun captureDangerClip(
+        logId: String,
+        score: Float,
+        onReady: (File, Long?) -> Unit,
+        onError: (Throwable) -> Unit
+    ) {
         synchronized(this) {
             if (capturingLogId != null) {
                 Log.w(TAG, "이미 스플라이스 진행 중이라 새 위험 이벤트($logId) 무시")
@@ -191,8 +205,25 @@ class RollingVideoBufferManager(private val context: Context) {
             onClipReady = onReady
             onClipError = onError
             capturingLogId = logId
+            peakScore = score
+            peakAtMs = System.currentTimeMillis()
         }
     }
+
+    /** 추론 결과마다 호출 — 클립을 만드는 중이면 최고점과 그 시각을 갱신한다 */
+    fun reportScore(score: Float) {
+        synchronized(this) {
+            if (capturingLogId == null || finishCaptureOnStop) return
+            if (score > peakScore) {
+                peakScore = score
+                peakAtMs = System.currentTimeMillis()
+            }
+        }
+    }
+
+    // 세그먼트 파일명(seg_{번호}_{시작 벽시계 ms}.mp4)에서 녹화 시작 시각
+    private fun segmentStartMs(file: File): Long? =
+        file.nameWithoutExtension.substringAfterLast('_').toLongOrNull()
 
     // 정지 후 마지막 세그먼트가 오류로 끝남 — 그 세그먼트 없이 지금 분량으로 마무리
     private fun onLastSegmentLost() {
@@ -212,6 +243,9 @@ class RollingVideoBufferManager(private val context: Context) {
         val post = postSegments.toList()
         val readyCb = onClipReady
         val errorCb = onClipError
+        // 클립 첫 세그먼트 시작부터 최고점까지. 세그먼트 사이 틈(수십 ms)은 무시한다
+        val clipStartMs = (pre + post).firstOrNull()?.let(::segmentStartMs)
+        val peakOffsetMs = clipStartMs?.let { (peakAtMs - SCORE_LAG_MS - it).coerceAtLeast(0L) }
 
         capturingLogId = null
         preSegmentsSnapshot = emptyList()
@@ -224,7 +258,7 @@ class RollingVideoBufferManager(private val context: Context) {
                 val outputFile = File(bufferDir, "clip_$logId.mp4")
                 try {
                     FallClipComposer.compose(pre + post, outputFile)
-                    readyCb?.invoke(outputFile)
+                    readyCb?.invoke(outputFile, peakOffsetMs)
                 } catch (e: Exception) {
                     Log.w(TAG, "클립 합성 실패 (logId=$logId)", e)
                     errorCb?.invoke(e)

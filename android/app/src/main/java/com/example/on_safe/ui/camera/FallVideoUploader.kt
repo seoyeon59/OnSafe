@@ -26,7 +26,8 @@ class FallVideoUploader {
         private val plainHttpClient = OkHttpClient.Builder().build()
     }
 
-    suspend fun upload(userId: String, logId: String, clipFile: File) {
+    /** [peakOffsetMs]: 클립 시작부터 위험 점수가 가장 높았던 시점 — 서버에 저장돼 보호자 앱 썸네일 위치가 된다 */
+    suspend fun upload(userId: String, logId: String, clipFile: File, peakOffsetMs: Long? = null) {
         try {
             val uploadUrlResponse = ApiClient.api.getUploadUrl(userId, logId)
             val uploadUrlBody = uploadUrlResponse.body()
@@ -60,7 +61,7 @@ class FallVideoUploader {
                 return
             }
 
-            val completeResponse = ApiClient.api.completeVideoUpload(userId, logId)
+            val completeResponse = ApiClient.api.completeVideoUpload(userId, logId, peakOffsetMs)
             if (completeResponse.isSuccessful && completeResponse.body()?.success == true) {
                 clipFile.delete()
             } else {

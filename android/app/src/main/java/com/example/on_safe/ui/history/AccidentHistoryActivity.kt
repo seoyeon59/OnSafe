@@ -85,6 +85,7 @@ class AccidentHistoryActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_accident_history)
+        HistoryThumbnails.init(this)
 
         initViews()
         initRecyclerView()
@@ -161,7 +162,8 @@ class AccidentHistoryActivity : AppCompatActivity() {
         adapter = AccidentHistoryAdapter(
             onWatchVideo = ::handleWatchVideo,
             onDownload   = ::handleDownload,
-            onDelete     = ::handleDeleteRequest
+            onDelete     = ::handleDeleteRequest,
+            loadThumbnail = viewModel::loadThumbnail
         )
         rvHistory.apply {
             layoutManager = LinearLayoutManager(this@AccidentHistoryActivity)

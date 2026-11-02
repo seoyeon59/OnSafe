@@ -271,11 +271,13 @@ interface ApiService {
         @Path("logId") logId: String
     ): Response<ApiResponse<UploadUrlResponse>>
 
-    // signed URL로 GCS 업로드 완료 후 호출 — 서버가 GCS 객체 존재를 재확인한 뒤 video_url 반영
+    // signed URL로 GCS 업로드 완료 후 호출 — 서버가 GCS 객체 존재를 재확인한 뒤 video_url 반영.
+    // peak_offset_ms: 클립 시작부터 위험 점수 최고점까지(ms) — 보호자 이력 썸네일 위치. null이면 보내지 않는다
     @PATCH("api/fall-logs/{userId}/{logId}/video-complete")
     suspend fun completeVideoUpload(
         @Path("userId") userId: String,
-        @Path("logId") logId: String
+        @Path("logId") logId: String,
+        @Query("peak_offset_ms") peakOffsetMs: Long? = null
     ): Response<ApiResponse<FallLogResponse>>
 
     // 낙상 사고 처리(isConfirmed) — 알림 읽음(markNotificationRead)과 별개. 재알림 중단 기준

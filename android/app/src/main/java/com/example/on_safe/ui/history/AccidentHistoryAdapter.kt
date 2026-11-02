@@ -1,9 +1,11 @@
 package com.example.on_safe.ui.history
 
+import android.graphics.Bitmap
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.view.isVisible
@@ -19,7 +21,8 @@ import com.example.on_safe.R
 class AccidentHistoryAdapter(
     private val onWatchVideo: (HistoryListItem.HistoryEntry) -> Unit,
     private val onDownload:   (HistoryListItem.HistoryEntry) -> Unit,
-    private val onDelete:     (HistoryListItem.HistoryEntry) -> Unit
+    private val onDelete:     (HistoryListItem.HistoryEntry) -> Unit,
+    private val loadThumbnail: (HistoryListItem.HistoryEntry, (Bitmap) -> Unit) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val items = mutableListOf<HistoryListItem>()
@@ -104,6 +107,7 @@ class AccidentHistoryAdapter(
         private val btnDownload:   ImageButton  = view.findViewById(R.id.btnDownload)
         private val btnDelete:     ImageButton  = view.findViewById(R.id.btnDelete)
         private val ivPlayOverlay: View         = view.findViewById(R.id.ivThumbnailPlay)
+        private val ivThumbnail:   ImageView    = view.findViewById(R.id.ivThumbnail)
 
         fun bind(entry: HistoryListItem.HistoryEntry) {
             // 영상 길이 오해 방지용 "감지 시각" 접두어 — 알림 상세 모달과 표현 통일
@@ -114,6 +118,13 @@ class AccidentHistoryAdapter(
             btnWatchVideo.alpha = videoAlpha
             btnDownload.alpha = videoAlpha
             ivPlayOverlay.isVisible = entry.hasVideo
+
+            // 재활용된 뷰에 이전 항목 사진이 남지 않게 비우고, 늦게 온 결과는 지금 항목일 때만 붙인다
+            ivThumbnail.setImageDrawable(null)
+            ivThumbnail.tag = entry.id
+            loadThumbnail(entry) { bitmap ->
+                if (ivThumbnail.tag == entry.id) ivThumbnail.setImageBitmap(bitmap)
+            }
 
             btnWatchVideo.setOnClickListener { onWatchVideo(entry) }
             btnDownload.setOnClickListener   { onDownload(entry) }

@@ -14,6 +14,8 @@ data class FallLogResponse(
      * nullable 유지 후 매핑 시점에 대체.
      */
     val videoStatus: String?,
+    // 영상 시작부터 위험 점수가 가장 높았던 시점(ms) — 이력 썸네일 위치. 구서버·이전 기록은 null
+    val peakOffsetMs: Long?,
     val timestamp: String
 )
 
