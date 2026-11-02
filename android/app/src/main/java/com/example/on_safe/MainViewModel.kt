@@ -256,7 +256,7 @@ class MainViewModel : ViewModel() {
     }
 
     /**
-     * 새 추론이 [IDLE_RESET_MS] 동안 없으면 위험이 아닌 점수는 0(정상)으로 내린다.
+     * 새 추론이 [IDLE_RESET_TICKS] 동안 없으면 위험이 아닌 점수는 0(정상)으로 내린다.
      * 서버는 사람이 안 보이거나 몸이 덜 보이면 추론을 건너뛰고 마지막 점수를 그대로 두는데, 그대로 그리면
      * 지나간 주의 점수가 몇 분씩 게이지에 멈춰 있었다. 위험은 서버가 15분간 최고값을 유지하므로 그대로 둔다 —
      * 넘어진 뒤 화면에서 사라져도 위험 표시가 남아야 한다.
@@ -299,8 +299,7 @@ class MainViewModel : ViewModel() {
     }
 
     companion object {
-        // 홈 위험 점수 게이지 갱신 간격 — 보호자마다 이 주기로 서버를 조회한다
-        private const val POLLING_INTERVAL_MS = 3_000L
+        private const val POLLING_INTERVAL_MS = 5_000L
 
         // 서버의 읽음 처리 반영 대기 시간
         private const val READ_SYNC_GRACE_MS = 3_000L
@@ -319,19 +318,11 @@ class MainViewModel : ViewModel() {
          */
         private const val HEARTBEAT_COVERS_IDLE = false
 
-        // 정체 판정 임계 — 시간으로 정하고 폴링 간격에 맞춰 틱 수로 바꾼다(간격을 바꿔도 시간은 그대로).
-        // 하트비트 간격이 5초라 그보다 짧은 정체는 지터만으로도 생긴다 — 최소 10초부터 정체로 본다
-        private const val RECONNECTING_MS = 10_000L    // 유예 시작
-        private const val SLOW_MS = 15_000L            // 처리 지연
-        private const val DEVICE_STANDBY_MS = 30_000L  // WiFi 재연결 고려한 확정
-        private const val IDLE_RESET_MS = 10_000L      // 새 추론 없으면 위험 아닌 점수를 0으로(idleAdjusted)
-
-        // 임계 시간을 채우는 최소 틱 수(올림)
-        private fun ticksFor(ms: Long): Int = ((ms + POLLING_INTERVAL_MS - 1) / POLLING_INTERVAL_MS).toInt()
-
-        private val RECONNECTING_TICKS = ticksFor(RECONNECTING_MS)
-        private val SLOW_TICKS = ticksFor(SLOW_MS)
-        private val DEVICE_STANDBY_TICKS = ticksFor(DEVICE_STANDBY_MS)
-        private val IDLE_RESET_TICKS = ticksFor(IDLE_RESET_MS)
+        // 정체 판정 임계 틱 — 폴링 5초 기준.
+        // 하트비트 간격도 5초라 1틱은 지터만으로도 겹침 — 최소 2틱부터 정체로 본다
+        private const val RECONNECTING_TICKS = 2    // 10초 — 유예 시작
+        private const val SLOW_TICKS = 3            // 15초 — 처리 지연
+        private const val DEVICE_STANDBY_TICKS = 6  // 30초 — WiFi 재연결 고려한 확정
+        private const val IDLE_RESET_TICKS = 2      // 10초 — 새 추론 없으면 위험 아닌 점수를 0으로(idleAdjusted)
     }
 }
