@@ -231,7 +231,7 @@ class MainViewModel : ViewModel() {
 
         // 하트비트 미지원 서버, 또는 하트비트가 무인 상태를 덮지 못하는 동안은 정체 판정 보류
         if (deviceSeenAt == null || !HEARTBEAT_COVERS_IDLE) {
-            applyRiskScore(score)
+            applyRiskScore(idleAdjusted(score))
             return
         }
 
@@ -254,6 +254,17 @@ class MainViewModel : ViewModel() {
 
         applyRiskScore(score)
     }
+
+    /**
+     * 새 추론이 [IDLE_RESET_TICKS] 동안 없으면 위험이 아닌 점수는 0(정상)으로 내린다.
+     * 서버는 사람이 안 보이거나 몸이 덜 보이면 추론을 건너뛰고 마지막 점수를 그대로 두는데, 그대로 그리면
+     * 지나간 주의 점수가 몇 분씩 게이지에 멈춰 있었다. 위험은 서버가 15분간 최고값을 유지하므로 그대로 둔다 —
+     * 넘어진 뒤 화면에서 사라져도 위험 표시가 남아야 한다.
+     */
+    private fun idleAdjusted(score: Int): Int =
+        if (updatedAtStaleTicks >= IDLE_RESET_TICKS &&
+            RiskScoreCardBinder.RiskLevel.fromScore(score) != RiskScoreCardBinder.RiskLevel.DANGER
+        ) 0 else score
 
     // 정체·오류 상태의 직전 점수 제거 — 낡은 값이 현재 안전 상태로 오독됨
     private fun setStalled(state: ConnectionState) {
@@ -312,5 +323,6 @@ class MainViewModel : ViewModel() {
         private const val RECONNECTING_TICKS = 2    // 10초 — 유예 시작
         private const val SLOW_TICKS = 3            // 15초 — 처리 지연
         private const val DEVICE_STANDBY_TICKS = 6  // 30초 — WiFi 재연결 고려한 확정
+        private const val IDLE_RESET_TICKS = 2      // 10초 — 새 추론 없으면 위험 아닌 점수를 0으로(idleAdjusted)
     }
 }
