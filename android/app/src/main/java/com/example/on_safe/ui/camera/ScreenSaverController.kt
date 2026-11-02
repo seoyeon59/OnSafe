@@ -11,6 +11,7 @@ import kotlin.random.Random
 
 /**
  * 카메라 모드 화면보호기 — 무동작 시 자동 dim + 번인 방지용 주기적 위치 이동.
+ * 촬영 중([setEnabled] true)에만 동작한다 — 화면보호기 문구가 "촬영 중입니다"라 대기 중에 뜨면 오해를 부른다.
  *
  * @param window 밝기 조절 대상
  * @param rootLayout 오버레이를 붙일 루트 뷰
@@ -27,6 +28,7 @@ class ScreenSaverController(
 
     private var screenSaverView: View? = null
     private var isScreenDimmed = false
+    private var enabled = false
     // 어두운 상태에서 첫 터치로 밝기가 복원된 직후 — btnWakeUp 즉시 해제 방지용
     private var justRestoredFromDim = false
 
@@ -54,7 +56,19 @@ class ScreenSaverController(
 
     fun resetInactivityTimer() {
         handler.removeCallbacks(inactivityRunnable)
-        handler.postDelayed(inactivityRunnable, INACTIVITY_TIMEOUT_MS)
+        if (enabled) handler.postDelayed(inactivityRunnable, INACTIVITY_TIMEOUT_MS)
+    }
+
+    /** 촬영 시작·종료 시 호출 — 끄면 떠 있던 화면보호기도 바로 내린다 */
+    fun setEnabled(enabled: Boolean) {
+        if (this.enabled == enabled) return
+        this.enabled = enabled
+        if (enabled) {
+            resetInactivityTimer()
+        } else {
+            justRestoredFromDim = false
+            hide()
+        }
     }
 
     /** Activity.onPause()에서 호출 — 타이머만 정지, 화면보호기 표시 상태는 유지 */

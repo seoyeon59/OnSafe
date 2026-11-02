@@ -27,9 +27,11 @@ class RollingVideoBufferManager(private val context: Context) {
     companion object {
         private const val TAG = "RollingVideoBuffer"
         private const val SEGMENT_DURATION_MS = 15_000L
-        private const val RING_BUFFER_CAPACITY = 12   // 3분
         private const val PRE_EVENT_SEGMENTS = 8       // 약 2분
         private const val POST_EVENT_SEGMENTS = 8      // 약 2분
+        // 사고 후 분량을 찍는 동안 사고 전 세그먼트가 밀려 지워지지 않게 둘의 합만큼 보관(약 4분).
+        // 예전 12개(3분)는 합(16)보다 작아, 촬영 1분 이후의 사고는 합성 시 앞 세그먼트가 없어 클립이 실패했다
+        private const val RING_BUFFER_CAPACITY = PRE_EVENT_SEGMENTS + POST_EVENT_SEGMENTS
         private const val TARGET_BITRATE = 1_500_000
         // 할 일이 없으면 이 시간 뒤 스레드가 스스로 끝난다 — 직접 shutdown하지 않는다(아래 executor 참고)
         private const val EXECUTOR_IDLE_TIMEOUT_SEC = 30L
@@ -76,28 +78,46 @@ class RollingVideoBufferManager(private val context: Context) {
     private var onClipReady: ((File) -> Unit)? = null
     private var onClipError: ((Throwable) -> Unit)? = null
 
+    // 사고 후 분량을 다 찍기 전에 촬영이 끝남 — 마지막 세그먼트의 Finalize(성공·실패 모두)에서
+    // 지금까지 찍힌 분량으로 클립을 마무리한다. 사고 순간이 그 세그먼트에 있을 수 있어 기다린다
+    private var finishCaptureOnStop = false
+
     private val mainHandler = Handler(Looper.getMainLooper())
     private val rotateRunnable = Runnable { rotateSegment() }
 
     fun start() {
+        synchronized(this) {
+            // 직전 정지의 마지막 세그먼트를 기다리는 중에 다시 시작 — 기다리지 않고 지금 분량으로 마무리
+            if (finishCaptureOnStop) {
+                finishCaptureOnStop = false
+                finishCaptureLocked(deleteSources = true)
+            }
+        }
         running = true
         rotateSegment()
     }
 
+    /**
+     * 촬영 정지. 위험 클립을 만드는 중(사고 후 분량을 찍는 중)이면 버리지 않고 지금까지 찍힌 분량으로
+     * 마무리한다 — 예전에는 사고 직후 촬영을 끄면 클립이 통째로 사라져 사고 영상이 저장되지 않았다.
+     */
     fun stop() {
         running = false
         mainHandler.removeCallbacks(rotateRunnable)
-        currentRecording?.stop()
+        val lastRecording = currentRecording
         currentRecording = null
         synchronized(this) {
-            segments.forEach { it.delete() }
+            // 진행 중인 클립에 쓸 세그먼트는 남기고(합성 뒤 지운다) 나머지 링 버퍼만 비운다
+            val keep = if (capturingLogId != null) (preSegmentsSnapshot + postSegments).toSet() else emptySet()
+            segments.filterNot { it in keep }.forEach { it.delete() }
             segments.clear()
-            capturingLogId = null
-            postSegments.clear()
-            preSegmentsSnapshot = emptyList()
-            onClipReady = null
-            onClipError = null
+            if (capturingLogId != null) {
+                // 녹화 중이던 세그먼트가 있으면 그 Finalize에서 마무리(아래 stop() 전에 표시해야 경쟁이 없다)
+                if (lastRecording != null) finishCaptureOnStop = true
+                else finishCaptureLocked(deleteSources = true)
+            }
         }
+        lastRecording?.stop()
         // executor는 shutdown하지 않는다 — 마지막 세그먼트의 Finalize가 이 뒤에 도착할 수 있다.
         // 유휴가 되면 스레드가 스스로 끝난다(EXECUTOR_IDLE_TIMEOUT_SEC)
     }
@@ -115,11 +135,15 @@ class RollingVideoBufferManager(private val context: Context) {
             .withAudioEnabled()
             .start(executor) { event ->
                 if (event is VideoRecordEvent.Finalize) {
-                    if (event.hasError()) {
+                    // SOURCE_INACTIVE(카메라 해제로 끝남)는 그때까지의 파일이 유효하다 — 촬영 정지 직후 마지막 세그먼트
+                    val usable = !event.hasError() ||
+                        (event.error == VideoRecordEvent.Finalize.ERROR_SOURCE_INACTIVE && file.length() > 0)
+                    if (usable) {
+                        onSegmentFinalized(file)
+                    } else {
                         Log.w(TAG, "세그먼트 녹화 오류: errorCode=${event.error}", event.cause)
                         file.delete()
-                    } else {
-                        onSegmentFinalized(file)
+                        onLastSegmentLost()
                     }
                 }
             }
@@ -127,8 +151,16 @@ class RollingVideoBufferManager(private val context: Context) {
     }
 
     private fun onSegmentFinalized(file: File) {
-        // stop() 뒤에 마무리된 마지막 세그먼트 — 버퍼는 이미 비웠으니 캐시에 남기지 않는다
+        // stop() 뒤에 마무리된 마지막 세그먼트 — 진행 중이던 클립이 있으면 넣어 마무리, 아니면 버린다
         if (!running) {
+            synchronized(this) {
+                if (finishCaptureOnStop) {
+                    finishCaptureOnStop = false
+                    postSegments.add(file)
+                    finishCaptureLocked(deleteSources = true)
+                    return
+                }
+            }
             file.delete()
             return
         }
@@ -162,8 +194,19 @@ class RollingVideoBufferManager(private val context: Context) {
         }
     }
 
-    // 호출부(onSegmentFinalized)가 이미 synchronized(this) 안이라 별도 락 불필요
-    private fun finishCaptureLocked() {
+    // 정지 후 마지막 세그먼트가 오류로 끝남 — 그 세그먼트 없이 지금 분량으로 마무리
+    private fun onLastSegmentLost() {
+        if (running) return
+        synchronized(this) {
+            if (!finishCaptureOnStop) return
+            finishCaptureOnStop = false
+            finishCaptureLocked(deleteSources = true)
+        }
+    }
+
+    // 호출부가 이미 synchronized(this) 안이라 별도 락 불필요.
+    // [deleteSources]: 촬영 정지로 링 버퍼가 비워진 뒤라 원본 세그먼트를 합성 후 직접 지운다
+    private fun finishCaptureLocked(deleteSources: Boolean = false) {
         val logId = capturingLogId ?: return
         val pre = preSegmentsSnapshot
         val post = postSegments.toList()
@@ -185,6 +228,8 @@ class RollingVideoBufferManager(private val context: Context) {
                 } catch (e: Exception) {
                     Log.w(TAG, "클립 합성 실패 (logId=$logId)", e)
                     errorCb?.invoke(e)
+                } finally {
+                    if (deleteSources) (pre + post).forEach { it.delete() }
                 }
             }
         } catch (e: java.util.concurrent.RejectedExecutionException) {

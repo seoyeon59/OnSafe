@@ -8,6 +8,7 @@ import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
@@ -51,6 +52,10 @@ import kotlinx.coroutines.launch
 import com.example.on_safe.util.cardDialog
 
 private const val TAG = "CameraModeActivity"
+
+// 촬영 시작 직후 낙상 분석을 쉬는 시간 — 버튼을 누르고 자리로 돌아가는 움직임(폰에서 멀어지기·숙였다 일어나기)을
+// 낙상으로 오판하지 않게 한다. 녹화·실시간 송출은 처음부터 한다. WS 재연결(촬영 중)에는 적용하지 않는다.
+private const val ANALYSIS_WARMUP_MS = 20_000L
 
 class CameraModeActivity : AppCompatActivity() {
 
@@ -117,6 +122,10 @@ class CameraModeActivity : AppCompatActivity() {
     private val fallVideoUploader = FallVideoUploader()
     // 위험 이벤트 중복 트리거 방지 — 같은 logId는 한 번만 처리
     private var lastHandledDangerLogId: String? = null
+
+    // 이 시각(elapsedRealtime) 전의 포즈 프레임은 AI 서버로 보내지 않는다 — 분석 스레드에서 읽는다
+    @Volatile
+    private var analysisStartsAtMs = 0L
 
     // 카메라 provider 보관용 (화면 종료 시 해제하려고 들고 있음)
     private var cameraProvider: ProcessCameraProvider? = null
@@ -460,6 +469,7 @@ class CameraModeActivity : AppCompatActivity() {
                     return
                 }
                 runOnUiThread {
+                    analysisStartsAtMs = SystemClock.elapsedRealtime() + ANALYSIS_WARMUP_MS
                     poseLandmarkerHelper = PoseLandmarkerHelper(
                         this@CameraModeActivity,
                         createPoseListener()
@@ -544,6 +554,8 @@ class CameraModeActivity : AppCompatActivity() {
                 timestampSec: Float,
                 landmarks: List<LandmarkPoint>
             ) {
+                // 촬영 시작 직후는 자리를 잡는 중 — 분석(서버 추론·알림)에서 뺀다
+                if (SystemClock.elapsedRealtime() < analysisStartsAtMs) return
                 landmarkStreamClient?.sendFrame(frameIndex, timestampSec, landmarks)
             }
 
@@ -669,6 +681,7 @@ class CameraModeActivity : AppCompatActivity() {
         currentState = state
         // 분석 프레임은 촬영 중에만 나온다 — 실시간 영상 송출 시작 허용 조건
         viewModel.setCameraStreaming(state == CameraState.STREAMING)
+        screenSaverController.setEnabled(state == CameraState.STREAMING)
         when (state) {
             CameraState.STANDBY -> {
                 stopRecordingTimer()

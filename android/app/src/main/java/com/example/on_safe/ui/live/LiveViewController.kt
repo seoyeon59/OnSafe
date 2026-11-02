@@ -188,6 +188,12 @@ class LiveViewController(
             }
             is RoomEvent.Disconnected -> {
                 if (closingByClient) return
+                // 같은 보호자의 다른 화면(홈↔전체화면)이 같은 신원으로 새로 접속해 이쪽이 밀려남 — 시청은 그쪽이 잇는다.
+                // 여기서 DELETE를 보내면 서버가 방을 지워 넘겨받은 화면까지 끊긴다.
+                if (event.reason == DisconnectReason.DUPLICATE_IDENTITY) {
+                    terminate(LiveViewState.Idle, endSession = false)
+                    return
+                }
                 // 서버가 방을 지움(만료·연결 해제·동의 철회 등) 또는 네트워크 단절 — 화면 정리.
                 // DELETE는 멱등이라 단절로 끊긴 경우에도 서버 세션을 확실히 닫도록 보낸다.
                 val message = if (event.reason == DisconnectReason.ROOM_DELETED) {

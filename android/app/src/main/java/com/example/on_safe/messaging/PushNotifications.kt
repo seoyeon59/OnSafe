@@ -107,10 +107,10 @@ object PushNotifications {
 
     // 리소스 이름 기반 URI(…/raw/alarm) — 채널은 생성 시 URI를 그대로 저장한다. 숫자 ID(R.raw.alarm)는
     // res/raw 파일이 늘거나 줄면 빌드마다 바뀔 수 있어, 설치된 기기의 위험 알림이 다른 소리로 울리거나 무음이 된다.
-    private fun alarmSoundUri(context: Context): Uri =
+    internal fun alarmSoundUri(context: Context): Uri =
         Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/raw/alarm")
 
-    private fun fallAlertVibration(context: Context): LongArray =
+    internal fun fallAlertVibration(context: Context): LongArray =
         context.resources.getIntArray(R.array.fall_alert_vibration_pattern).map { it.toLong() }.toLongArray()
 
     /** 보호자 위험·주의 알림 구분 — 소리·진동이 달라 채널이 갈린다 */
@@ -176,6 +176,8 @@ object PushNotifications {
 
         // POST_NOTIFICATIONS(33+) 미허용이면 notify 는 조용히 무시된다 — 크래시 없음.
         NotificationManagerCompat.from(context).notify(notificationId.incrementAndGet(), notification)
+        // 채널 소리·진동은 무음·진동 모드에 막힌다 — 위험 알림만 그때 알람 용도로 직접 울린다
+        if (level == FallAlertLevel.DANGER) MutedModeFallAlarm.playIfMuted(context)
     }
 
     // 낙상 딥링크 — 홈을 백스택에 두어 뒤로가기 시 홈 복귀
