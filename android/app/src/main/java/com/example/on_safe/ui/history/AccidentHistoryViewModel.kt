@@ -1,5 +1,6 @@
 package com.example.on_safe.ui.history
 
+import android.graphics.Bitmap
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -80,6 +81,8 @@ class AccidentHistoryViewModel : ViewModel() {
                 val entries = repository.getHistoryEntries(ward)
                 wardUserId = ward
                 rawEntries = entries
+                // 목록에서 사라진(삭제·만료) 기록의 썸네일은 폰에서도 지운다
+                HistoryThumbnails.retainOnly(entries.mapTo(HashSet()) { it.id })
                 setState { copy(entries = rawEntries, lastLoadFailed = false, notPaired = false) }
             } catch (e: CancellationException) {
                 throw e   // 화면 이탈에 의한 취소 — 조회 실패 처리 대상 아님
@@ -167,6 +170,17 @@ class AccidentHistoryViewModel : ViewModel() {
             } catch (e: Exception) {
                 _toastEvent.value = HistoryToastEvent("네트워크 오류로 확인 처리에 실패했습니다.")
             }
+        }
+    }
+
+    /** 목록 썸네일 — 영상의 위험 최고점 프레임. 캐시에 있으면 바로, 없으면 뽑은 뒤 [onLoaded] */
+    fun loadThumbnail(entry: HistoryListItem.HistoryEntry, onLoaded: (Bitmap) -> Unit) {
+        if (!entry.hasVideo) return
+        HistoryThumbnails.cached(entry.id)?.let { onLoaded(it); return }
+        val ward = wardUserId ?: return
+        viewModelScope.launch {
+            val bitmap = HistoryThumbnails.load(ward, entry.id, entry.peakOffsetMs) ?: return@launch
+            if (ward == wardUserId) onLoaded(bitmap)
         }
     }
 

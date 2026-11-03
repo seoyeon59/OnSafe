@@ -21,7 +21,9 @@ sealed class HistoryListItem {
         val date: String,
         val hasVideo: Boolean = false,
         // none(영상 미제공) / processing(준비 중) / ready(hasVideo와 동일 조건)
-        val videoStatus: String = "none"
+        val videoStatus: String = "none",
+        // 영상 시작부터 위험 점수 최고점까지(ms) — 썸네일 위치(HistoryThumbnails). 없으면 null
+        val peakOffsetMs: Long? = null
     ) : HistoryListItem()
 
     // 보관 기간 안내 — 목록의 "가장 오래된 데이터" 쪽 끝에 붙는 카드
