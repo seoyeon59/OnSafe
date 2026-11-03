@@ -32,9 +32,13 @@ internal object HistoryThumbnails {
     // 클립 = 사고 전(최대 약 2분) + 사고 후 약 2분 — 시점 값이 없는 이전 기록은 끝에서 2분 앞(사고 순간 근처)
     private const val POST_EVENT_MS = 120_000L
 
-    // 가장 가까운 키프레임(사고 영상은 1초마다 키프레임) — 키프레임이 아닌 정확한 프레임(OPTION_CLOSEST)을
-    // 원격 영상에서 뽑으면 삼성 기기에서 초록 화면이 나왔다(PC 디코딩으로는 같은 시점이 정상)
+    // 가장 가까운 키프레임(사고 영상은 1초마다 키프레임) — 키프레임이 아닌 정확한 프레임(OPTION_CLOSEST)은
+    // 원격 영상에서 삼성 기기가 초록 화면을 냈다(같은 시점을 PC에서 디코딩하면 정상)
     private const val FRAME_OPTION = MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+
+    // 점수(30프레임 윈도우를 2초 구간 평활화)는 실제 넘어지는 움직임보다 약 2초 늦게 최고점에 닿는다 — 그만큼 앞의 장면을 쓴다.
+    // 실기기: 넘어지기 시작 22.5초·매트에 누움 23.0초, 점수 최고점 24.85초
+    private const val SCORE_LAG_MS = 2_000L
 
     // 동시에 영상을 여는 수 — 목록을 빠르게 넘겨도 네트워크·디코더를 몰아 쓰지 않게
     private val gate = Semaphore(2)
@@ -95,7 +99,7 @@ internal object HistoryThumbnails {
         return try {
             retriever.setDataSource(signedUrl, emptyMap())
             val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
-            val atMs = (peakOffsetMs ?: durationMs?.let { it - POST_EVENT_MS } ?: 0L)
+            val atMs = (peakOffsetMs?.let { it - SCORE_LAG_MS } ?: durationMs?.let { it - POST_EVENT_MS } ?: 0L)
                 .coerceIn(0L, durationMs ?: Long.MAX_VALUE)
             val frame = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 val width = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull()

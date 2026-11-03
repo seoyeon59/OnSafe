@@ -32,8 +32,6 @@ class RollingVideoBufferManager(private val context: Context) {
         // 사고 후 분량을 찍는 동안 사고 전 세그먼트가 밀려 지워지지 않게 둘의 합만큼 보관(약 4분).
         // 예전 12개(3분)는 합(16)보다 작아, 촬영 1분 이후의 사고는 합성 시 앞 세그먼트가 없어 클립이 실패했다
         private const val RING_BUFFER_CAPACITY = PRE_EVENT_SEGMENTS + POST_EVENT_SEGMENTS
-        // 점수는 30프레임(~1초) 윈도우를 2초 구간으로 평활화한 값이라 실제 움직임보다 늦게 최고점에 닿는다 — 그만큼 앞당긴다
-        private const val SCORE_LAG_MS = 1_000L
         private const val TARGET_BITRATE = 1_500_000
         // 할 일이 없으면 이 시간 뒤 스레드가 스스로 끝난다 — 직접 shutdown하지 않는다(아래 executor 참고)
         private const val EXECUTOR_IDLE_TIMEOUT_SEC = 30L
@@ -243,9 +241,10 @@ class RollingVideoBufferManager(private val context: Context) {
         val post = postSegments.toList()
         val readyCb = onClipReady
         val errorCb = onClipError
-        // 클립 첫 세그먼트 시작부터 최고점까지. 세그먼트 사이 틈(수십 ms)은 무시한다
+        // 클립 첫 세그먼트 시작부터 최고점(결과를 받은 시각)까지. 세그먼트 사이 틈(수십 ms)은 무시한다.
+        // 점수 지연 보정은 썸네일을 뽑는 보호자 앱이 한다 — 서버에는 실제 최고점 시점을 저장
         val clipStartMs = (pre + post).firstOrNull()?.let(::segmentStartMs)
-        val peakOffsetMs = clipStartMs?.let { (peakAtMs - SCORE_LAG_MS - it).coerceAtLeast(0L) }
+        val peakOffsetMs = clipStartMs?.let { (peakAtMs - it).coerceAtLeast(0L) }
 
         capturingLogId = null
         preSegmentsSnapshot = emptyList()
