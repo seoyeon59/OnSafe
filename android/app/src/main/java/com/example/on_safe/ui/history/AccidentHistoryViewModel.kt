@@ -9,6 +9,8 @@ import com.example.on_safe.data.repository.AccidentHistoryRepository
 import com.example.on_safe.data.repository.RealAccidentHistoryRepository
 import com.example.on_safe.data.repository.WardSource
 import com.example.on_safe.network.ApiClient
+import com.example.on_safe.network.failure
+import com.example.on_safe.network.isOk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -53,6 +55,10 @@ class AccidentHistoryViewModel : ViewModel() {
 
     private val _videoUrlEvent = MutableLiveData<VideoUrlEvent?>()
     val videoUrlEvent: LiveData<VideoUrlEvent?> = _videoUrlEvent
+
+    // 확인하지 않은 위험 이벤트라 삭제가 거절됨 — Activity가 "확인 처리 후 삭제" 창을 띄운다
+    private val _confirmRequiredEvent = MutableLiveData<HistoryListItem.HistoryEntry?>()
+    val confirmRequiredEvent: LiveData<HistoryListItem.HistoryEntry?> = _confirmRequiredEvent
 
     fun loadHistory(guardianUserId: String) {
         if (guardianUserId.isBlank()) return
@@ -132,14 +138,37 @@ class AccidentHistoryViewModel : ViewModel() {
                     setState { copy(entries = rawEntries, lastLoadFailed = false) }
                     _toastEvent.value = HistoryToastEvent("이력이 삭제되었습니다.")
                 } else {
-                    _toastEvent.value = HistoryToastEvent(
-                        ApiClient.parseErrorMessage(response.errorBody(), "삭제에 실패했습니다.")
-                    )
+                    val failure = response.failure("삭제에 실패했습니다.")
+                    if (failure.code == CODE_LOG_NOT_CONFIRMED) {
+                        _confirmRequiredEvent.value = entry
+                    } else {
+                        _toastEvent.value = HistoryToastEvent(failure.message)
+                    }
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 _toastEvent.value = HistoryToastEvent("네트워크 오류로 삭제에 실패했습니다.")
+            }
+        }
+    }
+
+    // 미확인 위험 이벤트 — 보호자가 확인 처리에 동의하면 확인(isConfirmed) 후 이어서 삭제
+    fun confirmAndDelete(entry: HistoryListItem.HistoryEntry) {
+        val ward = wardUserId ?: return
+        viewModelScope.launch {
+            try {
+                val response = ApiClient.api.confirmFallLog(ward, entry.id)
+                if (ward != wardUserId) return@launch
+                if (response.isOk) {
+                    deleteEntry(entry)
+                } else {
+                    _toastEvent.value = HistoryToastEvent(response.failure("확인 처리에 실패했습니다.").message)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _toastEvent.value = HistoryToastEvent("네트워크 오류로 확인 처리에 실패했습니다.")
             }
         }
     }
@@ -163,7 +192,16 @@ class AccidentHistoryViewModel : ViewModel() {
         _videoUrlEvent.value = null
     }
 
+    fun onConfirmRequiredHandled() {
+        _confirmRequiredEvent.value = null
+    }
+
     private inline fun setState(update: AccidentHistoryUiState.() -> AccidentHistoryUiState) {
         _uiState.value = (_uiState.value ?: AccidentHistoryUiState()).update()
+    }
+
+    private companion object {
+        // 보호자가 확인하지 않은 위험 이벤트 삭제 거절(409)
+        const val CODE_LOG_NOT_CONFIRMED = "LOG_NOT_CONFIRMED"
     }
 }

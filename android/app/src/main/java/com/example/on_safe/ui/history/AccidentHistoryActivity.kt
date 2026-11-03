@@ -114,6 +114,12 @@ class AccidentHistoryActivity : AppCompatActivity() {
                 viewModel.onToastHandled()
             }
         }
+        viewModel.confirmRequiredEvent.observe(this) { entry ->
+            if (entry != null) {
+                showConfirmThenDeleteDialog(entry)
+                viewModel.onConfirmRequiredHandled()
+            }
+        }
         viewModel.videoUrlEvent.observe(this) { event ->
             if (event != null) {
                 if (event.forDownload) {
@@ -294,6 +300,26 @@ class AccidentHistoryActivity : AppCompatActivity() {
         dialog.findViewById<TextView>(R.id.btnDeleteConfirm).setOnClickListener {
             dialog.dismiss()
             viewModel.deleteEntry(entry)
+        }
+        dialog.show()
+    }
+
+    // 확인하지 않은 위험 이벤트(LOG_NOT_CONFIRMED) — 삭제 창을 재사용해 확인 처리 후 삭제를 안내
+    private fun showConfirmThenDeleteDialog(entry: HistoryListItem.HistoryEntry) {
+        val dialog = cardDialog(this, R.layout.dialog_delete_history)
+
+        dialog.findViewById<TextView>(R.id.tvDeleteTitle).text = "확인하지 않은 위험 이벤트입니다"
+        dialog.findViewById<TextView>(R.id.tvDeleteMessage).text =
+            "확인 처리한 뒤에 삭제할 수 있습니다.\n확인 처리하고 삭제하시겠습니까?"
+        dialog.findViewById<TextView>(R.id.btnDeleteCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.findViewById<TextView>(R.id.btnDeleteConfirm).apply {
+            text = "확인 후 삭제"
+            setOnClickListener {
+                dialog.dismiss()
+                viewModel.confirmAndDelete(entry)
+            }
         }
         dialog.show()
     }
