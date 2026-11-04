@@ -6,7 +6,7 @@ import android.os.Bundle
 import com.example.on_safe.messaging.FcmTokenRegistrar
 import com.example.on_safe.messaging.PushNotifications
 import com.example.on_safe.network.ApiClient
-import com.example.on_safe.ui.pairing.PairingApprovalDialog
+// import com.example.on_safe.ui.pairing.PairingApprovalDialog  // [연결 승인 비활성화]
 import com.example.on_safe.util.CrashLogger
 import java.lang.ref.WeakReference
 
@@ -23,18 +23,19 @@ class OnSafeApp : Application() {
         // (미로그인이거나 google-services.json 미설정이면 내부에서 안전하게 건너뜀)
         FcmTokenRegistrar.registerIfLoggedIn(this)
 
-        // 사용 중 재동의·연결 승인 창을 띄울 현재 화면 추적
+        // 사용 중 재동의 창(연결 승인 창은 현재 비활성화)을 띄울 현재 화면 추적
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityResumed(activity: Activity) {
                 resumed = WeakReference(activity)
-                PairingApprovalDialog.showPendingOn(activity)
+                // [연결 승인 비활성화] 화면 복귀 시 보류된 연결 승인 창 표시 — 사용 중지
+                // PairingApprovalDialog.showPendingOn(activity)
             }
             override fun onActivityPaused(activity: Activity) {
                 if (resumed?.get() === activity) resumed = null
             }
-            // 백그라운드에서 받은 연결 요청 알림을 탭하면 런처 인텐트 extras 로 들어온다
+            // [연결 승인 비활성화] 백그라운드에서 받은 연결 요청 알림을 탭해 들어올 때(런처 인텐트 extras) 승인 창 — 사용 중지
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                if (savedInstanceState == null) PairingApprovalDialog.offerFromIntent(activity.intent)
+                // if (savedInstanceState == null) PairingApprovalDialog.offerFromIntent(activity.intent)
             }
             override fun onActivityStarted(activity: Activity) = Unit
             override fun onActivityStopped(activity: Activity) = Unit
