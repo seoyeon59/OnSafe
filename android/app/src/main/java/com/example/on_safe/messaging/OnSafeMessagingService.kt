@@ -2,7 +2,7 @@ package com.example.on_safe.messaging
 
 import android.util.Log
 import com.example.on_safe.BuildConfig
-import com.example.on_safe.ui.pairing.PairingApprovalDialog
+// import com.example.on_safe.ui.pairing.PairingApprovalDialog  // [연결 승인 비활성화]
 import com.example.on_safe.util.TokenManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -49,8 +49,9 @@ class OnSafeMessagingService : FirebaseMessagingService() {
         // 낙상 계열은 data로 위험(경보음+진동)·주의(진동만) 채널 구분. 피보호자 본인 알림은 서버가 미발송
         PushNotifications.show(applicationContext, event, title, body, data)
         PushEventBus.publish(PushEvent(event, data))
+        // [연결 승인 비활성화] 피보호자(카메라 모드) 승인 창 사용 중지 — 되살릴 때 아래 주석과 import를 풀면 된다
         // 보호자 연결 요청 — 승인해야 성립하므로 보이는 화면 위에 바로 승인 창
-        if (event == PairingApprovalDialog.EVENT) PairingApprovalDialog.offer(data, message.sentTime)
+        // if (event == PairingApprovalDialog.EVENT) PairingApprovalDialog.offer(data, message.sentTime)
     }
 
     private companion object {
