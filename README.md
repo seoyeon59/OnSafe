@@ -159,7 +159,7 @@ OnSafe/
 
 ## 🚀 개발 환경 설정
 
-### 요구 사항
+### 0. 요구 사항
 - Android Studio (Koala 이상 권장), JDK 17
 - 테스트 기기 또는 에뮬레이터 (Android 7.0+)
 
