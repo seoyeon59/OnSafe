@@ -260,7 +260,7 @@ APK 위치: `android/app/build/outputs/apk/debug/app-debug.apk`
       <sub>@stoney109</sub>
     </td>
     <td align="center">
-      <a href="https://github.com/codingMaster-404"><img src="https://avatars.githubusercontent.com/u/270085662?v=4" width="100" alt="codingMaster-404" /><br /><b>Hwang Dong-uk</b></a><br />
+      <a href="https://github.com/codingMaster-404"><img src="https://avatars.githubusercontent.com/u/270085662?v=4" width="100" alt="codingMaster-404" /><br /><b>황동욱</b></a><br />
       <sub>@codingMaster-404</sub>
     </td>
     <td align="center">
@@ -268,7 +268,7 @@ APK 위치: `android/app/build/outputs/apk/debug/app-debug.apk`
       <sub>@Hamsukwon</sub>
     </td>
     <td align="center">
-      <a href="https://github.com/Jasmin527"><img src="https://avatars.githubusercontent.com/u/176097685?v=4" width="100" alt="Jasmin527" /><br /><b>Jang Yeseo</b></a><br />
+      <a href="https://github.com/Jasmin527"><img src="https://avatars.githubusercontent.com/u/176097685?v=4" width="100" alt="Jasmin527" /><br /><b>장예서</b></a><br />
       <sub>@Jasmin527</sub>
     </td>
   </tr>
