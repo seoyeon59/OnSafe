@@ -247,8 +247,29 @@ APK 위치: `android/app/build/outputs/apk/debug/app-debug.apk`
 
 ---
 
-## 👥 Contributors
+## 👥 Team
 
-<a href="https://github.com/seoyeon59/OnSafe/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=seoyeon59/OnSafe" />
-</a>
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/seoyeon59"><img src="https://avatars.githubusercontent.com/u/188958450?v=4" width="100" alt="seoyeon59" /><br /><b>전서연</b></a><br />
+      <sub>@seoyeon59</sub>
+    </td>
+    <td align="center">
+      <a href="https://github.com/stoney109"><img src="https://avatars.githubusercontent.com/u/139944219?v=4" width="100" alt="stoney109" /><br /><b>공다원</b></a><br />
+      <sub>@stoney109</sub>
+    </td>
+    <td align="center">
+      <a href="https://github.com/codingMaster-404"><img src="https://avatars.githubusercontent.com/u/270085662?v=4" width="100" alt="codingMaster-404" /><br /><b>Hwang Dong-uk</b></a><br />
+      <sub>@codingMaster-404</sub>
+    </td>
+    <td align="center">
+      <a href="https://github.com/Hamsukwon"><img src="https://avatars.githubusercontent.com/u/68820015?v=4" width="100" alt="Hamsukwon" /><br /><b>함석원</b></a><br />
+      <sub>@Hamsukwon</sub>
+    </td>
+    <td align="center">
+      <a href="https://github.com/Jasmin527"><img src="https://avatars.githubusercontent.com/u/176097685?v=4" width="100" alt="Jasmin527" /><br /><b>Jang Yeseo</b></a><br />
+      <sub>@Jasmin527</sub>
+    </td>
+  </tr>
+</table>
