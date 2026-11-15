@@ -268,7 +268,7 @@ APK 위치: `android/app/build/outputs/apk/debug/app-debug.apk`
       <sub>@Hamsukwon</sub>
     </td>
     <td align="center">
-      <a href="https://github.com/Jasmin527"><img src="https://avatars.githubusercontent.com/u/176097685?v=4" width="100" alt="Jasmin527" /><br /><b>Jasmin527</b></a><br />
+      <a href="https://github.com/Jasmin527"><img src="https://avatars.githubusercontent.com/u/176097685?v=4" width="100" alt="Jasmin527" /><br /><b>Jang Yeseo</b></a><br />
       <sub>@Jasmin527</sub>
     </td>
   </tr>
